@@ -220,8 +220,8 @@ passport.use(
  */
 const googleStrategyConfig = new GoogleStrategy(
   {
-    clientID: process.env.GOOGLE_ID,
-    clientSecret: process.env.GOOGLE_SECRET,
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: '/auth/google/callback',
     scope: ['profile', 'email', 'https://www.googleapis.com/auth/drive.metadata.readonly', 'https://www.googleapis.com/auth/spreadsheets.readonly'],
     accessType: 'offline',
@@ -295,8 +295,8 @@ passport.use(
       authorizationURL: 'https://www.linkedin.com/oauth/v2/authorization',
       tokenURL: 'https://www.linkedin.com/oauth/v2/accessToken',
       userInfoURL: 'https://api.linkedin.com/v2/userinfo',
-      clientID: process.env.LINKEDIN_ID,
-      clientSecret: process.env.LINKEDIN_SECRET,
+      clientID: process.env.LINKEDIN_CLIENT_ID,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
       callbackURL: `${process.env.BASE_URL}/auth/linkedin/callback`,
       scope: ['openid', 'profile', 'email'],
       passReqToCallback: true,
