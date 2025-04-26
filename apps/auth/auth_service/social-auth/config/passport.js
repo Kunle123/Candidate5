@@ -17,6 +17,15 @@ const validator = require('validator');
 
 const User = require('../models/User');
 
+// Debug logging for OAuth environment variables
+console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID);
+console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET);
+console.log('LINKEDIN_CLIENT_ID:', process.env.LINKEDIN_CLIENT_ID);
+console.log('LINKEDIN_CLIENT_SECRET:', process.env.LINKEDIN_CLIENT_SECRET);
+console.log('FACEBOOK_ID:', process.env.FACEBOOK_ID);
+console.log('FACEBOOK_SECRET:', process.env.FACEBOOK_SECRET);
+console.log('BASE_URL:', process.env.BASE_URL);
+
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
