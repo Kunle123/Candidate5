@@ -1,0 +1,20 @@
+{
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "backend/ai_service/Dockerfile"
+  },
+  "deploy": {
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  },
+  "environment": {
+    "PORT": "8002",
+    "variables": {
+      "CV_SERVICE_URL": "http://candidatev.railway.internal:8003"
+    },
+    "secrets": [
+      "OPENAI_API_KEY",
+      "CV_SERVICE_AUTH_TOKEN"
+    ]
+  }
+} 

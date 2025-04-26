@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install only the bare minimum
+RUN pip install fastapi==0.109.0 uvicorn==0.26.0 PyJWT==2.7.0
+
+# Copy only the health check file
+COPY ./healthcheck.py .
+
+# Make debugging easier
+RUN pwd && ls -la
+
+# For Railway health check debugging
+ENV PORT=8002
+ENV PYTHONUNBUFFERED=1
+
+# Run just the health check app
+CMD ["uvicorn", "healthcheck:app", "--host", "0.0.0.0", "--port", "8002"] 

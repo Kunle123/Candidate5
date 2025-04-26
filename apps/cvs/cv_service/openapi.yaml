@@ -1,0 +1,1027 @@
+openapi: 3.0.0
+info:
+  title: CandidateV CV Management Service API
+  version: 1.0.0
+  description: API for creating, editing, and managing CVs
+  contact:
+    name: CandidateV Support
+    email: support@candidatev.com
+
+servers:
+  - url: http://localhost:8002
+    description: Local development server
+  - url: https://{cv_service_url}
+    description: Production server
+    variables:
+      cv_service_url:
+        default: cv-service.candidatev.com
+
+components:
+  schemas:
+    CVMetadata:
+      type: object
+      required:
+        - name
+        - version
+        - last_modified
+      properties:
+        name:
+          type: string
+          description: CV title
+          example: My Professional CV
+        description:
+          type: string
+          nullable: true
+          description: CV description
+          example: CV for software engineering positions
+        is_default:
+          type: boolean
+          default: false
+          description: Whether this is the user's default CV
+          example: false
+        version:
+          type: integer
+          minimum: 1
+          description: CV version number
+          example: 1
+        last_modified:
+          type: string
+          format: date-time
+          description: When the CV was last modified
+          example: 2025-04-10T15:30:00Z
+
+    CVTemplate:
+      type: object
+      required:
+        - id
+        - name
+        - category
+      properties:
+        id:
+          type: string
+          description: Template identifier
+          example: professional
+        name:
+          type: string
+          description: Template display name
+          example: Professional
+        preview_image_url:
+          type: string
+          nullable: true
+          format: uri
+          description: URL to template preview image
+          example: https://example.com/templates/professional.jpg
+        description:
+          type: string
+          nullable: true
+          description: Template description
+          example: A clean and professional CV template
+        category:
+          type: string
+          description: Template category
+          example: Business
+        style_options:
+          type: object
+          description: Template styling options
+          example:
+            color_scheme: blue
+            font_family: Roboto
+            layout: standard
+        is_premium:
+          type: boolean
+          default: false
+          description: Whether this is a premium template
+          example: false
+
+    CVEducation:
+      type: object
+      required:
+        - id
+        - institution
+        - degree
+        - field_of_study
+        - start_date
+      properties:
+        id:
+          type: string
+          description: Education entry identifier
+          example: edu1
+        institution:
+          type: string
+          description: Institution name
+          example: University of Example
+        degree:
+          type: string
+          description: Degree title
+          example: Bachelor of Science
+        field_of_study:
+          type: string
+          description: Field of study
+          example: Computer Science
+        start_date:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])$
+          description: Start date in YYYY-MM format
+          example: 2018-09
+        end_date:
+          type: string
+          nullable: true
+          pattern: ^\d{4}-(0[1-9]|1[0-2])$
+          description: End date in YYYY-MM format, or null for current education
+          example: 2022-06
+        description:
+          type: string
+          nullable: true
+          description: Description or additional information
+          example: Graduated with honors. Focus on artificial intelligence and machine learning.
+        included:
+          type: boolean
+          default: true
+          description: Whether to include in CV
+          example: true
+
+    CVExperience:
+      type: object
+      required:
+        - id
+        - company
+        - position
+        - start_date
+      properties:
+        id:
+          type: string
+          description: Experience entry identifier
+          example: exp1
+        company:
+          type: string
+          description: Company name
+          example: Example Corp
+        position:
+          type: string
+          description: Job position/title
+          example: Senior Software Engineer
+        start_date:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])$
+          description: Start date in YYYY-MM format
+          example: 2022-07
+        end_date:
+          type: string
+          nullable: true
+          pattern: ^\d{4}-(0[1-9]|1[0-2])$
+          description: End date in YYYY-MM format, or null for current positions
+          example: null
+        description:
+          type: string
+          nullable: true
+          description: Job description and responsibilities
+          example: Led a team of 5 developers building a microservices architecture.
+        included:
+          type: boolean
+          default: true
+          description: Whether to include in CV
+          example: true
+
+    CVSkill:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Skill identifier
+          example: skill1
+        name:
+          type: string
+          description: Skill name
+          example: Python
+        level:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 5
+          description: Skill level (1-5, with 5 being the highest)
+          example: 5
+        category:
+          type: string
+          nullable: true
+          description: Skill category
+          example: Programming Languages
+        years_of_experience:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: Years of experience with this skill
+          example: 5
+        included:
+          type: boolean
+          default: true
+          description: Whether to include in CV
+          example: true
+
+    CVLanguage:
+      type: object
+      required:
+        - id
+        - name
+        - proficiency
+      properties:
+        id:
+          type: string
+          description: Language identifier
+          example: lang1
+        name:
+          type: string
+          description: Language name
+          example: English
+        proficiency:
+          type: string
+          enum: 
+            - Basic
+            - Intermediate
+            - Advanced
+            - Fluent
+            - Native
+          description: Language proficiency level
+          example: Fluent
+        included:
+          type: boolean
+          default: true
+          description: Whether to include in CV
+          example: true
+
+    CVContent:
+      type: object
+      required:
+        - template_id
+      properties:
+        template_id:
+          type: string
+          description: Template identifier
+          example: professional
+        style_options:
+          type: object
+          description: CV style customization options
+          example:
+            color_scheme: blue
+            font_family: Roboto
+        personal_info:
+          type: object
+          description: Personal information section
+          example:
+            full_name: John Doe
+            email: john.doe@example.com
+            phone: +1 (123) 456-7890
+        summary:
+          type: string
+          nullable: true
+          description: CV summary or objective
+          example: Experienced software engineer with 5+ years of experience in web development.
+        experiences:
+          type: array
+          items:
+            $ref: '#/components/schemas/CVExperience'
+        education:
+          type: array
+          items:
+            $ref: '#/components/schemas/CVEducation'
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/CVSkill'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/CVLanguage'
+
+    CV:
+      type: object
+      required:
+        - id
+        - user_id
+        - metadata
+        - content
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: CV unique identifier
+          example: 123e4567-e89b-12d3-a456-426614174000
+        user_id:
+          type: string
+          format: uuid
+          description: Owner user ID
+          example: 123e4567-e89b-12d3-a456-426614174001
+        metadata:
+          $ref: '#/components/schemas/CVMetadata'
+        content:
+          $ref: '#/components/schemas/CVContent'
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: 2025-04-10T12:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: 2025-04-10T15:30:00Z
+
+    CVCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: CV title
+          example: My Professional CV
+        description:
+          type: string
+          nullable: true
+          description: CV description
+          example: CV for software engineering positions
+        is_default:
+          type: boolean
+          default: false
+          description: Whether this should be the user's default CV
+          example: false
+        template_id:
+          type: string
+          default: default
+          description: Template identifier
+          example: professional
+        base_cv_id:
+          type: string
+          nullable: true
+          format: uuid
+          description: ID of an existing CV to copy content from
+          example: null
+
+    CVUpdateMetadata:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          description: CV title
+          example: Updated CV Title
+        description:
+          type: string
+          nullable: true
+          description: CV description
+          example: Updated description for my CV
+        is_default:
+          type: boolean
+          nullable: true
+          description: Whether this should be the user's default CV
+          example: true
+
+    CVUpdateContent:
+      type: object
+      properties:
+        template_id:
+          type: string
+          nullable: true
+          description: Template identifier
+          example: modern
+        style_options:
+          type: object
+          nullable: true
+          description: CV style customization options
+          example:
+            color_scheme: teal
+            font_family: Montserrat
+        personal_info:
+          type: object
+          nullable: true
+          description: Personal information section
+          example:
+            full_name: John Doe
+            email: john.doe@example.com
+            phone: +1 (123) 456-7890
+        summary:
+          type: string
+          nullable: true
+          description: CV summary or objective
+          example: Experienced software engineer with 5+ years of experience in web development.
+
+    ShareRequest:
+      type: object
+      properties:
+        expires_in_days:
+          type: integer
+          nullable: true
+          minimum: 1
+          default: 7
+          description: Number of days until the share link expires
+          example: 30
+
+    ShareResponse:
+      type: object
+      required:
+        - share_url
+        - expires_at
+      properties:
+        share_url:
+          type: string
+          format: uri
+          description: Public sharing URL
+          example: https://cv.candidatev.com/share/abc123
+        expires_at:
+          type: string
+          nullable: true
+          format: date-time
+          description: When the share link expires
+          example: 2025-05-10T15:30:00Z
+
+    CVListResponse:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - limit
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - title
+              - last_modified
+              - created_at
+            properties:
+              id:
+                type: string
+                format: uuid
+                description: CV unique identifier
+                example: 123e4567-e89b-12d3-a456-426614174000
+              title:
+                type: string
+                description: CV title
+                example: My Professional CV
+              template_id:
+                type: string
+                description: Template identifier
+                example: professional
+              last_modified:
+                type: string
+                format: date-time
+                description: Last modification timestamp
+                example: 2025-04-10T15:30:00Z
+              created_at:
+                type: string
+                format: date-time
+                description: Creation timestamp
+                example: 2025-04-10T12:00:00Z
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of CVs
+          example: 5
+        page:
+          type: integer
+          minimum: 1
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          minimum: 1
+          description: Number of items per page
+          example: 10
+
+    TemplateListResponse:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CVTemplate'
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of templates
+          example: 3
+        page:
+          type: integer
+          minimum: 1
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          minimum: 1
+          description: Number of items per page
+          example: 10
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - version
+        - database_connection
+      properties:
+        status:
+          type: string
+          enum: 
+            - healthy
+            - unhealthy
+          description: Service health status
+          example: healthy
+        timestamp:
+          type: string
+          format: date-time
+          description: Current timestamp
+          example: 2025-04-10T15:30:00Z
+        version:
+          type: string
+          description: Service version
+          example: 1.0.0
+        database_connection:
+          type: string
+          enum: 
+            - ok
+            - error
+          description: Database connection status
+          example: ok
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          enum: 
+            - error
+          description: Error status
+          example: error
+        message:
+          type: string
+          description: Error message
+          example: CV not found
+        code:
+          type: string
+          nullable: true
+          description: Error code
+          example: NOT_FOUND
+        requestId:
+          type: string
+          nullable: true
+          description: Request ID for tracing
+          example: 123e4567-e89b-12d3-a456-426614174000
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token authentication
+
+paths:
+  /:
+    get:
+      summary: Root endpoint
+      description: Returns basic service information
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: CandidateV CV Management Service
+
+  /api/health:
+    get:
+      summary: Health check
+      description: Check service health status
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/cv:
+    get:
+      summary: List user's CVs
+      description: Retrieve all CVs for the authenticated user
+      tags:
+        - CV Management
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: List of CVs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CVListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      summary: Create a new CV
+      description: Create a new CV, optionally based on an existing one
+      tags:
+        - CV Management
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CVCreate'
+      responses:
+        '201':
+          description: CV created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CV'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cv/{cv_id}:
+    parameters:
+      - name: cv_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: CV unique identifier
+    
+    get:
+      summary: Get CV
+      description: Retrieve a specific CV
+      tags:
+        - CV Management
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: CV details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CV'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: CV not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      summary: Delete CV
+      description: Delete a specific CV
+      tags:
+        - CV Management
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: CV deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: CV not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cv/{cv_id}/metadata:
+    parameters:
+      - name: cv_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: CV unique identifier
+    
+    put:
+      summary: Update CV metadata
+      description: Update CV title, description, and default status
+      tags:
+        - CV Management
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CVUpdateMetadata'
+      responses:
+        '200':
+          description: CV updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CV'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: CV not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cv/{cv_id}/content:
+    parameters:
+      - name: cv_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: CV unique identifier
+    
+    put:
+      summary: Update CV content
+      description: Update CV content, including template, personal info, and sections
+      tags:
+        - CV Management
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CVUpdateContent'
+      responses:
+        '200':
+          description: CV content updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CV'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: CV not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cv/{cv_id}/duplicate:
+    parameters:
+      - name: cv_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: CV unique identifier to duplicate
+    
+    post:
+      summary: Duplicate CV
+      description: Create a new CV based on an existing one
+      tags:
+        - CV Management
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CVCreate'
+      responses:
+        '201':
+          description: CV duplicated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CV'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: CV not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cv/{cv_id}/share:
+    parameters:
+      - name: cv_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: CV unique identifier
+    
+    post:
+      summary: Share CV
+      description: Generate a shareable link for the CV
+      tags:
+        - CV Sharing
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareRequest'
+      responses:
+        '200':
+          description: Share link created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: CV not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cv/templates:
+    get:
+      summary: List CV templates
+      description: Retrieve all available CV templates
+      tags:
+        - Templates
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          description: Number of items per page
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter templates by category
+      responses:
+        '200':
+          description: List of CV templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cv/templates/{template_id}:
+    parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Template identifier
+    
+    get:
+      summary: Get template
+      description: Retrieve a specific CV template
+      tags:
+        - Templates
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Template details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CVTemplate'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse' 
