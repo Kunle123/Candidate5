@@ -6,6 +6,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY . .
+RUN ls -l /app/src
 
 EXPOSE 8080
 
