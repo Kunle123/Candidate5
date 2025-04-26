@@ -39,6 +39,7 @@
     "cheerio": "^1.0.0",
     "compression": "^1.8.0",
     "connect-pg-simple": "^8.0.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "errorhandler": "^1.5.1",
     "express": "^5.1.0",
