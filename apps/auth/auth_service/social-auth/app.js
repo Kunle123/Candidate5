@@ -8,11 +8,10 @@ const session = require('express-session');
 const errorHandler = require('errorhandler');
 const lusca = require('lusca');
 const dotenv = require('dotenv');
-const MongoStore = require('connect-mongo');
 const flash = require('express-flash');
-const mongoose = require('mongoose');
 const passport = require('passport');
 const rateLimit = require('express-rate-limit');
+const pgSession = require('connect-pg-simple')(session);
 
 /**
  * Load environment variables from .env file, where API keys and passwords are configured.
@@ -85,16 +84,6 @@ const app = express();
 console.log('Run this app using "npm start" to include sass/scss/css builds.\n');
 
 /**
- * Connect to MongoDB.
- */
-mongoose.connect(process.env.MONGODB_URI);
-mongoose.connection.on('error', (err) => {
-  console.error(err);
-  console.log('MongoDB connection error. Please make sure MongoDB is running.');
-  process.exit(1);
-});
-
-/**
  * Express configuration.
  */
 app.set('host', process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0');
@@ -117,7 +106,9 @@ app.use(
       maxAge: 1209600000, // Two weeks in milliseconds
       secure: secureTransfer,
     },
-    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
+    store: new pgSession({
+      conString: process.env.DATABASE_URL,
+    }),
   }),
 );
 app.use(passport.initialize());
