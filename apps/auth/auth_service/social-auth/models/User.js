@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const bcrypt = require('@node-rs/bcrypt');
+const bcrypt = require('bcryptjs');
 const { DataTypes } = require('sequelize');
 const sequelize = require('./sequelize');
 
@@ -32,7 +32,7 @@ User.hashPassword = async function(password) {
 
 // Helper method for validating password
 User.prototype.comparePassword = async function(candidatePassword) {
-  return bcrypt.verify(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
 // Helper method for getting gravatar
