@@ -358,6 +358,11 @@ passport.use(
   ),
 );
 
+// Add debug logging for callback URLs
+console.log('Google callback URL:', `${process.env.BASE_URL}/auth/google/callback`);
+console.log('LinkedIn callback URL:', `${process.env.BASE_URL}/auth/linkedin/callback`);
+console.log('Facebook callback URL:', `${process.env.BASE_URL}/auth/facebook/callback`);
+
 /**
  * Login Required middleware.
  */
