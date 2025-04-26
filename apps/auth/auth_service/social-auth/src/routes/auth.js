@@ -194,4 +194,52 @@ router.post('/reset', async (req, res) => {
   }
 });
 
+// Request Email Verification
+router.post('/request-verification', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email is required.' });
+  }
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    const token = crypto.randomBytes(32).toString('hex');
+    user.emailVerificationToken = token;
+    user.emailVerificationExpires = new Date(Date.now() + 3600000); // 1 hour
+    await user.save();
+    // TODO: Send email with verification link (for now, return token in response)
+    res.json({ success: true, message: 'Verification token generated.', token });
+  } catch (err) {
+    console.error('Request verification error:', err);
+    res.status(500).json({ success: false, message: 'Failed to process verification request.' });
+  }
+});
+
+// Verify Email
+router.post('/verify', async (req, res) => {
+  const { token } = req.body;
+  if (!token) {
+    return res.status(400).json({ success: false, message: 'Verification token is required.' });
+  }
+  try {
+    const user = await User.findOne({ where: {
+      emailVerificationToken: token,
+      emailVerificationExpires: { [Op.gt]: new Date() }
+    }});
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired verification token.' });
+    }
+    user.emailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+    res.json({ success: true, message: 'Email has been verified.' });
+  } catch (err) {
+    console.error('Email verification error:', err);
+    res.status(500).json({ success: false, message: 'Failed to verify email.' });
+  }
+});
+
 module.exports = router; 
