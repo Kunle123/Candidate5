@@ -10,4 +10,4 @@ RUN ls -l /app/src
 
 EXPOSE 8080
 
-CMD ["node", "app.js"]
+CMD ["npm", "start"]
