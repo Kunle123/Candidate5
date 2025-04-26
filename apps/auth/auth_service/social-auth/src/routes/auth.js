@@ -1,7 +1,7 @@
 const express = require('express');
 const passport = require('passport');
 const bcrypt = require('bcryptjs');
-const pool = require('../db');
+const User = require('../../models/User');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 
@@ -67,18 +67,14 @@ router.post('/register', async (req, res) => {
   }
   try {
     // Check if user already exists
-    const userCheck = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (userCheck.rows.length > 0) {
+    const userCheck = await User.findOne({ where: { email } });
+    if (userCheck) {
       return res.status(409).json({ success: false, message: 'Email already registered.' });
     }
     // Hash password
     const password_hash = await bcrypt.hash(password, 10);
     // Insert user
-    const result = await pool.query(
-      'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email',
-      [name, email, password_hash]
-    );
-    const user = result.rows[0];
+    const user = await User.create({ name, email, password: password_hash });
     res.json({ success: true, message: 'User registered successfully.', user });
   } catch (err) {
     console.error('Registration error:', err);
@@ -116,13 +112,12 @@ router.post('/login', async (req, res) => {
   }
   try {
     // Find user
-    const result = await pool.query('SELECT id, name, email, password_hash FROM users WHERE email = $1', [email]);
-    if (result.rows.length === 0) {
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
-    const user = result.rows[0];
     // Check password
-    const valid = await bcrypt.compare(password, user.password_hash);
+    const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
