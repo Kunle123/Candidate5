@@ -5,5 +5,8 @@
     "packages/ui",
     "packages/utils",
     "packages/types"
-  ]
-} 
+  ],
+  "dependencies": {
+    "connect-pg-simple": "^10.0.0"
+  }
+}
