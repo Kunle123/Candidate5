@@ -21,6 +21,14 @@ const User = sequelize.define('User', {
     type: DataTypes.JSONB, // Store profile as JSON
     defaultValue: {},
   },
+  passwordResetToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  passwordResetExpires: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 }, {
   timestamps: true,
 });

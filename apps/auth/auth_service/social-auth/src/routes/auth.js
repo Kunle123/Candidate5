@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../../models/User');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 // Google Auth Routes
 router.get('/google',
@@ -141,6 +142,55 @@ router.post('/login', async (req, res) => {
 router.get('/profile', authenticateJWT, (req, res) => {
   const { id, name, email } = req.user;
   res.json({ success: true, user: { id, name, email } });
+});
+
+// Password Reset Request
+router.post('/forgot', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email is required.' });
+  }
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      // For security, do not reveal if the email is not registered
+      return res.json({ success: true, message: 'If that email is registered, a reset link has been sent.' });
+    }
+    const token = crypto.randomBytes(32).toString('hex');
+    user.passwordResetToken = token;
+    user.passwordResetExpires = new Date(Date.now() + 3600000); // 1 hour
+    await user.save();
+    // TODO: Send email with reset link (for now, return token in response)
+    res.json({ success: true, message: 'Password reset token generated.', token });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ success: false, message: 'Failed to process password reset request.' });
+  }
+});
+
+// Password Reset
+router.post('/reset', async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) {
+    return res.status(400).json({ success: false, message: 'Token and new password are required.' });
+  }
+  try {
+    const user = await User.findOne({ where: {
+      passwordResetToken: token,
+      passwordResetExpires: { [User.sequelize.Op.gt]: new Date() }
+    }});
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired token.' });
+    }
+    user.password = await bcrypt.hash(password, 10);
+    user.passwordResetToken = null;
+    user.passwordResetExpires = null;
+    await user.save();
+    res.json({ success: true, message: 'Password has been reset.' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ success: false, message: 'Failed to reset password.' });
+  }
 });
 
 module.exports = router; 
