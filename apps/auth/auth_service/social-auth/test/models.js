@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const sinon = require('sinon');
 const bcrypt = require('@node-rs/bcrypt');
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const User = require('../models/User');
 
@@ -10,7 +10,7 @@ describe('User Model', () => {
 
   before(async () => {
     // Close any existing connections
-    await mongoose.disconnect();
+    // await mongoose.disconnect();
 
     // Create new mongo instance
     mongoServer = await MongoMemoryServer.create();
@@ -24,14 +24,14 @@ describe('User Model', () => {
       socketTimeoutMS: 20000,
     };
 
-    await mongoose.connect(mongoUri, mongooseOpts);
+    // await mongoose.connect(mongoUri, mongooseOpts);
   });
 
   beforeEach(async () => {
     // Drop the entire database between tests
-    if (mongoose.connection.db) {
-      await mongoose.connection.db.dropDatabase();
-    }
+    // if (mongoose.connection.db) {
+    //   await mongoose.connection.db.dropDatabase();
+    // }
   });
 
   afterEach(() => {
@@ -39,9 +39,9 @@ describe('User Model', () => {
   });
 
   after(async () => {
-    if (mongoose.connection) {
-      await mongoose.connection.close();
-    }
+    // if (mongoose.connection) {
+    //   await mongoose.connection.close();
+    // }
     if (mongoServer) {
       await mongoServer.stop();
     }
