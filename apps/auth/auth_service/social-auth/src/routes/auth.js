@@ -242,4 +242,28 @@ router.post('/verify', async (req, res) => {
   }
 });
 
+// Change Password (JWT protected)
+router.post('/change-password', authenticateJWT, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Old and new passwords are required.' });
+  }
+  try {
+    const user = await User.findOne({ where: { id: req.user.id } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    const valid = await bcrypt.compare(oldPassword, user.password);
+    if (!valid) {
+      return res.status(401).json({ success: false, message: 'Old password is incorrect.' });
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ success: true, message: 'Password changed successfully.' });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ success: false, message: 'Failed to change password.' });
+  }
+});
+
 module.exports = router; 
