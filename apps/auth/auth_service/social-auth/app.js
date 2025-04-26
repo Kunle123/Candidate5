@@ -22,7 +22,7 @@ dotenv.config({ path: '.env.example' });
 /**
  * Set config values
  */
-const secureTransfer = process.env.BASE_URL.startsWith('https');
+const secureTransfer = (process.env.BASE_URL || '').startsWith('https');
 
 /**
  * Rate limiting configuration
