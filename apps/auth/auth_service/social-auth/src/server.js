@@ -15,12 +15,9 @@
 
 require('dotenv').config();
 const express = require('express');
-const session = require('express-session');
 const passport = require('passport');
 const cors = require('cors');
 const morgan = require('morgan');
-const RedisStore = require('connect-redis').default;
-const { createClient } = require('redis');
 
 // Import routes and passport config
 const authRoutes = require('./routes/auth');
@@ -61,25 +58,8 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- Session Configuration ---
-const redisClient = createClient({ url: process.env.REDIS_URL });
-redisClient.connect().catch(console.error);
-
-app.use(session({
-  store: new RedisStore({ client: redisClient }),
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'none', // Required for cross-site cookies
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
-
 // --- Passport Initialization ---
 app.use(passport.initialize());
-app.use(passport.session());
 
 // --- Routes ---
 app.use('/auth', authRoutes);

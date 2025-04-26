@@ -45,7 +45,6 @@
     "express": "^5.1.0",
     "express-flash": "^0.0.2",
     "express-rate-limit": "^7.5.0",
-    "express-session": "^1.18.1",
     "jquery": "^3.7.1",
     "lastfm": "^0.9.4",
     "lusca": "^1.7.0",
