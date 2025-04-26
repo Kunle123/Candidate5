@@ -5,6 +5,7 @@ const User = require('../../models/User');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { Op } = require('sequelize');
 
 // Google Auth Routes
 router.get('/google',
@@ -177,7 +178,7 @@ router.post('/reset', async (req, res) => {
   try {
     const user = await User.findOne({ where: {
       passwordResetToken: token,
-      passwordResetExpires: { [User.sequelize.Op.gt]: new Date() }
+      passwordResetExpires: { [Op.gt]: new Date() }
     }});
     if (!user) {
       return res.status(400).json({ success: false, message: 'Invalid or expired token.' });

@@ -81,7 +81,7 @@ app.use((err, req, res, next) => {
 
 // --- Start Server ---
 const PORT = process.env.PORT || 3001;
-sequelize.sync();
+sequelize.sync({ alter: true });
 app.listen(PORT, () => {
   console.log(`Auth service listening on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
