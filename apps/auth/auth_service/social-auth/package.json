@@ -18,7 +18,7 @@
     "postinstall": "patch-package",
     "prepare": "husky",
     "scss": "sass --no-source-map --silence-deprecation=import --quiet-deps --load-path=./ --update ./public/css:./public/css",
-    "start": "node app.js",
+    "start": "node src/server.js",
     "build": "npm run scss",
     "test": "c8 --temp-directory tmp/coverage mocha --timeout=60000 --exit"
   },
