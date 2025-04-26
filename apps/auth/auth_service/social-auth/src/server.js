@@ -18,6 +18,7 @@ const express = require('express');
 const passport = require('passport');
 const cors = require('cors');
 const morgan = require('morgan');
+const sequelize = require('../models/sequelize');
 
 // Import routes and passport config
 const authRoutes = require('./routes/auth');
@@ -80,6 +81,7 @@ app.use((err, req, res, next) => {
 
 // --- Start Server ---
 const PORT = process.env.PORT || 3001;
+sequelize.sync();
 app.listen(PORT, () => {
   console.log(`Auth service listening on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
