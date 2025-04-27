@@ -16,7 +16,7 @@ def read_root():
 async def login(request: Request):
     data = await request.json()
     async with httpx.AsyncClient() as client:
-        resp = await client.post(f"{auth_service_url}/login", json=data)
+        resp = await client.post(f"{auth_service_url}/auth/login", json=data)
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail=resp.text)
         return resp.json()
@@ -25,7 +25,7 @@ async def login(request: Request):
 async def register(request: Request):
     data = await request.json()
     async with httpx.AsyncClient() as client:
-        resp = await client.post(f"{auth_service_url}/register", json=data)
+        resp = await client.post(f"{auth_service_url}/auth/register", json=data)
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail=resp.text)
         return resp.json()
@@ -34,7 +34,7 @@ async def register(request: Request):
 async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security)):
     headers = {"Authorization": f"Bearer {credentials.credentials}"}
     async with httpx.AsyncClient() as client:
-        resp = await client.get(f"{auth_service_url}/me", headers=headers)
+        resp = await client.get(f"{auth_service_url}/auth/me", headers=headers)
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail=resp.text)
         return resp.json()
