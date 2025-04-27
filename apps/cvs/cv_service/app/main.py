@@ -436,3 +436,43 @@ def startup_event():
         logger.error(f"Error creating database tables: {e}", exc_info=True)
         # Depending on the error, you might want to prevent startup
 # --- End Database Table Creation --- 
+
+# --- /cvs endpoints (spec-compliant) ---
+@app.get("/cvs")
+async def get_cvs_v2(auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    return await get_cvs(auth, db)
+
+@app.post("/cvs", status_code=status.HTTP_201_CREATED)
+async def create_cv_v2(file: UploadFile = File(...), auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    return await create_cv(file, auth, db)
+
+@app.get("/cvs/{cv_id}")
+async def get_cv_v2(cv_id: str, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    return await get_cv(cv_id, auth, db)
+
+@app.put("/cvs/{cv_id}")
+async def update_cv_content_v2(cv_id: str, content: CVUpdateContent, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    return await update_cv_content(cv_id, content, auth, db)
+
+@app.delete("/cvs/{cv_id}")
+async def delete_cv_v2(cv_id: str, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    return await delete_cv(cv_id, auth, db)
+
+@app.post("/cvs/{cv_id}/analyze")
+async def analyze_cv(cv_id: str, jobDescription: dict = Body(...), auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    # Placeholder: return mock missing keywords
+    # In a real implementation, analyze the CV content and compare to jobDescription
+    return {"missingKeywords": ["Python", "Leadership", "Teamwork"]}
+
+@app.get("/cvs/{cv_id}/download")
+async def download_cv(cv_id: str, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    # Placeholder: return a dummy file response
+    from fastapi.responses import StreamingResponse
+    import io
+    user_id = auth["user_id"]
+    cv = db.query(models.CV).filter(models.CV.id == cv_id, models.CV.user_id == user_id).first()
+    if not cv:
+        raise HTTPException(status_code=404, detail="CV not found")
+    # For now, just return the JSON as a file
+    file_content = json.dumps(serialize_cv(cv), indent=2)
+    return StreamingResponse(io.BytesIO(file_content.encode()), media_type="application/json", headers={"Content-Disposition": f"attachment; filename=cv_{cv_id}.json"})
