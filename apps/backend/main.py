@@ -38,3 +38,11 @@ async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security)):
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail=resp.text)
         return resp.json()
+
+@app.post("/api/auth/register")
+async def register_alias(request: Request):
+    return await register(request)
+
+@app.post("/api/auth/login")
+async def login_alias(request: Request):
+    return await login(request)
