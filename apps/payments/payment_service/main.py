@@ -67,6 +67,12 @@ app.include_router(webhooks_router)
 @app.on_event("startup")
 async def startup():
     logger.info("Starting up Payment Service")
+    print("ALL ENV VARS AT STARTUP:", dict(os.environ))
+    print("CWD:", os.getcwd())
+    for root, dirs, files in os.walk("."):
+        for file in files:
+            if file.endswith(".env"):
+                print("Found .env file:", os.path.join(root, file))
 
 @app.on_event("shutdown")
 async def shutdown():
