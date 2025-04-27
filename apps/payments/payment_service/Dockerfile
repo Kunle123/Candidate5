@@ -2,7 +2,7 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Set environment variables
+# Set environment variables ch
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
@@ -23,4 +23,4 @@ COPY . .
 EXPOSE 8005
 
 # Command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8005"] 
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80005"] 
