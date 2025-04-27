@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     
     # Server Configuration
     HOST: str = "0.0.0.0"
-    PORT: int = 8003
+    PORT: int = 8005
     
     # CORS Configuration
     CORS_ORIGINS: Union[str, List[str]] = "*"
