@@ -12,3 +12,4 @@ asyncpg>=0.27.0
 httpx>=0.24.0
 stripe>=5.0.0
 tenacity==8.2.2 
+pydantic-settings==2.0.0
