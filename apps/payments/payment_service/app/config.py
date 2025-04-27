@@ -3,12 +3,8 @@ from typing import Optional, List, Union
 import json
 
 class Settings(BaseSettings):
-    # Supabase Configuration
-    SUPABASE_URL: str = "https://aqmybjkzxfwiizorveco.supabase.co"
-    SUPABASE_KEY: str = "your-service-role-key-here"
-    
     # Stripe Configuration
-    STRIPE_SECRET_KEY: str
+    STRIPE_API_KEY: str
     STRIPE_WEBHOOK_SECRET: str
     STRIPE_PRICE_ID: str
     
