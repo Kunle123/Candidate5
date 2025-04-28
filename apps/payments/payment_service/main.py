@@ -12,7 +12,7 @@ from app.routers.webhooks import router as webhooks_router
 from app.config import LogConfig
 
 # Setup logging
-dictConfig(LogConfig().dict())
+dictConfig(LogConfig())
 logger = logging.getLogger("payment_service")
 
 # Initialize FastAPI app
