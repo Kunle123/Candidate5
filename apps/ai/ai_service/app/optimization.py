@@ -271,3 +271,13 @@ async def optimize_cv(
     )
 
     return response 
+
+@router.post("/optimize-cv", response_model=OptimizationResponse)
+async def optimize_cv_spec(
+    request: OptimizationRequest,
+    user_token: str = Depends(oauth2_scheme)
+):
+    """
+    API spec-compliant endpoint for optimizing a CV.
+    """
+    return await optimize_cv(request, user_token) 

@@ -358,3 +358,13 @@ async def create_cover_letter(
     )
 
     return response 
+
+@router.post("/generate-cover-letter", response_model=CoverLetterResponse)
+async def generate_cover_letter_spec(
+    request: CoverLetterRequest,
+    user_token: str = Depends(oauth2_scheme)
+):
+    """
+    API spec-compliant endpoint for generating a cover letter.
+    """
+    return await create_cover_letter(request, user_token) 

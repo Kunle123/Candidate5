@@ -55,6 +55,12 @@ class CVAnalysisResponse(BaseModel):
     analysis: AnalysisResult
     timestamp: datetime
 
+class KeywordsRequest(BaseModel):
+    text: str
+
+class KeywordsResponse(BaseModel):
+    keywords: List[str]
+
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=0.5, max=10))
 async def fetch_cv_data(cv_id: str, token: str) -> Dict[str, Any]:
     """Fetch CV data from the CV service."""
@@ -236,3 +242,13 @@ async def analyze_cv(
     )
 
     return response 
+
+@router.post("/keywords", response_model=KeywordsResponse)
+async def extract_keywords(request: KeywordsRequest):
+    """
+    API spec-compliant endpoint for extracting keywords from text.
+    """
+    # Simple keyword extraction: split by spaces and filter unique words longer than 3 chars
+    words = set(word.strip('.,!?()[]{}:;"\'').lower() for word in request.text.split())
+    keywords = [w for w in words if len(w) > 3]
+    return KeywordsResponse(keywords=keywords) 
