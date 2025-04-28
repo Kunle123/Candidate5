@@ -13,6 +13,8 @@ from typing import Optional, List, Dict, Any, Union
 from fastapi.security import OAuth2PasswordBearer
 import logging
 import sys
+from docx import Document
+from tempfile import NamedTemporaryFile
 
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
@@ -222,23 +224,57 @@ async def get_cvs(
 
 @app.post("/api/cv", status_code=status.HTTP_201_CREATED)
 async def create_cv(
-    # cv_data: CVCreate, # REMOVE/COMMENT OUT this parameter
-    file: UploadFile = File(...), # ADD this parameter
+    file: UploadFile = File(...),
     auth: dict = Depends(verify_token),
     db: Session = Depends(get_db_session)
 ):
-    """Create a new CV from an uploaded file.""" # Updated docstring
-    # --- Function body will be replaced in Step 3.3 and 3.4 ---
-    # Placeholder until parsing logic is added
+    """Create a new CV from an uploaded file."""
     logger.info(f"Received file upload: {file.filename}, content type: {file.content_type}")
-    # We need to return something conforming to the original (or a new) response model
-    # For now, let's raise NotImplementedError until we add the parsing logic.
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="CV parsing logic not yet implemented.")
+    user_id = auth["user_id"]
 
-    # --- Original function body (based on CVCreate) is now obsolete for this endpoint ---
-    # user_id = auth["user_id"]
-    # cv_id = uuid.uuid4() if not is_sqlite else str(uuid.uuid4())
-    # ... (rest of old logic for creating blank/copying CV) ...
+    # Save uploaded file to a temp file
+    with NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
+
+    # Parse the .docx file
+    try:
+        doc = Document(tmp_path)
+        full_text = []
+        for para in doc.paragraphs:
+            full_text.append(para.text)
+        extracted_text = "\n".join(full_text)
+    except Exception as e:
+        logger.error(f"Error parsing .docx: {e}")
+        raise HTTPException(status_code=400, detail="Failed to parse .docx file")
+    finally:
+        os.unlink(tmp_path)
+
+    # Create new CV record
+    cv_id = str(uuid.uuid4())
+    now = datetime.utcnow()
+    new_cv = models.CV(
+        id=cv_id,
+        user_id=user_id,
+        name=file.filename,
+        description="Imported from .docx",
+        is_default=False,
+        version=1,
+        last_modified=now,
+        created_at=now,
+        updated_at=now,
+        template_id="default",
+        style_options={},
+        personal_info={},
+        summary=extracted_text,
+        custom_sections={}
+    )
+    db.add(new_cv)
+    db.commit()
+    db.refresh(new_cv)
+
+    logger.info(f"CV created with ID: {cv_id}")
+    return serialize_cv(new_cv)
 
 @app.get("/api/cv/{cv_id}")
 async def get_cv(
