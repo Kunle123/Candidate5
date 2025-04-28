@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import os
@@ -36,7 +36,7 @@ class SubscriptionPlan(BaseModel):
 class SubscriptionRequest(BaseModel):
     plan_id: str
     user_id: str
-    email: EmailStr
+    email: str
     return_url: str
 
 class SubscriptionResponse(BaseModel):
