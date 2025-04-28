@@ -53,24 +53,26 @@ class UserSubscription(BaseModel):
 # Subscription plans
 SUBSCRIPTION_PLANS = [
     SubscriptionPlan(
-        id="basic",
-        name="Basic Plan",
-        description="Essential tools for job seekers",
-        price_id=settings.BASIC_PLAN_PRICE_ID,
-        amount=999,  # $9.99
+        id="dominator",
+        name="Career Dominator",
+        description="All features for career domination",
+        price_id="price_1RIwjO3N6Cy1dIMXoND5K4zc",
+        amount=2999,  # £29.99
         interval="month",
         features=[
-            "Create and store up to 3 CVs",
-            "Basic AI optimization suggestions",
-            "Limited job match analysis"
+            "All Pro features",
+            "Priority support",
+            "Interview coaching",
+            "LinkedIn profile optimization",
+            "Career strategy session"
         ]
     ),
     SubscriptionPlan(
-        id="pro",
-        name="Professional Plan",
-        description="Advanced tools for serious job seekers",
-        price_id=settings.PRO_PLAN_PRICE_ID,
-        amount=1999,  # $19.99
+        id="accelerator",
+        name="Career Accelerator",
+        description="Advanced tools for career acceleration",
+        price_id="price_1RIwjO3N6Cy1dIMXfkNuOMaT",
+        amount=1999,  # £19.99
         interval="month",
         features=[
             "Create and store unlimited CVs",
@@ -81,18 +83,16 @@ SUBSCRIPTION_PLANS = [
         ]
     ),
     SubscriptionPlan(
-        id="enterprise",
-        name="Enterprise Plan",
-        description="Complete solution for career advancement",
-        price_id=settings.ENTERPRISE_PLAN_PRICE_ID,
-        amount=4999,  # $49.99
+        id="starter",
+        name="Career Starter",
+        description="Essential tools for starting your career",
+        price_id="price_1RIwjP3N6Cy1dIMXvOLBf1bi",
+        amount=1499,  # £14.99
         interval="month",
         features=[
-            "All Pro features",
-            "Priority support",
-            "Interview coaching",
-            "LinkedIn profile optimization",
-            "Career strategy session"
+            "Create and store up to 3 CVs",
+            "Basic AI optimization suggestions",
+            "Limited job match analysis"
         ]
     )
 ]
