@@ -101,8 +101,8 @@ async def verify_token(token: Optional[str] = Depends(oauth2_scheme)):
         # Verify token locally
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         
-        # Get user ID from payload
-        user_id = payload.get("user_id")
+        # Accept both 'user_id' and 'id' fields
+        user_id = payload.get("user_id") or payload.get("id")
         
         if user_id is None:
             raise HTTPException(
