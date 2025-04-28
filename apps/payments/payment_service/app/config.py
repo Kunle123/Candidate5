@@ -37,4 +37,25 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
 
+class LogConfig(dict):
+    def __init__(self):
+        super().__init__(
+            version=1,
+            formatters={
+                "default": {
+                    "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
+                }
+            },
+            handlers={
+                "console": {
+                    "class": "logging.StreamHandler",
+                    "formatter": "default",
+                }
+            },
+            root={
+                "level": "INFO",
+                "handlers": ["console"],
+            },
+        )
+
 settings = Settings() 
