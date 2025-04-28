@@ -1,7 +1,7 @@
 {
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "apps/ai/ai_servicee"
+    "dockerfilePath": "app/ai/ai_servicee"
   },
   "deploy": {
     "restartPolicyType": "ON_FAILURE",
