@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     STRIPE_API_KEY: str
     STRIPE_WEBHOOK_SECRET: str
     STRIPE_PRICE_ID: str
+    BASIC_PLAN_PRICE_ID: str
+    PRO_PLAN_PRICE_ID: str
+    ENTERPRISE_PLAN_PRICE_ID: str
     
     # Server Configuration
     HOST: str = "0.0.0.0"
