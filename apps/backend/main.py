@@ -1,8 +1,10 @@
 import os
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException, Depends, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import httpx
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request as StarletteRequest
+from starlette.responses import StreamingResponse
 
 app = FastAPI()
 
@@ -20,6 +22,47 @@ app.add_middleware(
 
 auth_service_url = os.environ.get("AUTH_SERVICE_URL", "http://auth-service:8000")
 security = HTTPBearer()
+
+cv_service_url = os.environ.get("CV_SERVICE_URL", "http://cv-service:8000")
+ai_service_url = os.environ.get("AI_SERVICE_URL", "http://ai-service:8000")
+payment_service_url = os.environ.get("PAYMENT_SERVICE_URL", "http://payment-service:8000")
+
+# Generic proxy function
+async def proxy(request: StarletteRequest, base_url: str, path: str):
+    url = f"{base_url}{path}"
+    method = request.method
+    headers = dict(request.headers)
+    headers.pop("host", None)
+    data = await request.body()
+    async with httpx.AsyncClient() as client:
+        resp = await client.request(
+            method,
+            url,
+            headers=headers,
+            content=data,
+            params=request.query_params,
+            timeout=60.0
+        )
+        return Response(
+            content=resp.content,
+            status_code=resp.status_code,
+            headers=dict(resp.headers)
+        )
+
+# Proxy /cvs and subpaths to CV service
+@app.api_route("/cvs{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_cvs(request: StarletteRequest, full_path: str):
+    return await proxy(request, cv_service_url, full_path)
+
+# Proxy /api/ai and subpaths to AI service
+@app.api_route("/api/ai{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_ai(request: StarletteRequest, full_path: str):
+    return await proxy(request, ai_service_url, full_path)
+
+# Proxy /api/payments and subpaths to Payments service
+@app.api_route("/api/payments{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_payments(request: StarletteRequest, full_path: str):
+    return await proxy(request, payment_service_url, full_path)
 
 @app.get("/")
 def read_root():
