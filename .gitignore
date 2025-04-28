@@ -1,3 +1,9 @@
 node_modules/
 .DS_Store
 apps/payments/payment_service/.env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Stripe utility script
+stripe_setup.py
