@@ -61,7 +61,7 @@ async def proxy_cvs(request: StarletteRequest, full_path: str):
 # Proxy /api/ai and subpaths to AI service
 @app.api_route("/api/ai{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_ai(request: StarletteRequest, full_path: str):
-    path = full_path if full_path else "/api/ai"
+    path = f"/api/ai{full_path}"
     return await proxy(request, ai_service_url, path)
 
 # Proxy /api/payments and subpaths to Payments service
