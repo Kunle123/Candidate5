@@ -2,16 +2,17 @@ import os
 from dotenv import load_dotenv
 import openai
 from typing import Optional, Dict, Any
-
-# Load environment variables from .env file
-load_dotenv()
-
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import time
 import uuid
 import sys
+from fastapi.security import OAuth2PasswordBearer
+import jwt
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -71,6 +72,22 @@ openai_client = None
 if openai_api_key:
     openai_client = openai.OpenAI(api_key=openai_api_key)
 
+# JWT settings
+JWT_SECRET = os.getenv("JWT_SECRET", "development_secret_key")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+async def get_current_user_id(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("user_id") or payload.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token: missing user_id")
+        return user_id
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+
 def get_mock_analysis() -> Dict[str, Any]:
     """Return mock analysis data when OpenAI is not available"""
     return {
@@ -92,8 +109,8 @@ def get_mock_analysis() -> Dict[str, Any]:
     }
 
 @app.post("/analyze")
-async def analyze_cv(cv_id: str, job_description: str) -> Dict[str, Any]:
-    """Analyze CV against job description"""
+async def analyze_cv(cv_id: str, job_description: str, user_id: str = Depends(get_current_user_id)) -> Dict[str, Any]:
+    """Analyze CV against job description (user-specific)"""
     if not openai_client:
         # Return mock data with a warning
         return {
@@ -101,7 +118,6 @@ async def analyze_cv(cv_id: str, job_description: str) -> Dict[str, Any]:
             "data": get_mock_analysis(),
             "warning": "Using mock data - AI service is currently offline"
         }
-        
     try:
         # Your existing OpenAI analysis code here
         response = openai_client.chat.completions.create(
@@ -109,7 +125,7 @@ async def analyze_cv(cv_id: str, job_description: str) -> Dict[str, Any]:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a CV analysis expert. Analyze the CV against the job description."
+                    "content": f"You are a CV analysis expert. Analyze the CV for user {user_id} against the job description."
                 },
                 {
                     "role": "user", 
@@ -117,15 +133,11 @@ async def analyze_cv(cv_id: str, job_description: str) -> Dict[str, Any]:
                 }
             ]
         )
-        
-        # Process OpenAI response
         analysis = response.choices[0].message.content
-        
         return {
             "success": True,
             "data": analysis
         }
-        
     except Exception as e:
         raise HTTPException(
             status_code=500,
