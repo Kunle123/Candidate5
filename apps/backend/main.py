@@ -5,6 +5,9 @@ import httpx
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request as StarletteRequest
 from starlette.responses import StreamingResponse
+from routers.cover_letters import router as cover_letters_router
+from routers.mega_cv import router as mega_cv_router
+from routers.applications import router as applications_router
 
 app = FastAPI()
 
@@ -105,3 +108,7 @@ async def register_alias(request: Request):
 @app.post("/api/auth/login")
 async def login_alias(request: Request):
     return await login(request)
+
+app.include_router(cover_letters_router)
+app.include_router(mega_cv_router)
+app.include_router(applications_router)
