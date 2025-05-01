@@ -1,3 +1,7 @@
+# ENTRYPOINT DISABLED: Use app/main.py as the only entrypoint for production
+#
+# The contents of this file have been commented out to avoid accidental use.
+
 from fastapi import FastAPI
 import os
 from datetime import datetime

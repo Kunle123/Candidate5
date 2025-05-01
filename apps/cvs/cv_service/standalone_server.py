@@ -1,3 +1,7 @@
+# ENTRYPOINT DISABLED: Use app/main.py as the only entrypoint for production
+#
+# The contents of this file have been commented out to avoid accidental use.
+'''
 from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -222,4 +226,5 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", "8002"))
     logger.info(f"Starting Standalone CV Service on port {port}")
     # Use 127.0.0.1 instead of 0.0.0.0 to match the frontend's expectation
-    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info") 
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")
+''' 
