@@ -128,6 +128,7 @@ def serialize_cv(cv, include_relationships=True):
     result = {
         "id": str(cv.id) if hasattr(cv.id, "hex") else cv.id,
         "user_id": str(cv.user_id) if hasattr(cv.user_id, "hex") else cv.user_id,
+        "filename": cv.name,
         "metadata": {
             "name": cv.name,
             "description": cv.description,
@@ -202,6 +203,10 @@ async def health_check():
             "cwd": os.getcwd()
         }
     }
+
+@app.get("/health")
+async def health_check_root():
+    return {"status": "ok"}
 
 @app.get("/api/cv")
 async def get_cvs(
