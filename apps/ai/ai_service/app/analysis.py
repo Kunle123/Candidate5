@@ -246,9 +246,30 @@ async def analyze_cv(
 @router.post("/keywords", response_model=KeywordsResponse)
 async def extract_keywords(request: KeywordsRequest):
     """
-    API spec-compliant endpoint for extracting keywords from text.
+    API spec-compliant endpoint for extracting keywords from text using OpenAI if available.
     """
-    # Simple keyword extraction: split by spaces and filter unique words longer than 3 chars
+    if client:
+        try:
+            prompt = f"""
+            Extract the most relevant and important keywords (skills, technologies, concepts, etc.) from the following text. 
+            Return ONLY a JSON array of strings, no other text.
+            TEXT: {request.text}
+            """
+            response = client.chat.completions.create(
+                model="gpt-4-turbo",
+                response_format={"type": "json_array"},
+                messages=[
+                    {"role": "system", "content": "You are an expert at extracting keywords from text. Respond with only a JSON array of keywords."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.2,
+            )
+            keywords = json.loads(response.choices[0].message.content)
+            return KeywordsResponse(keywords=keywords)
+        except Exception as e:
+            logger.error(f"OpenAI keyword extraction failed: {str(e)}. Falling back to rule-based extraction.")
+            # Fallback to rule-based extraction below
+    # Rule-based fallback
     words = set(word.strip('.,!?()[]{}:;"\'').lower() for word in request.text.split())
     keywords = [w for w in words if len(w) > 3]
     return KeywordsResponse(keywords=keywords) 
