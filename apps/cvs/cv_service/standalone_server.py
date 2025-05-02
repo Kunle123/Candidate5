@@ -222,9 +222,12 @@ async def create_cv(cv_data: Dict[str, Any]):
     
     return new_cv
 
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8002"))
-    logger.info(f"Starting Standalone CV Service on port {port}")
-    # Use 127.0.0.1 instead of 0.0.0.0 to match the frontend's expectation
-    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")
+# ENTRYPOINT DISABLED: Use app/main.py as the only entrypoint for production
+#
+# The contents of this file have been commented out to avoid accidental use.
+'''
+# if __name__ == "__main__":
+#     port = int(os.getenv("PORT", "8002"))
+#     logger.info(f"Starting Standalone CV Service on port {port}")
+#     uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")
 ''' 
