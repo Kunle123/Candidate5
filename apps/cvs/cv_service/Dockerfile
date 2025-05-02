@@ -26,8 +26,8 @@ COPY . .
 RUN echo '#!/bin/bash\n\
 PORT="${PORT:-8000}"\n\
 echo "Starting server on port $PORT"\n\
-# Use host :: to enable IPv6 for Railway internal networking\n\
-exec uvicorn app.main:app --host :: --port $PORT --workers ${UVICORN_WORKERS:-1}\n\
+# Use host 0.0.0.0 for Railway compatibility\n\
+exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers ${UVICORN_WORKERS:-1}\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
 # Command to run the application
