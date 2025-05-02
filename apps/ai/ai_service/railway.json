@@ -7,7 +7,6 @@
     "restartPolicyMaxRetries": 3
   },
   "environment": {
-    "PORT": "8002",
     "variables": {
       "CV_SERVICE_URL": "http://candidatev.railway.internal:8003"
     },
