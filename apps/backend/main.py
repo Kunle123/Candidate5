@@ -109,6 +109,10 @@ async def register_alias(request: Request):
 async def login_alias(request: Request):
     return await login(request)
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 app.include_router(cover_letters_router)
 app.include_router(mega_cv_router)
 app.include_router(applications_router)
