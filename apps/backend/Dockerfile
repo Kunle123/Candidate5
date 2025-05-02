@@ -4,5 +4,7 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 EXPOSE 8000
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port $PORT"] 
+CMD ["/app/start.sh"] 
