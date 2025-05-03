@@ -8,7 +8,7 @@ from fastapi import APIRouter
 logger = logging.getLogger("export_service.health")
 
 # Define environment variables
-CV_SERVICE_URL = os.getenv("CV_SERVICE_URL", "http://localhost:8002")
+CV_SERVICE_URL = os.getenv("CV_SERVICE_URL")
 EXPORT_DIR = os.getenv("EXPORT_DIR", "./exports")
 
 # Create router

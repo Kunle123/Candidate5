@@ -52,7 +52,7 @@ async def startup():
     logger.info(f"Export directory set to: {export_dir}")
     
     # Log configuration
-    cv_service_url = os.getenv("CV_SERVICE_URL", "http://localhost:8002")
+    cv_service_url = os.getenv("CV_SERVICE_URL")
     logger.info(f"CV Service URL: {cv_service_url}")
     
     cors_origins = os.getenv("CORS_ORIGINS", "http://localhost,http://localhost:3000").split(",")

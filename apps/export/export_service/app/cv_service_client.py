@@ -9,7 +9,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 logger = logging.getLogger("export_service.cv_service_client")
 
 # CV Service URL
-CV_SERVICE_URL = os.getenv("CV_SERVICE_URL", "http://localhost:8002")
+CV_SERVICE_URL = os.getenv("CV_SERVICE_URL")
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=0.5, max=10))
 async def fetch_cv_data(cv_id: str, token: str) -> Dict[str, Any]:

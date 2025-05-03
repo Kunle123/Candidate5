@@ -23,12 +23,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-auth_service_url = os.environ.get("AUTH_SERVICE_URL", "http://auth-service:8000")
+auth_service_url = os.environ.get("AUTH_SERVICE_URL")
 security = HTTPBearer()
 
-cv_service_url = os.environ.get("CV_SERVICE_URL", "http://cv-service:8000")
-ai_service_url = os.environ.get("AI_SERVICE_URL", "http://ai-service:8000")
-payment_service_url = os.environ.get("PAYMENT_SERVICE_URL", "http://payment-service:8000")
+cv_service_url = os.environ.get("CV_SERVICE_URL")
+ai_service_url = os.environ.get("AI_SERVICE_URL")
+payment_service_url = os.environ.get("PAYMENT_SERVICE_URL")
 
 # Generic proxy function
 async def proxy(request: StarletteRequest, base_url: str, path: str):

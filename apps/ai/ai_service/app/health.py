@@ -54,7 +54,7 @@ async def health_check():
         health.openai_details["error"] = "OPENAI_API_KEY not set"
     
     # Check CV Service connection
-    cv_service_url = os.getenv("CV_SERVICE_URL", "http://localhost:8002")
+    cv_service_url = os.getenv("CV_SERVICE_URL")
     logger.info(f"Health check attempting to use CV service URL: '{cv_service_url}'")
     
     max_retries = 3

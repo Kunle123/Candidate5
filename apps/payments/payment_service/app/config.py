@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from typing import Optional, List, Union
 import json
+import os
 
 class Settings(BaseSettings):
     # Stripe Configuration
@@ -13,7 +14,7 @@ class Settings(BaseSettings):
     
     # Server Configuration
     HOST: str = "0.0.0.0"
-    PORT: int = 8005
+    PORT: int = int(os.getenv("PORT", 8005))
     
     # CORS Configuration
     CORS_ORIGINS: Union[str, List[str]] = "*"

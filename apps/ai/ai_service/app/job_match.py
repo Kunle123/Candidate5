@@ -31,7 +31,7 @@ if OPENAI_API_KEY:
     client = OpenAI(api_key=OPENAI_API_KEY)
 
 # CV Service URL
-CV_SERVICE_URL = os.getenv("CV_SERVICE_URL", "http://localhost:8002")
+CV_SERVICE_URL = os.getenv("CV_SERVICE_URL")
 CV_SERVICE_AUTH_TOKEN = os.getenv("CV_SERVICE_AUTH_TOKEN")
 if not CV_SERVICE_AUTH_TOKEN:
     logger.warning("CV_SERVICE_AUTH_TOKEN environment variable is not set. AI service cannot authenticate to CV service.")
