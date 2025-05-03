@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.11
 
 WORKDIR /app
 
@@ -13,14 +13,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
 COPY . .
 
 # Expose the port the app runs on
-EXPOSE 8005
+EXPOSE 8000
 
 # Command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8005"] 
+RUN chmod +x /app/start.sh
+CMD ["/app/start.sh"] 

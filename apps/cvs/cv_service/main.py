@@ -84,6 +84,10 @@ async def redoc_html():
 async def get_openapi_schema():
     return app.openapi()
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8002"))
     logger.info(f"Starting CV Management Service on port {port}")

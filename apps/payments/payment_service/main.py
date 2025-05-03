@@ -82,6 +82,10 @@ async def shutdown():
 async def root():
     return {"message": "CandidateV Payment Service"}
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 # Run debug server if executed directly
 if __name__ == "__main__":
     import uvicorn
