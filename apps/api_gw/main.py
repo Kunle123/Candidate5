@@ -113,6 +113,12 @@ async def login_alias(request: Request):
 def health():
     return {"status": "ok"}
 
+@app.on_event("startup")
+def list_routes():
+    print("Registered routes:")
+    for route in app.routes:
+        print(route.path)
+
 app.include_router(cover_letters_router)
 app.include_router(mega_cv_router)
 app.include_router(applications_router)
