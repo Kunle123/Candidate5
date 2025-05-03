@@ -8,6 +8,7 @@ from starlette.responses import StreamingResponse
 from routers.cover_letters import router as cover_letters_router
 from routers.mega_cv import router as mega_cv_router
 from routers.applications import router as applications_router
+import re
 
 app = FastAPI()
 
@@ -55,7 +56,9 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
 # Proxy /cvs and subpaths to CV service
 @app.api_route("/cvs{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_cvs(request: StarletteRequest, full_path: str):
-    path = full_path if full_path else "/cvs"
+    path = f"/cvs{full_path}" if full_path else "/cvs"
+    # Remove any accidental double slashes
+    path = re.sub(r'//+', '/', path)
     return await proxy(request, cv_service_url, path)
 
 # Proxy /api/ai and subpaths to AI service
