@@ -163,6 +163,10 @@ async def shutdown():
 async def root():
     return {"message": "CandidateV AI Optimization Service"}
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 # Run debug server if executed directly
 if __name__ == "__main__":
     import uvicorn
