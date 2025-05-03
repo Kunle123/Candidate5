@@ -1,3 +1,4 @@
+print("DEBUG: This is the deployed API Gateway main.py")
 import os
 from fastapi import FastAPI, Request, HTTPException, Depends, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -56,9 +57,9 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
 # Proxy /cvs and subpaths to CV service
 @app.api_route("/cvs{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_cvs(request: StarletteRequest, full_path: str):
-    path = f"/cvs{full_path}" if full_path else "/cvs"
-    # Remove any accidental double slashes
-    path = re.sub(r'//+', '/', path)
+    path = "/cvs" + (full_path or "")
+    path = re.sub(r'/+', '/', path)
+    print(f"full_path: '{full_path}'")
     print(f"Proxying to CV service path: {path}")
     return await proxy(request, cv_service_url, path)
 
