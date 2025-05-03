@@ -16,7 +16,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://your-frontend-domain.com"
+        "https://api-gw-production.up.railway.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
