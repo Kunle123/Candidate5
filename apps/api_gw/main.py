@@ -59,6 +59,7 @@ async def proxy_cvs(request: StarletteRequest, full_path: str):
     path = f"/cvs{full_path}" if full_path else "/cvs"
     # Remove any accidental double slashes
     path = re.sub(r'//+', '/', path)
+    print(f"Proxying to CV service path: {path}")
     return await proxy(request, cv_service_url, path)
 
 # Proxy /api/ai and subpaths to AI service
