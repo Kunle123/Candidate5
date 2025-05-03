@@ -251,8 +251,7 @@ async def extract_keywords(request: KeywordsRequest):
     if client:
         try:
             prompt = f"""
-            Extract the most relevant and important keywords (skills, technologies, concepts, etc.) from the following text. 
-            Return ONLY a JSON array of strings, no other text.
+            Extract ONLY the job-specific keywords and phrases that an Applicant Tracking System (ATS) would use to identify qualified candidates from the following job description. Focus on skills, technologies, certifications, job titles, and industry-specific terms. Return ONLY a JSON array of strings, no other text.
             TEXT: {request.text}
             """
             response = client.chat.completions.create(
