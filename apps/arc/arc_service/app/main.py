@@ -149,7 +149,12 @@ def parse_cv_with_ai(text: str) -> ArcData:
         "successes (array of strings), skills (array of strings), training (array of strings). "
         "The JSON should have an 'education' array, where each item is an object with: "
         "institution (string), degree (string), year (string or null). "
-        "Also include 'skills' (array of strings), 'projects' (array of objects), and 'certifications' (array of objects).\n\nCV Text:\n" + text
+        "Also include 'skills' (array of strings), 'projects' (array of objects), and 'certifications' (array of objects).\n"
+        "IMPORTANT: Do NOT summarize or omit any unique information from the CV. "
+        "Extract and include all unique experiences, achievements, skills, training, certifications, and details as separate entries in the output. "
+        "If an item is unique, keep it, even if it seems less relevant to the current job posting. "
+        "The goal is to build a full, flexible applicant profile for future applications.\n\n"
+        "CV Text:\n" + text
     )
     try:
         response = client.chat.completions.create(
@@ -245,16 +250,17 @@ async def generate_materials(req: GenerateRequest, user_id: str = Depends(get_cu
 You are an expert CV and cover letter writer. Given the following job posting and candidate data, generate a tailored CV and a matching cover letter.
 
 Instructions:
-1. Customize the professional summary to highlight experiences, skills, and goals that match the job description. Use keywords from the job posting.
-2. Align work experience: reorder bullet points to emphasize relevant duties and achievements, use similar language as the job ad, and quantify results where possible.
-3. Match the skills section to the job posting, removing unrelated skills.
-4. Adjust job titles for clarity if needed.
-5. Add relevant keywords from the job posting throughout the CV.
-6. Highlight relevant certifications/training, moving them higher if important.
-7. Emphasize achievements that align with the company's goals.
-8. Mirror the company's language and culture cues.
-9. Adjust the order of sections for maximum relevance.
-10. Generate a targeted cover letter that matches the tailored CV.
+1. Always start from the full, detailed ArcData profile, preserving all unique experiences, achievements, skills, and details.
+2. Customize the professional summary to highlight experiences, skills, and goals that match the job description. Use keywords from the job posting.
+3. Align work experience: reorder bullet points to emphasize relevant duties and achievements, use similar language as the job ad, and quantify results where possible.
+4. Match the skills section to the job posting, removing unrelated skills.
+5. Adjust job titles for clarity if needed.
+6. Add relevant keywords from the job posting throughout the CV.
+7. Highlight relevant certifications/training, moving them higher if important.
+8. Emphasize achievements that align with the company's goals.
+9. Mirror the company's language and culture cues.
+10. Adjust the order of sections for maximum relevance.
+11. Generate a targeted cover letter that matches the tailored CV.
 
 Return ONLY valid JSON with two fields: "cv" (the tailored CV as a string) and "coverLetter" (the cover letter as a string).
 
