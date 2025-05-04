@@ -36,6 +36,7 @@ security = HTTPBearer()
 cv_service_url = os.environ.get("CV_SERVICE_URL")
 ai_service_url = os.environ.get("AI_SERVICE_URL")
 payment_service_url = os.environ.get("PAYMENT_SERVICE_URL")
+arc_service_url = os.environ.get("ARC_SERVICE_URL")
 
 # Generic proxy function
 async def proxy(request: StarletteRequest, base_url: str, path: str):
@@ -79,6 +80,11 @@ async def proxy_ai(request: StarletteRequest, full_path: str):
 async def proxy_payments(request: StarletteRequest, full_path: str):
     path = full_path if full_path else "/api/payments"
     return await proxy(request, payment_service_url, path)
+
+@app.api_route("/api/arc{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_arc(request: StarletteRequest, full_path: str):
+    path = f"/api/arc{full_path}"
+    return await proxy(request, arc_service_url, path)
 
 @app.get("/")
 def read_root():
