@@ -190,6 +190,10 @@ async def delete_cv_task(taskId: str, user_id: str = Depends(get_current_user)):
 async def health():
     return {"status": "ok"}
 
+@app.get("/health")
+async def root_health():
+    return {"status": "ok"}
+
 # --- Error handler example ---
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request, exc):
