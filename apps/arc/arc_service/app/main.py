@@ -27,8 +27,18 @@ class CVStatusResponse(BaseModel):
     extractedDataSummary: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
 
+class Role(BaseModel):
+    company: str
+    title: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    description: Optional[str] = None
+    successes: Optional[List[str]] = None
+    skills: Optional[List[str]] = None
+    training: Optional[List[str]] = None
+
 class ArcData(BaseModel):
-    work_experience: Optional[List[Dict[str, Any]]] = None
+    work_experience: Optional[List[Role]] = None
     education: Optional[List[Dict[str, Any]]] = None
     skills: Optional[List[str]] = None
     projects: Optional[List[Dict[str, Any]]] = None
@@ -131,17 +141,21 @@ def parse_cv_with_ai(text: str) -> ArcData:
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
     prompt = (
-        "Extract the following information from this CV text as JSON: "
-        "work_experience (list of jobs with company, role, dates), "
-        "education (list), skills (list), projects (list), certifications (list). "
-        "Return only valid JSON.\n\nCV Text:\n" + text
+        "Extract the following information from this CV text as a JSON object. "
+        "All property names and string values must be enclosed in double quotes. "
+        "Return ONLY valid JSON, with no extra text or explanation.\n"
+        "The JSON should have a 'work_experience' array, where each item is an object with: "
+        "company (string), title (string), start_date (string), end_date (string or null), description (string), "
+        "successes (array of strings), skills (array of strings), training (array of strings). "
+        "Also include 'education', 'skills', 'projects', and 'certifications' as arrays.\n\nCV Text:\n" + text
     )
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-3.5-turbo-1106",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1000,
-            temperature=0.2
+            max_tokens=1500,
+            temperature=0.2,
+            response_format={"type": "json_object"}
         )
         import json
         data = json.loads(response.choices[0].message.content)
