@@ -5,6 +5,10 @@ from typing import Optional, List, Dict, Any
 from uuid import uuid4
 from fastapi.responses import JSONResponse, FileResponse
 import io
+import os
+import openai
+import pdfplumber
+from docx import Document
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -104,17 +108,61 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     # In real implementation, decode token and get user_id
     return "demo_user_id"
 
+def extract_text_from_pdf(file: UploadFile):
+    with pdfplumber.open(file.file) as pdf:
+        text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+    file.file.seek(0)
+    return text
+
+def extract_text_from_docx(file: UploadFile):
+    doc = Document(file.file)
+    text = "\n".join([para.text for para in doc.paragraphs])
+    file.file.seek(0)
+    return text
+
+def parse_cv_with_ai(text: str) -> ArcData:
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    openai.api_key = openai_api_key
+    prompt = (
+        "Extract the following information from this CV text as JSON: "
+        "work_experience (list of jobs with company, role, dates), "
+        "education (list), skills (list), projects (list), certifications (list). "
+        "Return only valid JSON.\n\nCV Text:\n" + text
+    )
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=1000,
+        temperature=0.2
+    )
+    import json
+    try:
+        data = json.loads(response.choices[0].message.content)
+        return ArcData(**data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
+
 # --- Endpoint: Upload CV ---
 @router.post("/cv", response_model=CVUploadResponse)
 async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user)):
     task_id = str(uuid4())
     tasks[task_id] = {"status": "pending", "user_id": user_id}
-    # TODO: Extract structured ArcData from CV file
-    # For now, simulate new ArcData
-    new_arc_data = ArcData(
-        work_experience=[{"company": "Acme Corp", "role": "Engineer", "dates": "2020-2022"}],
-        skills=["Python", "Project Management"]
-    )
+    # Extract text from file
+    filename = file.filename.lower()
+    if filename.endswith(".pdf"):
+        text = extract_text_from_pdf(file)
+    elif filename.endswith(".docx"):
+        text = extract_text_from_docx(file)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
+    # Use AI to parse structured ArcData
+    try:
+        new_arc_data = parse_cv_with_ai(text)
+    except Exception as e:
+        tasks[task_id] = {"status": "failed", "user_id": user_id, "error": str(e)}
+        raise
     # Deduplicate and merge with existing data
     existing = user_arc_data.get(user_id, ArcData())
     merged = merge_arc_data(existing, new_arc_data)
