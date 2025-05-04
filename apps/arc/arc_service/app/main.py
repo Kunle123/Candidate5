@@ -214,11 +214,12 @@ def parse_cv_with_ai(text: str) -> ArcData:
     # Prompt instructions (without CV text)
     prompt_instructions = (
         "Extract all unique, detailed information from this CV text as a JSON object. "
+        "Use UK English spelling and conventions throughout. "
         "All property names and string values must be enclosed in double quotes. Do not use single quotes or omit quotes. "
         "Return ONLY valid JSON, with no extra text, comments, or explanations.\n"
         "The JSON should have a 'work_experience' array (each item: company, title, start_date, end_date, description, successes, skills, training), "
         "an 'education' array (each item: institution, degree, year), 'skills' (array of strings), 'projects' (array of objects), and 'certifications' (array of objects).\n"
-        "Do NOT summarize or omit any unique information. If an item is unique, keep it.\n\n"
+        "Do NOT summarise or omit any unique information. If an item is unique, keep it.\n\n"
         "CV Text:\n"
     )
     # Use tiktoken to count tokens
@@ -364,19 +365,19 @@ async def generate_materials(req: GenerateRequest, user_id: str = Depends(get_cu
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
     prompt = f"""
-You are an expert CV and cover letter writer. Given the following job posting and candidate data, generate a highly detailed, tailored CV and a matching cover letter.
+You are an expert CV and cover letter writer. Use UK English spelling and conventions throughout. Given the following job posting and candidate data, generate a highly detailed, tailored CV and a matching cover letter.
 
 Instructions:
 1. Always start from the full, detailed ArcData profile, preserving all unique experiences, achievements, skills, and details.
 2. Be as detailed as possible. Include all relevant information, bullet points, and descriptions for each role, project, and achievement.
-3. Do not omit or summarize unless information is clearly duplicated.
-4. Customize the professional summary to highlight experiences, skills, and goals that match the job description. Use keywords from the job posting.
-5. Align work experience: reorder bullet points to emphasize relevant duties and achievements, use similar language as the job ad, and quantify results where possible.
+3. Do not omit or summarise unless information is clearly duplicated.
+4. Customise the professional summary to highlight experiences, skills, and goals that match the job description. Use keywords from the job posting.
+5. Align work experience: reorder bullet points to emphasise relevant duties and achievements, use similar language as the job ad, and quantify results where possible.
 6. Match the skills section to the job posting, removing unrelated skills.
 7. Adjust job titles for clarity if needed.
 8. Add relevant keywords from the job posting throughout the CV.
 9. Highlight relevant certifications/training, moving them higher if important.
-10. Emphasize achievements that align with the company's goals.
+10. Emphasise achievements that align with the company's goals.
 11. Mirror the company's language and culture cues.
 12. Adjust the order of sections for maximum relevance.
 13. Generate a targeted cover letter that matches the tailored CV.
@@ -461,8 +462,9 @@ async def extract_keywords(req: KeywordsRequest, user_id: str = Depends(get_curr
     client = openai.OpenAI(api_key=openai_api_key)
     prompt = (
         "Extract up to 20 of the most important recruiter-focused keywords from the following job description. "
+        "Use UK English spelling and conventions throughout. "
         "Return ONLY a JSON object with a single property 'keywords', which is an array of keywords, and no extra text, comments, or explanations. "
-        "Prioritize essential skills, technologies, certifications, and role-specific terms. "
+        "Prioritise essential skills, technologies, certifications, and role-specific terms. "
         "Do not include generic words like 'job', 'candidate', or 'requirements'.\n\n"
         f"Job Description:\n{req.jobDescription[:4000]}"
     )
