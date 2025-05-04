@@ -336,7 +336,7 @@ Instructions:
 12. Adjust the order of sections for maximum relevance.
 13. Generate a targeted cover letter that matches the tailored CV.
 
-All property names and string values in the JSON must be enclosed in double quotes. Do not use single quotes or omit quotes. Return ONLY valid JSON, with no extra text, comments, or explanations.
+Return ONLY a JSON object with two properties: "cv" (the tailored CV as a string) and "coverLetter" (the cover letter as a string). Do not return any other fields, explanations, or extra text. All property names and string values must be enclosed in double quotes.
 
 Job Posting:
 {req.jobAdvert[:4000]}
@@ -355,8 +355,10 @@ Candidate Data (ArcData):
         import json
         try:
             data = json.loads(response.choices[0].message.content)
-            # Ensure list fields are correct in case AI returns ArcData
-            data = ensure_list_fields(data)
+            # Defensive: Ensure both 'cv' and 'coverLetter' are present and are strings
+            if not (isinstance(data, dict) and isinstance(data.get("cv"), str) and isinstance(data.get("coverLetter"), str)):
+                logger.error(f"AI CV/cover letter response missing required fields. Raw response: {response.choices[0].message.content}")
+                raise HTTPException(status_code=500, detail="AI did not return the expected cv and coverLetter fields.")
         except Exception as e:
             logger.error(f"AI CV/cover letter JSON parse failed: {e}")
             logger.error(f"Raw response: {response.choices[0].message.content}")
@@ -364,12 +366,14 @@ Candidate Data (ArcData):
             if match:
                 try:
                     data = json.loads(match.group(0))
-                    data = ensure_list_fields(data)
+                    if not (isinstance(data, dict) and isinstance(data.get("cv"), str) and isinstance(data.get("coverLetter"), str)):
+                        logger.error(f"AI CV/cover letter response missing required fields (fallback). Raw response: {response.choices[0].message.content}")
+                        raise HTTPException(status_code=500, detail="AI did not return the expected cv and coverLetter fields (fallback).")
                 except Exception as e2:
                     logger.error(f"Fallback JSON parse also failed: {e2}")
-                    data = {}
+                    raise HTTPException(status_code=500, detail="AI CV/cover letter generation failed: Could not parse response.")
             else:
-                data = {}
+                raise HTTPException(status_code=500, detail="AI CV/cover letter generation failed: No JSON object found in response.")
         return GenerateResponse(**data)
     except Exception as e:
         logger.error(f"AI CV/cover letter generation failed: {e}")
