@@ -4,4 +4,7 @@ databases[postgresql]>=0.5
 alembic>=1.7
 psycopg2-binary>=2.9
 tiktoken
-granian 
+granian
+fastapi
+pydantic
+uvicorn[standard] 
