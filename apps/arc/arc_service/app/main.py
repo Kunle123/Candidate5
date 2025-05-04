@@ -373,14 +373,15 @@ Instructions:
 3. Do not omit or summarise unless information is clearly duplicated.
 4. Customise the professional summary to highlight experiences, skills, and goals that match the job description. Use keywords from the job posting.
 5. Align work experience: reorder bullet points to emphasise relevant duties and achievements, use similar language as the job ad, and quantify results where possible.
-6. Match the skills section to the job posting, removing unrelated skills.
-7. Adjust job titles for clarity if needed.
-8. Add relevant keywords from the job posting throughout the CV.
-9. Highlight relevant certifications/training, moving them higher if important.
-10. Emphasise achievements that align with the company's goals.
-11. Mirror the company's language and culture cues.
-12. Adjust the order of sections for maximum relevance.
-13. Generate a targeted cover letter that matches the tailored CV.
+6. List all work experience in strict reverse chronological order, with the most recent position first.
+7. Match the skills section to the job posting, removing unrelated skills.
+8. Adjust job titles for clarity if needed.
+9. Add relevant keywords from the job posting throughout the CV.
+10. Highlight relevant certifications/training, moving them higher if important.
+11. Emphasise achievements that align with the company's goals.
+12. Mirror the company's language and culture cues.
+13. Adjust the order of sections for maximum relevance.
+14. Generate a targeted cover letter that matches the tailored CV.
 
 Return ONLY a JSON object with two properties: "cv" (the tailored CV as a string) and "coverLetter" (the cover letter as a string). Do not return any other fields, explanations, or extra text. All property names and string values must be enclosed in double quotes.
 
