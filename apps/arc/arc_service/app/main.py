@@ -147,7 +147,9 @@ def parse_cv_with_ai(text: str) -> ArcData:
         "The JSON should have a 'work_experience' array, where each item is an object with: "
         "company (string), title (string), start_date (string), end_date (string or null), description (string), "
         "successes (array of strings), skills (array of strings), training (array of strings). "
-        "Also include 'education', 'skills', 'projects', and 'certifications' as arrays.\n\nCV Text:\n" + text
+        "The JSON should have an 'education' array, where each item is an object with: "
+        "institution (string), degree (string), year (string or null). "
+        "Also include 'skills' (array of strings), 'projects' (array of objects), and 'certifications' (array of objects).\n\nCV Text:\n" + text
     )
     try:
         response = client.chat.completions.create(
@@ -159,6 +161,16 @@ def parse_cv_with_ai(text: str) -> ArcData:
         )
         import json
         data = json.loads(response.choices[0].message.content)
+        # Fallback: convert string entries in education, projects, certifications to objects
+        for key in ["education", "projects", "certifications"]:
+            if key in data and isinstance(data[key], list):
+                new_list = []
+                for entry in data[key]:
+                    if isinstance(entry, str):
+                        new_list.append({"description": entry})
+                    else:
+                        new_list.append(entry)
+                data[key] = new_list
         return ArcData(**data)
     except Exception as e:
         logger.error(f"AI parsing failed: {e}")
