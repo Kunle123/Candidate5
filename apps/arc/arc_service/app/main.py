@@ -254,4 +254,10 @@ async def root_health():
 async def custom_http_exception_handler(request, exc):
     return JSONResponse(status_code=exc.status_code, content={"error": exc.detail})
 
+openai_api_key_startup = os.getenv("OPENAI_API_KEY")
+if openai_api_key_startup:
+    print("OPENAI_API_KEY at startup:", openai_api_key_startup[:6] + "..." + openai_api_key_startup[-4:])
+else:
+    print("OPENAI_API_KEY at startup: None")
+
 app.include_router(router) 
