@@ -186,6 +186,17 @@ def extract_text_from_docx(file: UploadFile):
     file.file.seek(0)
     return text
 
+# --- Helper: Ensure List Fields in ArcData ---
+def ensure_list_fields(data):
+    # Fix work_experience[].skills and work_experience[].successes
+    if "work_experience" in data and isinstance(data["work_experience"], list):
+        for role in data["work_experience"]:
+            for field in ["skills", "successes"]:
+                if field in role and isinstance(role[field], str):
+                    # Split on commas and strip whitespace
+                    role[field] = [s.strip() for s in role[field].split(",") if s.strip()]
+    return data
+
 def parse_cv_with_ai(text: str) -> ArcData:
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if not openai_api_key:
@@ -212,6 +223,8 @@ def parse_cv_with_ai(text: str) -> ArcData:
         import json
         try:
             data = json.loads(response.choices[0].message.content)
+            # Ensure list fields are correct
+            data = ensure_list_fields(data)
         except Exception as e:
             logger.error(f"AI parsing failed: {e}")
             logger.error(f"Raw response: {response.choices[0].message.content}")
@@ -220,6 +233,7 @@ def parse_cv_with_ai(text: str) -> ArcData:
             if match:
                 try:
                     data = json.loads(match.group(0))
+                    data = ensure_list_fields(data)
                 except Exception as e2:
                     logger.error(f"Fallback JSON parse also failed: {e2}")
                     data = {}
@@ -341,6 +355,8 @@ Candidate Data (ArcData):
         import json
         try:
             data = json.loads(response.choices[0].message.content)
+            # Ensure list fields are correct in case AI returns ArcData
+            data = ensure_list_fields(data)
         except Exception as e:
             logger.error(f"AI CV/cover letter JSON parse failed: {e}")
             logger.error(f"Raw response: {response.choices[0].message.content}")
@@ -348,6 +364,7 @@ Candidate Data (ArcData):
             if match:
                 try:
                     data = json.loads(match.group(0))
+                    data = ensure_list_fields(data)
                 except Exception as e2:
                     logger.error(f"Fallback JSON parse also failed: {e2}")
                     data = {}
