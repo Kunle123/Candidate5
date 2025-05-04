@@ -175,4 +175,8 @@ def submit_feedback(req: FeedbackRequest, user_id: Optional[str] = Depends(get_c
     feedbacks.append({"user_id": user_id, **req.dict()})
     return {"success": True}
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 app.include_router(router, prefix="/api") 
