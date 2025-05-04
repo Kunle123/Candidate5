@@ -251,7 +251,10 @@ async def extract_keywords(request: KeywordsRequest):
     if client:
         try:
             prompt = f"""
-            Extract ONLY the job-specific keywords and phrases that an Applicant Tracking System (ATS) would use to identify qualified candidates from the following job description. Focus on skills, technologies, certifications, job titles, and industry-specific terms. Return ONLY a JSON array of strings, no other text.
+            Extract up to 20 of the most important and job-specific keywords and phrases that a recruiter or Applicant Tracking System (ATS) would look for in the following job description. 
+            Focus on the keywords that are most critical for the role, such as required skills, technologies, certifications, job titles, and industry-specific terms. 
+            Prioritize keywords that are essential for the role, appear multiple times, or are listed as required or preferred. 
+            Return ONLY a JSON array of strings, no other text.
             TEXT: {request.text}
             """
             response = client.chat.completions.create(
