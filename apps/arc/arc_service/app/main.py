@@ -10,6 +10,7 @@ import openai
 import pdfplumber
 from docx import Document
 import logging
+import re
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -105,14 +106,55 @@ def deduplicate_and_merge_achievements(existing: list, new: list) -> list:
 
 # --- Helper: Merge ArcData ---
 def merge_arc_data(existing: ArcData, new: ArcData) -> ArcData:
+    """
+    Merge new ArcData into existing ArcData, preserving all unique data.
+    - If a field (e.g., work_experience, education, skills, etc.) already exists, keep the existing entry unless the new entry is unique.
+    - Do not remove or overwrite existing data unless it is an exact duplicate.
+    - Only add new, unique entries.
+    - ArcData should only ever be deleted by an explicit admin or user delete function (not implemented here).
+    """
+    def dedup_list_of_dicts(existing_list, new_list, key_fields):
+        if not existing_list:
+            existing_list = []
+        if not new_list:
+            new_list = []
+        seen = set()
+        result = []
+        for item in existing_list + new_list:
+            if isinstance(item, dict):
+                key = tuple(item.get(f) for f in key_fields)
+            else:
+                key = item
+            if key not in seen:
+                seen.add(key)
+                result.append(item)
+        return result
+
     return ArcData(
-        work_experience=deduplicate_and_merge_work_experience(existing.work_experience, new.work_experience),
-        education=deduplicate_and_merge_education(existing.education, new.education),
-        skills=deduplicate_and_merge_skills(existing.skills, new.skills),
-        projects=deduplicate_and_merge_projects(existing.projects, new.projects),
-        certifications=deduplicate_and_merge_certifications(existing.certifications, new.certifications),
+        work_experience=dedup_list_of_dicts(
+            getattr(existing, 'work_experience', []),
+            getattr(new, 'work_experience', []),
+            key_fields=["company", "title", "start_date", "end_date"]
+        ),
+        education=dedup_list_of_dicts(
+            getattr(existing, 'education', []),
+            getattr(new, 'education', []),
+            key_fields=["institution", "degree", "year"]
+        ),
+        skills=list(set((existing.skills or []) + (new.skills or []))),
+        projects=dedup_list_of_dicts(
+            getattr(existing, 'projects', []),
+            getattr(new, 'projects', []),
+            key_fields=["name", "description"]
+        ),
+        certifications=dedup_list_of_dicts(
+            getattr(existing, 'certifications', []),
+            getattr(new, 'certifications', []),
+            key_fields=["name", "issuer", "year"]
+        ),
         # Add more fields as needed
     )
+# ArcData is only deleted by explicit admin/user request (not implemented here)
 
 # --- Helper: Auth ---
 def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -141,31 +183,38 @@ def parse_cv_with_ai(text: str) -> ArcData:
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
     prompt = (
-        "Extract the following information from this CV text as a JSON object. "
-        "All property names and string values must be enclosed in double quotes. "
-        "Return ONLY valid JSON, with no extra text or explanation.\n"
-        "The JSON should have a 'work_experience' array, where each item is an object with: "
-        "company (string), title (string), start_date (string), end_date (string or null), description (string), "
-        "successes (array of strings), skills (array of strings), training (array of strings). "
-        "The JSON should have an 'education' array, where each item is an object with: "
-        "institution (string), degree (string), year (string or null). "
-        "Also include 'skills' (array of strings), 'projects' (array of objects), and 'certifications' (array of objects).\n"
-        "IMPORTANT: Do NOT summarize or omit any unique information from the CV. "
-        "Extract and include all unique experiences, achievements, skills, training, certifications, and details as separate entries in the output. "
-        "If an item is unique, keep it, even if it seems less relevant to the current job posting. "
-        "The goal is to build a full, flexible applicant profile for future applications.\n\n"
-        "CV Text:\n" + text
+        "Extract all unique, detailed information from this CV text as a JSON object. "
+        "All property names and string values must be enclosed in double quotes. Do not use single quotes or omit quotes. "
+        "Return ONLY valid JSON, with no extra text, comments, or explanations.\n"
+        "The JSON should have a 'work_experience' array (each item: company, title, start_date, end_date, description, successes, skills, training), "
+        "an 'education' array (each item: institution, degree, year), 'skills' (array of strings), 'projects' (array of objects), and 'certifications' (array of objects).\n"
+        "Do NOT summarize or omit any unique information. If an item is unique, keep it.\n\n"
+        "CV Text:\n" + text[:6000]  # Truncate to avoid context overflow
     )
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo-1106",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1500,
+            max_tokens=1800,
             temperature=0.2,
             response_format={"type": "json_object"}
         )
         import json
-        data = json.loads(response.choices[0].message.content)
+        try:
+            data = json.loads(response.choices[0].message.content)
+        except Exception as e:
+            logger.error(f"AI parsing failed: {e}")
+            logger.error(f"Raw response: {response.choices[0].message.content}")
+            # Fallback: try to extract JSON object from the response
+            match = re.search(r'\{.*\}', response.choices[0].message.content, re.DOTALL)
+            if match:
+                try:
+                    data = json.loads(match.group(0))
+                except Exception as e2:
+                    logger.error(f"Fallback JSON parse also failed: {e2}")
+                    data = {}
+            else:
+                data = {}
         # Fallback: convert string entries in education, projects, certifications to objects
         for key in ["education", "projects", "certifications"]:
             if key in data and isinstance(data[key], list):
@@ -179,7 +228,6 @@ def parse_cv_with_ai(text: str) -> ArcData:
         return ArcData(**data)
     except Exception as e:
         logger.error(f"AI parsing failed: {e}")
-        logger.error(f"Prompt sent to OpenAI: {prompt[:500]}...")
         raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
 
 # --- Endpoint: Upload CV ---
@@ -247,43 +295,57 @@ async def generate_materials(req: GenerateRequest, user_id: str = Depends(get_cu
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
     prompt = f"""
-You are an expert CV and cover letter writer. Given the following job posting and candidate data, generate a tailored CV and a matching cover letter.
+You are an expert CV and cover letter writer. Given the following job posting and candidate data, generate a highly detailed, tailored CV and a matching cover letter.
 
 Instructions:
 1. Always start from the full, detailed ArcData profile, preserving all unique experiences, achievements, skills, and details.
-2. Customize the professional summary to highlight experiences, skills, and goals that match the job description. Use keywords from the job posting.
-3. Align work experience: reorder bullet points to emphasize relevant duties and achievements, use similar language as the job ad, and quantify results where possible.
-4. Match the skills section to the job posting, removing unrelated skills.
-5. Adjust job titles for clarity if needed.
-6. Add relevant keywords from the job posting throughout the CV.
-7. Highlight relevant certifications/training, moving them higher if important.
-8. Emphasize achievements that align with the company's goals.
-9. Mirror the company's language and culture cues.
-10. Adjust the order of sections for maximum relevance.
-11. Generate a targeted cover letter that matches the tailored CV.
+2. Be as detailed as possible. Include all relevant information, bullet points, and descriptions for each role, project, and achievement.
+3. Do not omit or summarize unless information is clearly duplicated.
+4. Customize the professional summary to highlight experiences, skills, and goals that match the job description. Use keywords from the job posting.
+5. Align work experience: reorder bullet points to emphasize relevant duties and achievements, use similar language as the job ad, and quantify results where possible.
+6. Match the skills section to the job posting, removing unrelated skills.
+7. Adjust job titles for clarity if needed.
+8. Add relevant keywords from the job posting throughout the CV.
+9. Highlight relevant certifications/training, moving them higher if important.
+10. Emphasize achievements that align with the company's goals.
+11. Mirror the company's language and culture cues.
+12. Adjust the order of sections for maximum relevance.
+13. Generate a targeted cover letter that matches the tailored CV.
 
-Return ONLY valid JSON with two fields: "cv" (the tailored CV as a string) and "coverLetter" (the cover letter as a string).
+All property names and string values in the JSON must be enclosed in double quotes. Do not use single quotes or omit quotes. Return ONLY valid JSON, with no extra text, comments, or explanations.
 
 Job Posting:
-{req.jobAdvert}
+{req.jobAdvert[:4000]}
 
 Candidate Data (ArcData):
-{req.arcData}
+{str(req.arcData)[:4000]}
 """
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo-1106",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=2000,
+            max_tokens=3000,
             temperature=0.2,
             response_format={"type": "json_object"}
         )
         import json
-        data = json.loads(response.choices[0].message.content)
+        try:
+            data = json.loads(response.choices[0].message.content)
+        except Exception as e:
+            logger.error(f"AI CV/cover letter JSON parse failed: {e}")
+            logger.error(f"Raw response: {response.choices[0].message.content}")
+            match = re.search(r'\{.*\}', response.choices[0].message.content, re.DOTALL)
+            if match:
+                try:
+                    data = json.loads(match.group(0))
+                except Exception as e2:
+                    logger.error(f"Fallback JSON parse also failed: {e2}")
+                    data = {}
+            else:
+                data = {}
         return GenerateResponse(**data)
     except Exception as e:
         logger.error(f"AI CV/cover letter generation failed: {e}")
-        logger.error(f"Prompt sent to OpenAI: {prompt[:500]}...")
         raise HTTPException(status_code=500, detail=f"AI CV/cover letter generation failed: {e}")
 
 # --- Endpoint: Download Processed CV or Extracted Data ---
