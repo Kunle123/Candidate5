@@ -213,7 +213,7 @@ def parse_cv_with_ai(text: str) -> ArcData:
         "The JSON should have a 'work_experience' array (each item: company, title, start_date, end_date, description, successes, skills, training), "
         "an 'education' array (each item: institution, degree, year), 'skills' (array of strings), 'projects' (array of objects), and 'certifications' (array of objects).\n"
         "Do NOT summarize or omit any unique information. If an item is unique, keep it.\n\n"
-        "CV Text:\n" + text[:6000]  # Truncate to avoid context overflow
+        "CV Text:\n" + text[:15000]  # Truncate to avoid context overflow
     )
     try:
         response = client.chat.completions.create(
