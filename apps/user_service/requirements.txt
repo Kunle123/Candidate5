@@ -7,4 +7,5 @@ tiktoken
 granian
 fastapi
 pydantic
-uvicorn[standard] 
+uvicorn[standard]
+email-validator 
