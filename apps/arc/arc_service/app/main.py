@@ -127,10 +127,15 @@ def merge_arc_data(existing: ArcData, new: ArcData) -> ArcData:
         seen = set()
         result = []
         for item in existing_list + new_list:
-            if isinstance(item, dict):
-                key = tuple(item.get(f) for f in key_fields)
+            # Convert Pydantic models to dicts for hashing
+            if hasattr(item, 'dict'):
+                item_dict = item.dict()
             else:
-                key = item
+                item_dict = item
+            if isinstance(item_dict, dict):
+                key = tuple(item_dict.get(f) for f in key_fields)
+            else:
+                key = item_dict
             if key not in seen:
                 seen.add(key)
                 result.append(item)
