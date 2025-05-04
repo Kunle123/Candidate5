@@ -54,6 +54,12 @@ class GenerateResponse(BaseModel):
     cv: str
     coverLetter: str
 
+class KeywordsRequest(BaseModel):
+    jobDescription: str
+
+class KeywordsResponse(BaseModel):
+    keywords: list[str]
+
 # --- In-memory stores for demo purposes ---
 tasks = {}
 user_arc_data = {}
@@ -374,6 +380,50 @@ async def delete_cv_task(taskId: str, user_id: str = Depends(get_current_user)):
     del tasks[taskId]
     # TODO: Remove associated data from user_arc_data if needed
     return {"success": True}
+
+# --- Endpoint: Extract Keywords from Job Description ---
+@router.post("/ai/keywords", response_model=KeywordsResponse)
+async def extract_keywords(req: KeywordsRequest, user_id: str = Depends(get_current_user)):
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = openai.OpenAI(api_key=openai_api_key)
+    prompt = (
+        "Extract up to 20 of the most important recruiter-focused keywords from the following job description. "
+        "Return ONLY a JSON array of keywords, with no extra text, comments, or explanations. "
+        "Prioritize essential skills, technologies, certifications, and role-specific terms. "
+        "Do not include generic words like 'job', 'candidate', or 'requirements'.\n\n"
+        f"Job Description:\n{req.jobDescription[:4000]}"
+    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo-1106",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300,
+            temperature=0.2,
+            response_format={"type": "json_array"}
+        )
+        import json
+        try:
+            keywords = json.loads(response.choices[0].message.content)
+        except Exception as e:
+            logger.error(f"Keyword extraction JSON parse failed: {e}")
+            logger.error(f"Raw response: {response.choices[0].message.content}")
+            # Fallback: try to extract JSON array from the response
+            match = re.search(r'\[.*\]', response.choices[0].message.content, re.DOTALL)
+            if match:
+                try:
+                    keywords = json.loads(match.group(0))
+                except Exception as e2:
+                    logger.error(f"Fallback JSON parse also failed: {e2}")
+                    keywords = []
+            else:
+                keywords = []
+        return KeywordsResponse(keywords=keywords)
+    except Exception as e:
+        logger.error(f"Keyword extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Keyword extraction failed: {e}")
 
 # --- Health Check Endpoint ---
 @router.get("/health")
