@@ -390,7 +390,7 @@ async def extract_keywords(req: KeywordsRequest, user_id: str = Depends(get_curr
     client = openai.OpenAI(api_key=openai_api_key)
     prompt = (
         "Extract up to 20 of the most important recruiter-focused keywords from the following job description. "
-        "Return ONLY a JSON array of keywords, with no extra text, comments, or explanations. "
+        "Return ONLY a JSON object with a single property 'keywords', which is an array of keywords, and no extra text, comments, or explanations. "
         "Prioritize essential skills, technologies, certifications, and role-specific terms. "
         "Do not include generic words like 'job', 'candidate', or 'requirements'.\n\n"
         f"Job Description:\n{req.jobDescription[:4000]}"
@@ -401,19 +401,21 @@ async def extract_keywords(req: KeywordsRequest, user_id: str = Depends(get_curr
             messages=[{"role": "user", "content": prompt}],
             max_tokens=300,
             temperature=0.2,
-            response_format={"type": "json_array"}
+            response_format={"type": "json_object"}
         )
         import json
         try:
-            keywords = json.loads(response.choices[0].message.content)
+            data = json.loads(response.choices[0].message.content)
+            keywords = data.get("keywords", [])
         except Exception as e:
             logger.error(f"Keyword extraction JSON parse failed: {e}")
             logger.error(f"Raw response: {response.choices[0].message.content}")
-            # Fallback: try to extract JSON array from the response
-            match = re.search(r'\[.*\]', response.choices[0].message.content, re.DOTALL)
+            # Fallback: try to extract JSON object from the response
+            match = re.search(r'\{.*\}', response.choices[0].message.content, re.DOTALL)
             if match:
                 try:
-                    keywords = json.loads(match.group(0))
+                    data = json.loads(match.group(0))
+                    keywords = data.get("keywords", [])
                 except Exception as e2:
                     logger.error(f"Fallback JSON parse also failed: {e2}")
                     keywords = []
