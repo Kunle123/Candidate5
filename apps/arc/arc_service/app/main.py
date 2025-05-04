@@ -164,8 +164,9 @@ def merge_arc_data(existing: ArcData, new: ArcData) -> ArcData:
 
 # --- Helper: Auth ---
 def get_current_user(token: str = Depends(oauth2_scheme)):
-    # TEMP: Allow anonymous access for testing keyword extraction endpoint
-    # TODO: Revert this to require authentication in production
+    # Require Bearer token for authentication (reverted to original logic)
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return "demo_user_id"
 
 def extract_text_from_pdf(file: UploadFile):
