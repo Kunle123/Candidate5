@@ -224,8 +224,49 @@ async def update_arc_data(data: ArcData = Body(...), user_id: str = Depends(get_
 # --- Endpoint: Generate Application Materials ---
 @router.post("/generate", response_model=GenerateResponse)
 async def generate_materials(req: GenerateRequest, user_id: str = Depends(get_current_user)):
-    # TODO: Implement generation logic
-    return GenerateResponse(cv="Generated CV text or link", coverLetter="Generated cover letter text")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = openai.OpenAI(api_key=openai_api_key)
+    prompt = f"""
+You are an expert CV and cover letter writer. Given the following job posting and candidate data, generate a tailored CV and a matching cover letter.
+
+Instructions:
+1. Customize the professional summary to highlight experiences, skills, and goals that match the job description. Use keywords from the job posting.
+2. Align work experience: reorder bullet points to emphasize relevant duties and achievements, use similar language as the job ad, and quantify results where possible.
+3. Match the skills section to the job posting, removing unrelated skills.
+4. Adjust job titles for clarity if needed.
+5. Add relevant keywords from the job posting throughout the CV.
+6. Highlight relevant certifications/training, moving them higher if important.
+7. Emphasize achievements that align with the company's goals.
+8. Mirror the company's language and culture cues.
+9. Adjust the order of sections for maximum relevance.
+10. Generate a targeted cover letter that matches the tailored CV.
+
+Return ONLY valid JSON with two fields: "cv" (the tailored CV as a string) and "coverLetter" (the cover letter as a string).
+
+Job Posting:
+{req.jobAdvert}
+
+Candidate Data (ArcData):
+{req.arcData}
+"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo-1106",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=2000,
+            temperature=0.2,
+            response_format={"type": "json_object"}
+        )
+        import json
+        data = json.loads(response.choices[0].message.content)
+        return GenerateResponse(**data)
+    except Exception as e:
+        logger.error(f"AI CV/cover letter generation failed: {e}")
+        logger.error(f"Prompt sent to OpenAI: {prompt[:500]}...")
+        raise HTTPException(status_code=500, detail=f"AI CV/cover letter generation failed: {e}")
 
 # --- Endpoint: Download Processed CV or Extracted Data ---
 @router.get("/cv/download/{taskId}")
