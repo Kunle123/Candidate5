@@ -45,4 +45,8 @@ docker-compose up --build
 - Add new apps or packages under `apps/` or `packages/` as needed.
 
 ## Contributing
-- Please see `docs/` for architecture and contribution guidelines. 
+- Please see `docs/` for architecture and contribution guidelines.
+
+## New Features
+- User, settings, jobs, applications, and feedback endpoints are being added in a new `apps/user_service/` app for modularity and scalability.
+- The backend uses `tiktoken` for dynamic token-based truncation of CV text sent to OpenAI, ensuring maximum safe extraction. 
