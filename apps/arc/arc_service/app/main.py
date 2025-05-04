@@ -124,14 +124,14 @@ def parse_cv_with_ai(text: str) -> ArcData:
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if not openai_api_key:
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
-    openai.api_key = openai_api_key
+    client = openai.OpenAI(api_key=openai_api_key)
     prompt = (
         "Extract the following information from this CV text as JSON: "
         "work_experience (list of jobs with company, role, dates), "
         "education (list), skills (list), projects (list), certifications (list). "
         "Return only valid JSON.\n\nCV Text:\n" + text
     )
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1000,
