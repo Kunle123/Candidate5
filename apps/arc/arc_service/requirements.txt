@@ -10,4 +10,5 @@ granian
 python-multipart
 pdfplumber
 python-docx
-openai 
+openai
+tiktoken 
