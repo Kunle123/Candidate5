@@ -14,6 +14,7 @@ import re
 from sqlalchemy.orm import Session
 from .models import UserArcData
 from .db import SessionLocal
+import tiktoken
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -206,20 +207,35 @@ def parse_cv_with_ai(text: str) -> ArcData:
         logger.error("OpenAI API key not set in environment variables.")
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
-    prompt = (
+    # Model/token settings
+    model_name = "gpt-3.5-turbo-1106"
+    max_context_tokens = 16385
+    reserved_response_tokens = 1800
+    # Prompt instructions (without CV text)
+    prompt_instructions = (
         "Extract all unique, detailed information from this CV text as a JSON object. "
         "All property names and string values must be enclosed in double quotes. Do not use single quotes or omit quotes. "
         "Return ONLY valid JSON, with no extra text, comments, or explanations.\n"
         "The JSON should have a 'work_experience' array (each item: company, title, start_date, end_date, description, successes, skills, training), "
         "an 'education' array (each item: institution, degree, year), 'skills' (array of strings), 'projects' (array of objects), and 'certifications' (array of objects).\n"
         "Do NOT summarize or omit any unique information. If an item is unique, keep it.\n\n"
-        "CV Text:\n" + text[:15000]  # Truncate to avoid context overflow
+        "CV Text:\n"
     )
+    # Use tiktoken to count tokens
+    enc = tiktoken.encoding_for_model(model_name)
+    instr_tokens = len(enc.encode(prompt_instructions))
+    available_tokens = max_context_tokens - reserved_response_tokens - instr_tokens
+    # Truncate CV text to fit available tokens
+    cv_text_tokens = enc.encode(text)
+    if len(cv_text_tokens) > available_tokens:
+        cv_text_tokens = cv_text_tokens[:available_tokens]
+    truncated_cv_text = enc.decode(cv_text_tokens)
+    prompt = prompt_instructions + truncated_cv_text
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo-1106",
+            model=model_name,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1800,
+            max_tokens=reserved_response_tokens,
             temperature=0.2,
             response_format={"type": "json_object"}
         )
