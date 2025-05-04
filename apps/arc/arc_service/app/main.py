@@ -9,10 +9,14 @@ import os
 import openai
 import pdfplumber
 from docx import Document
+import logging
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+logger = logging.getLogger("arc_service")
+logging.basicConfig(level=logging.INFO)
 
 # --- Models ---
 class CVUploadResponse(BaseModel):
@@ -123,6 +127,7 @@ def extract_text_from_docx(file: UploadFile):
 def parse_cv_with_ai(text: str) -> ArcData:
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
     prompt = (
@@ -131,17 +136,19 @@ def parse_cv_with_ai(text: str) -> ArcData:
         "education (list), skills (list), projects (list), certifications (list). "
         "Return only valid JSON.\n\nCV Text:\n" + text
     )
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=1000,
-        temperature=0.2
-    )
-    import json
     try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1000,
+            temperature=0.2
+        )
+        import json
         data = json.loads(response.choices[0].message.content)
         return ArcData(**data)
     except Exception as e:
+        logger.error(f"AI parsing failed: {e}")
+        logger.error(f"Prompt sent to OpenAI: {prompt[:500]}...")
         raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
 
 # --- Endpoint: Upload CV ---
@@ -149,18 +156,18 @@ def parse_cv_with_ai(text: str) -> ArcData:
 async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user)):
     task_id = str(uuid4())
     tasks[task_id] = {"status": "pending", "user_id": user_id}
-    # Extract text from file
     filename = file.filename.lower()
-    if filename.endswith(".pdf"):
-        text = extract_text_from_pdf(file)
-    elif filename.endswith(".docx"):
-        text = extract_text_from_docx(file)
-    else:
-        raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
-    # Use AI to parse structured ArcData
     try:
+        if filename.endswith(".pdf"):
+            text = extract_text_from_pdf(file)
+        elif filename.endswith(".docx"):
+            text = extract_text_from_docx(file)
+        else:
+            logger.error(f"Unsupported file type uploaded: {filename}")
+            raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
         new_arc_data = parse_cv_with_ai(text)
     except Exception as e:
+        logger.error(f"Error in /cv upload endpoint: {e}")
         tasks[task_id] = {"status": "failed", "user_id": user_id, "error": str(e)}
         raise
     # Deduplicate and merge with existing data
