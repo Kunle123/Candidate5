@@ -18,11 +18,14 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://api-gw-production.up.railway.app"
+        "http://localhost:3000",
+        "https://api-gw-production.up.railway.app",
+        "https://candidatev.vercel.app",
+        "https://candidate-v-frontend.vercel.app"
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*", "Content-Type", "Authorization"],
 )
 
 auth_service_url = os.environ.get("AUTH_SERVICE_URL")
