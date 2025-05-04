@@ -11,6 +11,9 @@ import pdfplumber
 from docx import Document
 import logging
 import re
+from sqlalchemy.orm import Session
+from .models import UserArcData
+from .db import SessionLocal
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -254,9 +257,17 @@ def parse_cv_with_ai(text: str) -> ArcData:
         logger.error(f"AI parsing failed: {e}")
         raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
 
+# --- Dependency: Database Session ---
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 # --- Endpoint: Upload CV ---
 @router.post("/cv", response_model=CVUploadResponse)
-async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user)):
+async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     task_id = str(uuid4())
     tasks[task_id] = {"status": "pending", "user_id": user_id}
     filename = file.filename.lower()
@@ -273,10 +284,18 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         logger.error(f"Error in /cv upload endpoint: {e}")
         tasks[task_id] = {"status": "failed", "user_id": user_id, "error": str(e)}
         raise
-    # Deduplicate and merge with existing data
-    existing = user_arc_data.get(user_id, ArcData())
-    merged = merge_arc_data(existing, new_arc_data)
-    user_arc_data[user_id] = merged
+    # Deduplicate and merge with existing data from DB
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj:
+        existing = ArcData(**db_obj.arc_data)
+        merged = merge_arc_data(existing, new_arc_data)
+        db_obj.arc_data = merged.dict()
+    else:
+        merged = new_arc_data
+        db_obj = UserArcData(user_id=user_id, arc_data=merged.dict())
+        db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
     tasks[task_id] = {
         "status": "completed",
         "user_id": user_id,
@@ -298,16 +317,26 @@ async def poll_cv_status(taskId: str, user_id: str = Depends(get_current_user)):
 
 # --- Endpoint: Arc Data Management ---
 @router.get("/data", response_model=ArcData)
-async def get_arc_data(user_id: str = Depends(get_current_user)):
-    return user_arc_data.get(user_id, ArcData())
+async def get_arc_data(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj:
+        return db_obj.arc_data
+    return ArcData()
 
 @router.put("/data", response_model=ArcData)
 @router.post("/data", response_model=ArcData)
-async def update_arc_data(data: ArcData = Body(...), user_id: str = Depends(get_current_user)):
-    # Deduplicate and merge with existing data
-    existing = user_arc_data.get(user_id, ArcData())
-    merged = merge_arc_data(existing, data)
-    user_arc_data[user_id] = merged
+async def update_arc_data(data: ArcData = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj:
+        # Merge with existing data
+        merged = merge_arc_data(ArcData(**db_obj.arc_data), data)
+        db_obj.arc_data = merged.dict()
+    else:
+        merged = data
+        db_obj = UserArcData(user_id=user_id, arc_data=merged.dict())
+        db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
     return merged
 
 # --- Endpoint: Generate Application Materials ---
