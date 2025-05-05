@@ -23,7 +23,8 @@ app.add_middleware(
         "http://localhost:3000",
         "https://api-gw-production.up.railway.app",
         "https://candidatev.vercel.app",
-        "https://candidate-v-frontend.vercel.app"
+        "https://candidate-v-frontend.vercel.app",
+        "https://c5-frontend-pied.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -117,12 +118,16 @@ async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security)):
             raise HTTPException(status_code=resp.status_code, detail=resp.text)
         return resp.json()
 
-@app.post("/api/auth/register")
+@app.api_route("/api/auth/register", methods=["POST", "OPTIONS"])
 async def register_alias(request: Request):
+    if request.method == "OPTIONS":
+        return Response(status_code=200)
     return await register(request)
 
-@app.post("/api/auth/login")
+@app.api_route("/api/auth/login", methods=["POST", "OPTIONS"])
 async def login_alias(request: Request):
+    if request.method == "OPTIONS":
+        return Response(status_code=200)
     return await login(request)
 
 @app.get("/health")
