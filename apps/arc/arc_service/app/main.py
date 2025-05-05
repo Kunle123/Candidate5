@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from .models import UserArcData
 from .db import SessionLocal
 import tiktoken
+import jwt
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -22,6 +23,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 logger = logging.getLogger("arc_service")
 logging.basicConfig(level=logging.INFO)
+
+JWT_SECRET = os.getenv("JWT_SECRET", "development_secret_key")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 # --- Models ---
 class CVUploadResponse(BaseModel):
@@ -173,10 +177,16 @@ def merge_arc_data(existing: ArcData, new: ArcData) -> ArcData:
 
 # --- Helper: Auth ---
 def get_current_user(token: str = Depends(oauth2_scheme)):
-    # Require Bearer token for authentication (reverted to original logic)
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return "demo_user_id"
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("user_id") or payload.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token: no user_id")
+        return user_id
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
 
 def extract_text_from_pdf(file: UploadFile):
     with pdfplumber.open(file.file) as pdf:
