@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, Body, status
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Body, status, BackgroundTasks
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List, Literal
 from uuid import uuid4
@@ -89,17 +89,24 @@ def get_user_profile(user_id: str = Depends(get_current_user)):
     now = datetime.utcnow().isoformat()
     return users.get(user_id, UserProfile(id=user_id, name="Demo User", email="demo@example.com", createdAt=now, updatedAt=now))
 
-@router.put("/user/profile")
-def update_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get_current_user)):
+@router.patch("/user/profile")
+def patch_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get_current_user)):
     now = datetime.utcnow().isoformat()
     profile = UserProfile(id=user_id, name=req.name, email=req.email, createdAt=now, updatedAt=now)
     users[user_id] = profile
     return {"success": True, "profile": profile}
 
-@router.put("/user/password")
-def change_password(req: ChangePasswordRequest, user_id: str = Depends(get_current_user)):
-    # Dummy: always succeed
-    return {"success": True}
+@router.post("/user/send-verification")
+def send_verification_email(background_tasks: BackgroundTasks, user_id: str = Depends(get_current_user)):
+    # Stub: Simulate sending email
+    print(f"Verification email sent to user {user_id}")
+    return {"success": True, "message": "Verification email sent."}
+
+@router.post("/user/change-password")
+def change_password(old_password: str, new_password: str, user_id: str = Depends(get_current_user)):
+    # Stub: Simulate password change
+    print(f"Password changed for user {user_id}")
+    return {"success": True, "message": "Password changed."}
 
 # --- Settings Endpoints ---
 @router.get("/user/settings", response_model=UserSettings)

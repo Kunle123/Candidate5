@@ -143,3 +143,35 @@ def list_routes():
 app.include_router(cover_letters_router)
 app.include_router(mega_cv_router)
 app.include_router(applications_router)
+
+@app.api_route("/api/users/profile", methods=["PATCH"])
+async def update_user_profile(request: Request):
+    data = await request.json()
+    headers = dict(request.headers)
+    headers.pop("host", None)
+    async with httpx.AsyncClient() as client:
+        resp = await client.patch(f"{os.environ.get('USER_SERVICE_URL')}/user/profile", json=data, headers=headers)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail=resp.text)
+        return resp.json()
+
+@app.api_route("/api/auth/send-verification", methods=["POST"])
+async def send_verification(request: Request):
+    headers = dict(request.headers)
+    headers.pop("host", None)
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(f"{os.environ.get('USER_SERVICE_URL')}/user/send-verification", headers=headers)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail=resp.text)
+        return resp.json()
+
+@app.api_route("/api/auth/change-password", methods=["POST"])
+async def change_password(request: Request):
+    data = await request.json()
+    headers = dict(request.headers)
+    headers.pop("host", None)
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(f"{os.environ.get('USER_SERVICE_URL')}/user/change-password", json=data, headers=headers)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail=resp.text)
+        return resp.json()
