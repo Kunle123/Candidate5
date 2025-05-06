@@ -8,6 +8,7 @@ import logging
 import stripe
 import json
 from app.config import settings
+import httpx
 
 # Configure logger
 logger = logging.getLogger("payment_service")
@@ -20,6 +21,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_API_KEY
+
+USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8000")
 
 # Pydantic models
 class PaymentMethod(BaseModel):
@@ -48,28 +51,31 @@ class UserPaymentProfile(BaseModel):
     default_payment_method_id: Optional[str] = None
     has_payment_method: bool = False
 
+async def get_email_for_user_id(user_id: str, token: str) -> str:
+    """Fetch the user's email from the user service using their UUID."""
+    headers = {"Authorization": f"Bearer {token}"}
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"{USER_SERVICE_URL}/api/user/profile", headers=headers)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail="Could not fetch user profile for Stripe lookup")
+        data = resp.json()
+        return data["email"]
+
 @router.get("/methods/{user_id}", response_model=List[PaymentMethod])
 async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme)):
-    """Get all payment methods for a user"""
+    """Get all payment methods for a user (user_id is UUID)."""
     try:
-        # First, check if the user has a customer ID in Stripe
-        customers = stripe.Customer.list(email=user_id, limit=1)
-        
+        email = await get_email_for_user_id(user_id, token)
+        customers = stripe.Customer.list(email=email, limit=1)
         if not customers.data:
             return []
-        
         customer_id = customers.data[0].id
-        
-        # Get payment methods for the customer
         payment_methods = stripe.PaymentMethod.list(
             customer=customer_id,
             type="card"
         )
-        
-        # Get the default payment method
         customer = stripe.Customer.retrieve(customer_id)
         default_payment_method_id = customer.get("invoice_settings", {}).get("default_payment_method")
-        
         result = []
         for pm in payment_methods.data:
             if pm.type == "card":
@@ -82,9 +88,7 @@ async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme))
                     card_exp_year=pm.card.exp_year,
                     is_default=(pm.id == default_payment_method_id)
                 ))
-        
         return result
-    
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in get_payment_methods: {str(e)}")
         raise HTTPException(
@@ -100,34 +104,25 @@ async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme))
 
 @router.get("/history/{user_id}", response_model=List[PaymentHistory])
 async def get_payment_history(user_id: str, token: str = Depends(oauth2_scheme)):
-    """Get payment history for a user"""
+    """Get payment history for a user (user_id is UUID)."""
     try:
-        # First, check if the user has a customer ID in Stripe
-        customers = stripe.Customer.list(email=user_id, limit=1)
-        
+        email = await get_email_for_user_id(user_id, token)
+        customers = stripe.Customer.list(email=email, limit=1)
         if not customers.data:
             return []
-        
         customer_id = customers.data[0].id
-        
-        # Get payment intents for the customer
         payment_intents = stripe.PaymentIntent.list(
             customer=customer_id,
             limit=100
         )
-        
-        # Get invoices
         invoices = stripe.Invoice.list(
             customer=customer_id,
             limit=100,
             status="paid"
         )
-        
-        # Process payment intents
         payment_history = []
         for pi in payment_intents.data:
             if pi.status == "succeeded":
-                # Try to find payment method details
                 payment_method = None
                 if pi.payment_method:
                     try:
@@ -143,14 +138,11 @@ async def get_payment_history(user_id: str, token: str = Depends(oauth2_scheme))
                             )
                     except Exception as e:
                         logger.warning(f"Error retrieving payment method {pi.payment_method}: {str(e)}")
-                
-                # Find related invoice
                 invoice_url = None
                 for inv in invoices.data:
                     if inv.payment_intent == pi.id:
                         invoice_url = inv.hosted_invoice_url
                         break
-                
                 payment_history.append(PaymentHistory(
                     id=pi.id,
                     amount=pi.amount,
@@ -162,12 +154,8 @@ async def get_payment_history(user_id: str, token: str = Depends(oauth2_scheme))
                     receipt_url=pi.charges.data[0].receipt_url if pi.charges.data else None,
                     payment_method=payment_method
                 ))
-        
-        # Sort by most recent first
         payment_history.sort(key=lambda x: x.created, reverse=True)
-        
         return payment_history
-    
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in get_payment_history: {str(e)}")
         raise HTTPException(
