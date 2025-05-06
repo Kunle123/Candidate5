@@ -3,8 +3,23 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List, Literal
 from uuid import uuid4
 from datetime import datetime
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="User Service", description="User profile, settings, jobs, applications, and feedback endpoints.")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "https://c5-frontend-pied.vercel.app",
+        "https://your-frontend.vercel.app",  # Add any other frontend domains here
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
 router = APIRouter()
 
 # --- Models ---
