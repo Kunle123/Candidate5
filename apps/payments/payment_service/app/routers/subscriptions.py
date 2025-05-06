@@ -9,6 +9,7 @@ import stripe
 import json
 import httpx
 from app.config import settings
+from app.routers.payments import get_email_for_user_id, USER_SERVICE_URL
 
 # Configure logger
 logger = logging.getLogger("payment_service")
@@ -173,21 +174,19 @@ async def create_checkout_session(
 
 @router.get("/user/{user_id}", response_model=Optional[UserSubscription])
 async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme)):
-    """Get the current subscription for a user"""
+    """Get the current subscription for a user (user_id is UUID)."""
     try:
+        email = await get_email_for_user_id(user_id, token)
         # Get subscriptions for the user from Stripe
         subscriptions = stripe.Subscription.list(
             limit=1,  # Typically a user would have only one active subscription
             status="active",
             expand=["data.default_payment_method"],
-            metadata={"user_id": user_id}
+            customer=stripe.Customer.list(email=email, limit=1).data[0].id if stripe.Customer.list(email=email, limit=1).data else None
         )
-        
         if not subscriptions.data:
             return None
-        
         subscription = subscriptions.data[0]
-        
         # Get the plan details
         plan_id = subscription.metadata.get("plan_id", "basic")  # Default to basic if not specified
         plan = None
@@ -195,10 +194,8 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
             if p.id == plan_id:
                 plan = p
                 break
-        
         if not plan:
             plan = SUBSCRIPTION_PLANS[0]  # Default to first plan
-        
         # Create the response
         return UserSubscription(
             id=subscription.id,
@@ -207,7 +204,6 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
             plan=plan,
             is_active=subscription.status == "active"
         )
-        
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in get_user_subscription: {str(e)}")
         raise HTTPException(
