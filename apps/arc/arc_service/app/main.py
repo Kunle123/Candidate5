@@ -211,50 +211,80 @@ def ensure_list_fields(data):
                     role[field] = [s.strip() for s in role[field].split(",") if s.strip()]
     return data
 
-def parse_cv_to_unique_sentences_per_role(text: str) -> ArcData:
-    # Simple heuristic: split by lines, look for job role headers (e.g., lines in ALL CAPS or with years)
-    lines = text.splitlines()
-    roles = []
-    current_role = None
-    current_sentences = set()
-    role_pattern = re.compile(r'(?i)([A-Z][A-Za-z\s\-&]+)\s+at\s+([A-Z][A-Za-z\s\-&]+)|([A-Z][A-Za-z\s\-&]+)\s+\(\d{4}')
-    year_pattern = re.compile(r'\b(19|20)\d{2}\b')
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        # Detect new job role section
-        if role_pattern.search(line) or (year_pattern.search(line) and len(line.split()) < 10):
-            # Save previous role
-            if current_role and current_sentences:
-                roles.append({
-                    "title": current_role,
-                    "sentences": list(current_sentences)
-                })
-            current_role = line
-            current_sentences = set()
-        else:
-            # Split line into sentences and deduplicate
-            for sentence in re.split(r'[.!?]\s+', line):
-                s = sentence.strip()
-                if s:
-                    current_sentences.add(s)
-    # Save last role
-    if current_role and current_sentences:
-        roles.append({
-            "title": current_role,
-            "sentences": list(current_sentences)
-        })
-    # Build ArcData
-    work_experience = []
-    for role in roles:
-        work_experience.append(Role(
-            company="",  # Could try to extract company from title if needed
-            title=role["title"],
-            description="",
-            successes=role["sentences"],
-        ))
-    return ArcData(work_experience=work_experience)
+def parse_cv_with_ai(text: str) -> ArcData:
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = openai.OpenAI(api_key=openai_api_key)
+    # Improved prompt for robust extraction
+    prompt_instructions = (
+        "You are an expert CV parser. Extract all unique, detailed information from this CV text as a JSON object. "
+        "Handle a wide variety of CV formats, layouts, and section names. "
+        "Use UK English spelling and conventions throughout. "
+        "All property names and string values must be enclosed in double quotes. Do not use single quotes or omit quotes. "
+        "Return ONLY valid JSON, with no extra text, comments, or explanations.\n"
+        "The JSON should have a 'work_experience' array (each item: company, title, start_date, end_date, description, successes, skills, training), "
+        "an 'education' array (each item: institution, degree, year), 'skills' (array of strings), 'projects' (array of objects), and 'certifications' (array of objects).\n"
+        "For each work experience, extract as much detail as possible, including achievements and unique sentences.\n"
+        "If the CV uses non-standard section names or order, do your best to map them to the correct fields.\n"
+        "Do NOT summarise or omit any unique information. If an item is unique, keep it.\n\n"
+        "CV Text:\n"
+    )
+    # Use tiktoken to count tokens
+    import tiktoken
+    model_name = "gpt-3.5-turbo-1106"
+    max_context_tokens = 16385
+    reserved_response_tokens = 1800
+    enc = tiktoken.encoding_for_model(model_name)
+    instr_tokens = len(enc.encode(prompt_instructions))
+    available_tokens = max_context_tokens - reserved_response_tokens - instr_tokens
+    cv_text_tokens = enc.encode(text)
+    if len(cv_text_tokens) > available_tokens:
+        cv_text_tokens = cv_text_tokens[:available_tokens]
+    truncated_cv_text = enc.decode(cv_text_tokens)
+    prompt = prompt_instructions + truncated_cv_text
+    try:
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=reserved_response_tokens,
+            temperature=0.2,
+            response_format={"type": "json_object"}
+        )
+        import json
+        try:
+            data = json.loads(response.choices[0].message.content)
+            # Ensure list fields are correct
+            data = ensure_list_fields(data)
+        except Exception as e:
+            logger.error(f"AI parsing failed: {e}")
+            logger.error(f"Raw response: {response.choices[0].message.content}")
+            # Fallback: try to extract JSON object from the response
+            match = re.search(r'\{.*\}', response.choices[0].message.content, re.DOTALL)
+            if match:
+                try:
+                    data = json.loads(match.group(0))
+                    data = ensure_list_fields(data)
+                except Exception as e2:
+                    logger.error(f"Fallback JSON parse also failed: {e2}")
+                    data = {}
+            else:
+                data = {}
+        # Fallback: convert string entries in education, projects, certifications to objects
+        for key in ["education", "projects", "certifications"]:
+            if key in data and isinstance(data[key], list):
+                new_list = []
+                for entry in data[key]:
+                    if isinstance(entry, str):
+                        new_list.append({"description": entry})
+                    else:
+                        new_list.append(entry)
+                data[key] = new_list
+        return ArcData(**data)
+    except Exception as e:
+        logger.error(f"AI parsing failed: {e}")
+        raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
 
 # --- Dependency: Database Session ---
 def get_db():
@@ -278,7 +308,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         else:
             logger.error(f"Unsupported file type uploaded: {filename}")
             raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
-        new_arc_data = parse_cv_to_unique_sentences_per_role(text)
+        new_arc_data = parse_cv_with_ai(text)
     except Exception as e:
         logger.error(f"Error in /cv upload endpoint: {e}")
         tasks[task_id] = {"status": "failed", "user_id": user_id, "error": str(e)}
@@ -298,7 +328,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
     tasks[task_id] = {
         "status": "completed",
         "user_id": user_id,
-        "extractedDataSummary": {"workExperienceCount": len(merged.work_experience or []), "sentencesFound": sum(len(r.successes or []) for r in merged.work_experience or [])}
+        "extractedDataSummary": {"workExperienceCount": len(merged.work_experience or []), "skillsFound": len(merged.skills or [])}
     }
     return {"taskId": task_id}
 
