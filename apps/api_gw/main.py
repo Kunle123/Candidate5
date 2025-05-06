@@ -113,7 +113,7 @@ async def register(request: Request):
 async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security)):
     headers = {"Authorization": f"Bearer {credentials.credentials}"}
     async with httpx.AsyncClient() as client:
-        resp = await client.get(f"{os.environ.get('USER_SERVICE_URL')}/user/profile", headers=headers)
+        resp = await client.get(f"{os.environ.get('USER_SERVICE_URL')}/api/user/profile", headers=headers)
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail=resp.text)
         return resp.json()
