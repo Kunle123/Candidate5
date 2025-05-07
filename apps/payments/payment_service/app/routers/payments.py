@@ -53,13 +53,44 @@ class UserPaymentProfile(BaseModel):
 
 async def get_email_for_user_id(user_id: str, token: str) -> str:
     """Fetch the user's email from the user service using their UUID."""
+    logger.info(f"Getting email for user {user_id}")
     headers = {"Authorization": f"Bearer {token}"}
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(f"{USER_SERVICE_URL}/api/user/profile", headers=headers)
-        if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code, detail="Could not fetch user profile for Stripe lookup")
-        data = resp.json()
-        return data["email"]
+    try:
+        async with httpx.AsyncClient() as client:
+            logger.info(f"Making request to {USER_SERVICE_URL}/api/user/profile")
+            resp = await client.get(f"{USER_SERVICE_URL}/api/user/profile", headers=headers)
+            logger.info(f"User service response status: {resp.status_code}")
+            logger.info(f"User service response: {resp.text}")
+            
+            if resp.status_code != 200:
+                logger.error(f"Error getting user profile: {resp.status_code} - {resp.text}")
+                raise HTTPException(
+                    status_code=resp.status_code,
+                    detail=f"Could not fetch user profile for Stripe lookup: {resp.text}"
+                )
+            
+            data = resp.json()
+            if "email" not in data:
+                logger.error(f"No email found in user profile data: {data}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="User profile does not contain email"
+                )
+                
+            logger.info(f"Successfully got email for user {user_id}")
+            return data["email"]
+    except httpx.RequestError as e:
+        logger.error(f"Request error getting user profile: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error connecting to user service: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error getting user profile: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error getting user profile: {str(e)}"
+        )
 
 @router.get("/methods/{user_id}", response_model=List[PaymentMethod])
 async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme)):
@@ -177,8 +208,11 @@ async def add_payment_method(
 ):
     """Create a Stripe SetupIntent for adding a payment method"""
     try:
+        # Get user's email from user service
+        email = await get_email_for_user_id(user_id, token)
+        
         # First, get or create a customer in Stripe
-        customers = stripe.Customer.list(email=user_id, limit=1)
+        customers = stripe.Customer.list(email=email, limit=1)
         
         customer_id = None
         if customers.data:
@@ -186,7 +220,7 @@ async def add_payment_method(
         else:
             # Create a new customer
             customer = stripe.Customer.create(
-                email=user_id,
+                email=email,
                 metadata={"user_id": user_id}
             )
             customer_id = customer.id
