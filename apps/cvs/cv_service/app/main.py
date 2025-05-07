@@ -36,7 +36,7 @@ app = FastAPI(title="CandidateV CV Service")
 # Environment variables
 JWT_SECRET = os.getenv("JWT_SECRET", "development_secret_key")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost,http://localhost:3000").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175").split(",")
 
 # Configure CORS
 app.add_middleware(
@@ -45,6 +45,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # OAuth2 scheme

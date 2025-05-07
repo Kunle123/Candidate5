@@ -39,13 +39,14 @@ from app.job_match import router as job_match_router
 from app.cover_letter import router as cover_letter_router
 
 # Configure CORS
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost,http://localhost:3000,https://candidate-v-frontend.vercel.app").split(",")
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # Add request ID and logging middleware

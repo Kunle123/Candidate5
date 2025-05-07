@@ -4,20 +4,19 @@ from typing import Optional, List, Literal
 from uuid import uuid4
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI(title="User Service", description="User profile, settings, jobs, applications, and feedback endpoints.")
 
 # Add CORS middleware
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://c5-frontend-pied.vercel.app",
-        "https://your-frontend.vercel.app",  # Add any other frontend domains here
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 router = APIRouter()
