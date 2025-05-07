@@ -175,18 +175,34 @@ async def create_checkout_session(
 @router.get("/user/{user_id}", response_model=Optional[UserSubscription])
 async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme)):
     """Get the current subscription for a user (user_id is UUID)."""
+    logger.info(f"Getting subscription for user {user_id}")
     try:
         email = await get_email_for_user_id(user_id, token)
+        logger.info(f"Found email for user {user_id}: {email}")
+        
         # Get subscriptions for the user from Stripe
+        customers = stripe.Customer.list(email=email, limit=1)
+        if not customers.data:
+            logger.info(f"No Stripe customer found for user {user_id} with email {email}")
+            return None
+            
+        customer_id = customers.data[0].id
+        logger.info(f"Found Stripe customer {customer_id} for user {user_id}")
+        
         subscriptions = stripe.Subscription.list(
             limit=1,  # Typically a user would have only one active subscription
             status="active",
             expand=["data.default_payment_method"],
-            customer=stripe.Customer.list(email=email, limit=1).data[0].id if stripe.Customer.list(email=email, limit=1).data else None
+            customer=customer_id
         )
+        
         if not subscriptions.data:
+            logger.info(f"No active subscriptions found for user {user_id}")
             return None
+            
         subscription = subscriptions.data[0]
+        logger.info(f"Found subscription {subscription.id} for user {user_id}")
+        
         # Get the plan details
         plan_id = subscription.metadata.get("plan_id", "basic")  # Default to basic if not specified
         plan = None
@@ -196,6 +212,8 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
                 break
         if not plan:
             plan = SUBSCRIPTION_PLANS[0]  # Default to first plan
+            logger.info(f"Using default plan for user {user_id}")
+            
         # Create the response
         return UserSubscription(
             id=subscription.id,
