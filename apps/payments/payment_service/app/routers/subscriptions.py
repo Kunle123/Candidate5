@@ -51,6 +51,11 @@ class UserSubscription(BaseModel):
     plan: SubscriptionPlan
     is_active: bool
 
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
 # Subscription plans
 SUBSCRIPTION_PLANS = [
     SubscriptionPlan(
@@ -276,14 +281,18 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
             
         # Create the response
         try:
+            current_period_end = datetime.fromtimestamp(subscription.current_period_end)
+            logger.info(f"Current period end: {current_period_end}")
+            
             subscription_response = UserSubscription(
                 id=subscription.id,
                 status=subscription.status,
-                current_period_end=datetime.fromtimestamp(subscription.current_period_end),
+                current_period_end=current_period_end,
                 plan=plan,
                 is_active=subscription.status == "active"
             )
             logger.info(f"Successfully created subscription response for user {user_id}")
+            logger.info(f"Response: {subscription_response.json()}")
             return subscription_response
         except Exception as e:
             logger.error(f"Error creating subscription response for user {user_id}: {str(e)}")
