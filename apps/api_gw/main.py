@@ -61,8 +61,11 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
             )
             print(f"Response status: {resp.status_code}")
             print(f"Response headers: {dict(resp.headers)}")
+            # Log response body for debugging
+            body = resp.content
+            print(f"Response body: {body.decode()}")
             return Response(
-                content=resp.content,
+                content=body,
                 status_code=resp.status_code,
                 headers=dict(resp.headers)
             )
