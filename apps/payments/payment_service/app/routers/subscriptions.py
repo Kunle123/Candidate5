@@ -181,8 +181,11 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
         try:
             email = await get_email_for_user_id(user_id, token)
             logger.info(f"Found email for user {user_id}: {email}")
+        except HTTPException as e:
+            logger.error(f"HTTP error getting email for user {user_id}: {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error getting email for user {user_id}: {str(e)}")
+            logger.error(f"Unexpected error getting email for user {user_id}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error getting user email: {str(e)}"
@@ -190,8 +193,9 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
         
         # Get subscriptions for the user from Stripe
         try:
+            logger.info(f"Searching for Stripe customer with email: {email}")
             customers = stripe.Customer.list(email=email, limit=1)
-            logger.info(f"Stripe customer list response: {customers}")
+            logger.info(f"Stripe customer list response: {json.dumps(customers.data, default=str)}")
             
             if not customers.data:
                 logger.info(f"No Stripe customer found for user {user_id} with email {email}")
@@ -208,13 +212,14 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
         
         # Get active subscriptions
         try:
+            logger.info(f"Searching for active subscriptions for customer {customer_id}")
             subscriptions = stripe.Subscription.list(
                 limit=1,  # Typically a user would have only one active subscription
                 status="active",
                 expand=["data.default_payment_method"],
                 customer=customer_id
             )
-            logger.info(f"Stripe subscription list response: {subscriptions}")
+            logger.info(f"Stripe subscription list response: {json.dumps(subscriptions.data, default=str)}")
             
             if not subscriptions.data:
                 logger.info(f"No active subscriptions found for user {user_id}")
@@ -251,13 +256,15 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
             
         # Create the response
         try:
-            return UserSubscription(
+            subscription_response = UserSubscription(
                 id=subscription.id,
                 status=subscription.status,
                 current_period_end=datetime.fromtimestamp(subscription.current_period_end),
                 plan=plan,
                 is_active=subscription.status == "active"
             )
+            logger.info(f"Successfully created subscription response for user {user_id}")
+            return subscription_response
         except Exception as e:
             logger.error(f"Error creating subscription response for user {user_id}: {str(e)}")
             raise HTTPException(
