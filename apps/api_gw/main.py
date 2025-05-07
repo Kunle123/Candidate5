@@ -85,7 +85,7 @@ async def proxy_payments(request: StarletteRequest, full_path: str):
 # Proxy /api/subscriptions and subpaths to Payments service
 @app.api_route("/api/subscriptions{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_subscriptions(request: StarletteRequest, full_path: str):
-    path = full_path if full_path else "/api/subscriptions"
+    path = f"/api/subscriptions{full_path}" if full_path else "/api/subscriptions"
     print(f"Proxying subscription request to: {payment_service_url}{path}")
     return await proxy(request, payment_service_url, path)
 
