@@ -46,10 +46,11 @@ class UserSubscription(BaseModel):
     plan_name: str
     plan: SubscriptionPlan
     status: str
-    renewal_date: str  # Changed to str to ensure ISO format
-    current_period_end: str  # Changed to str to ensure ISO format
+    renewal_date: str  # ISO format string
+    current_period_end: str  # ISO format string
 
     class Config:
+        from_attributes = True  # Updated from orm_mode
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
