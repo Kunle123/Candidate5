@@ -27,12 +27,9 @@ stripe.api_key = settings.STRIPE_API_KEY
 class SubscriptionPlan(BaseModel):
     id: str
     name: str
-    description: str
-    price_id: str
     amount: int
     currency: str = "usd"
     interval: str
-    features: List[str]
 
 class SubscriptionRequest(BaseModel):
     plan_id: str
@@ -46,10 +43,11 @@ class SubscriptionResponse(BaseModel):
 
 class UserSubscription(BaseModel):
     id: str
-    status: str
-    current_period_end: datetime
+    plan_name: str
     plan: SubscriptionPlan
-    is_active: bool
+    status: str
+    renewal_date: datetime
+    current_period_end: datetime
 
     class Config:
         json_encoders = {
@@ -61,45 +59,23 @@ SUBSCRIPTION_PLANS = [
     SubscriptionPlan(
         id="dominator",
         name="Career Dominator",
-        description="All features for career domination",
-        price_id="price_1RIwjO3N6Cy1dIMXoND5K4zc",
         amount=2999,  # £29.99
-        interval="month",
-        features=[
-            "All Pro features",
-            "Priority support",
-            "Interview coaching",
-            "LinkedIn profile optimization",
-            "Career strategy session"
-        ]
+        currency="usd",
+        interval="month"
     ),
     SubscriptionPlan(
         id="accelerator",
         name="Career Accelerator",
-        description="Advanced tools for career acceleration",
-        price_id="price_1RIwjO3N6Cy1dIMXfkNuOMaT",
         amount=1999,  # £19.99
-        interval="month",
-        features=[
-            "Create and store unlimited CVs",
-            "Advanced AI optimization",
-            "Detailed job match analysis",
-            "Keyword optimization",
-            "Cover letter generator"
-        ]
+        currency="usd",
+        interval="month"
     ),
     SubscriptionPlan(
         id="starter",
         name="Career Starter",
-        description="Essential tools for starting your career",
-        price_id="price_1RIwjP3N6Cy1dIMXvOLBf1bi",
         amount=1499,  # £14.99
-        interval="month",
-        features=[
-            "Create and store up to 3 CVs",
-            "Basic AI optimization suggestions",
-            "Limited job match analysis"
-        ]
+        currency="usd",
+        interval="month"
     )
 ]
 
@@ -146,7 +122,7 @@ async def create_checkout_session(
             payment_method_types=["card"],
             line_items=[
                 {
-                    "price": plan.price_id,
+                    "price": plan.id,
                     "quantity": 1,
                 },
             ],
@@ -284,12 +260,28 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
             current_period_end = datetime.fromtimestamp(subscription.current_period_end)
             logger.info(f"Current period end: {current_period_end}")
             
+            # Map Stripe status to frontend expected status
+            status_map = {
+                "active": "Active",
+                "canceled": "Canceled",
+                "past_due": "Past Due",
+                "trialing": "Trialing"
+            }
+            status = status_map.get(subscription.status, subscription.status.capitalize())
+            
             subscription_response = UserSubscription(
                 id=subscription.id,
-                status=subscription.status,
-                current_period_end=current_period_end,
-                plan=plan,
-                is_active=subscription.status == "active"
+                plan_name=plan.name,
+                plan=SubscriptionPlan(
+                    id=plan.id,
+                    name=plan.name,
+                    amount=plan.amount,
+                    currency=plan.currency,
+                    interval=plan.interval
+                ),
+                status=status,
+                renewal_date=current_period_end,
+                current_period_end=current_period_end
             )
             logger.info(f"Successfully created subscription response for user {user_id}")
             logger.info(f"Response: {subscription_response.json()}")
