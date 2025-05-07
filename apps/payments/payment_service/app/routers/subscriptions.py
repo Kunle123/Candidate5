@@ -176,9 +176,11 @@ async def create_checkout_session(
 async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme)):
     """Get the current subscription for a user (user_id is UUID)."""
     logger.info(f"Getting subscription for user {user_id}")
+    logger.info(f"Request headers: {dict(request.headers)}")
     try:
         # Get user's email
         try:
+            logger.info(f"Attempting to get email for user {user_id}")
             email = await get_email_for_user_id(user_id, token)
             logger.info(f"Found email for user {user_id}: {email}")
         except HTTPException as e:
