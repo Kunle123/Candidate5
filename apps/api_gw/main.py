@@ -88,7 +88,14 @@ async def proxy_ai(request: StarletteRequest, full_path: str):
 # Proxy /api/payments and subpaths to Payments service
 @app.api_route("/api/payments{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_payments(request: StarletteRequest, full_path: str):
-    path = full_path if full_path else "/api/payments"
+    print(f"Received payment request: {request.method} {request.url.path}")
+    print(f"Full path: {full_path}")
+    # Remove any double slashes and ensure path starts with /
+    path = f"/api/payments{full_path}" if full_path else "/api/payments"
+    path = re.sub(r'/+', '/', path)
+    print(f"Proxying payment request to: {payment_service_url}{path}")
+    print(f"Request headers: {dict(request.headers)}")
+    print(f"Query params: {request.query_params}")
     return await proxy(request, payment_service_url, path)
 
 # Proxy /api/subscriptions and subpaths to Payments service
@@ -96,8 +103,12 @@ async def proxy_payments(request: StarletteRequest, full_path: str):
 async def proxy_subscriptions(request: StarletteRequest, full_path: str):
     print(f"Received subscription request: {request.method} {request.url.path}")
     print(f"Full path: {full_path}")
+    # Remove any double slashes and ensure path starts with /
     path = f"/api/subscriptions{full_path}" if full_path else "/api/subscriptions"
+    path = re.sub(r'/+', '/', path)
     print(f"Proxying subscription request to: {payment_service_url}{path}")
+    print(f"Request headers: {dict(request.headers)}")
+    print(f"Query params: {request.query_params}")
     return await proxy(request, payment_service_url, path)
 
 @app.api_route("/api/arc{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
