@@ -13,22 +13,15 @@ import re
 
 app = FastAPI()
 
-# Add CORS middleware
+# CORS Configuration
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:3000",
-        "https://api-gw-production.up.railway.app",
-        "https://candidatev.vercel.app",
-        "https://candidate-v-frontend.vercel.app",
-        "https://c5-frontend-pied.vercel.app"
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*", "Content-Type", "Authorization"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 auth_service_url = os.environ.get("AUTH_SERVICE_URL")
