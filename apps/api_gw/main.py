@@ -57,14 +57,38 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
             # Log response body for debugging
             body = resp.content
             print(f"Response body: {body.decode()}")
-            return Response(
+            
+            # Create response with original headers
+            response = Response(
                 content=body,
                 status_code=resp.status_code,
                 headers=dict(resp.headers)
             )
+            
+            # Ensure CORS headers are set
+            origin = request.headers.get("origin")
+            if origin in cors_origins:
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+                response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+            
+            return response
         except Exception as e:
             print(f"Error proxying request: {str(e)}")
-            raise
+            # Create error response with CORS headers
+            error_response = Response(
+                content=str(e).encode(),
+                status_code=500,
+                headers={
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": request.headers.get("origin", cors_origins[0]),
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With"
+                }
+            )
+            return error_response
 
 # Proxy /cvs and subpaths to CV service
 @app.api_route("/cvs{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
