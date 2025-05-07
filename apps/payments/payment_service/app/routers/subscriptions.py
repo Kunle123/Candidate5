@@ -177,6 +177,24 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
     """Get the current subscription for a user (user_id is UUID)."""
     logger.info(f"Getting subscription for user {user_id}")
     logger.info(f"Request headers: {dict(request.headers)}")
+    
+    # Validate UUID format
+    import uuid
+    try:
+        uuid_obj = uuid.UUID(user_id)
+        if str(uuid_obj) != user_id:
+            logger.error(f"Invalid UUID format for user_id: {user_id}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid UUID format"
+            )
+    except ValueError as e:
+        logger.error(f"Invalid UUID format for user_id: {user_id}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid UUID format"
+        )
+    
     try:
         # Get user's email
         try:
