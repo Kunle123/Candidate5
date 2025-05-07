@@ -22,7 +22,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_API_KEY
 
-USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8000")
+# Service URLs
+USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "https://api-gw-production.up.railway.app")
 
 # Pydantic models
 class PaymentMethod(BaseModel):
@@ -57,8 +58,8 @@ async def get_email_for_user_id(user_id: str, token: str) -> str:
     headers = {"Authorization": f"Bearer {token}"}
     try:
         async with httpx.AsyncClient() as client:
-            logger.info(f"Making request to {USER_SERVICE_URL}/api/user/profile")
-            resp = await client.get(f"{USER_SERVICE_URL}/api/user/profile", headers=headers)
+            logger.info(f"Making request to {USER_SERVICE_URL}/api/user/{user_id}")
+            resp = await client.get(f"{USER_SERVICE_URL}/api/user/{user_id}", headers=headers)
             logger.info(f"User service response status: {resp.status_code}")
             logger.info(f"User service response: {resp.text}")
             
