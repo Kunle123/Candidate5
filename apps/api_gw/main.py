@@ -46,20 +46,29 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
     headers = dict(request.headers)
     headers.pop("host", None)
     data = await request.body()
+    print(f"Proxying request: {method} {url}")
+    print(f"Headers: {headers}")
+    print(f"Query params: {request.query_params}")
     async with httpx.AsyncClient() as client:
-        resp = await client.request(
-            method,
-            url,
-            headers=headers,
-            content=data,
-            params=request.query_params,
-            timeout=60.0
-        )
-        return Response(
-            content=resp.content,
-            status_code=resp.status_code,
-            headers=dict(resp.headers)
-        )
+        try:
+            resp = await client.request(
+                method,
+                url,
+                headers=headers,
+                content=data,
+                params=request.query_params,
+                timeout=60.0
+            )
+            print(f"Response status: {resp.status_code}")
+            print(f"Response headers: {dict(resp.headers)}")
+            return Response(
+                content=resp.content,
+                status_code=resp.status_code,
+                headers=dict(resp.headers)
+            )
+        except Exception as e:
+            print(f"Error proxying request: {str(e)}")
+            raise
 
 # Proxy /cvs and subpaths to CV service
 @app.api_route("/cvs{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
@@ -85,6 +94,8 @@ async def proxy_payments(request: StarletteRequest, full_path: str):
 # Proxy /api/subscriptions and subpaths to Payments service
 @app.api_route("/api/subscriptions{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_subscriptions(request: StarletteRequest, full_path: str):
+    print(f"Received subscription request: {request.method} {request.url.path}")
+    print(f"Full path: {full_path}")
     path = f"/api/subscriptions{full_path}" if full_path else "/api/subscriptions"
     print(f"Proxying subscription request to: {payment_service_url}{path}")
     return await proxy(request, payment_service_url, path)
