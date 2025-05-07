@@ -46,8 +46,8 @@ class UserSubscription(BaseModel):
     plan_name: str
     plan: SubscriptionPlan
     status: str
-    renewal_date: datetime
-    current_period_end: datetime
+    renewal_date: str  # Changed to str to ensure ISO format
+    current_period_end: str  # Changed to str to ensure ISO format
 
     class Config:
         json_encoders = {
@@ -269,6 +269,9 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
             }
             status = status_map.get(subscription.status, subscription.status.capitalize())
             
+            # Convert datetime to ISO format string
+            current_period_end_iso = current_period_end.isoformat()
+            
             subscription_response = UserSubscription(
                 id=subscription.id,
                 plan_name=plan.name,
@@ -280,8 +283,8 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
                     interval=plan.interval
                 ),
                 status=status,
-                renewal_date=current_period_end,
-                current_period_end=current_period_end
+                renewal_date=current_period_end_iso,
+                current_period_end=current_period_end_iso
             )
             logger.info(f"Successfully created subscription response for user {user_id}")
             logger.info(f"Response: {subscription_response.json()}")
