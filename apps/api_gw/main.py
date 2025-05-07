@@ -109,7 +109,18 @@ async def proxy_subscriptions(request: StarletteRequest, full_path: str):
     print(f"Proxying subscription request to: {payment_service_url}{path}")
     print(f"Request headers: {dict(request.headers)}")
     print(f"Query params: {request.query_params}")
-    return await proxy(request, payment_service_url, path)
+    
+    try:
+        response = await proxy(request, payment_service_url, path)
+        print(f"Response status: {response.status_code}")
+        print(f"Response headers: {dict(response.headers)}")
+        # Log response body for debugging
+        body = await response.body()
+        print(f"Response body: {body.decode()}")
+        return response
+    except Exception as e:
+        print(f"Error in subscription proxy: {str(e)}")
+        raise
 
 @app.api_route("/api/arc{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_arc(request: StarletteRequest, full_path: str):
