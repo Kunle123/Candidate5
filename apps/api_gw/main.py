@@ -235,3 +235,15 @@ async def change_password(request: Request):
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail=resp.text)
         return resp.json()
+
+@app.options("/{full_path:path}")
+async def preflight_handler(request: Request, full_path: str):
+    origin = request.headers.get("origin")
+    headers = {
+        "Access-Control-Allow-Origin": origin if origin in cors_origins else cors_origins[0],
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+        "Access-Control-Max-Age": "600"
+    }
+    return Response(status_code=200, headers=headers)
