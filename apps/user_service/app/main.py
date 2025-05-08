@@ -9,7 +9,7 @@ import os
 app = FastAPI(title="User Service", description="User profile, settings, jobs, applications, and feedback endpoints.")
 
 # Add CORS middleware
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175").split(",")
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,https://c5-frontend-pied.vercel.app").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
