@@ -135,7 +135,7 @@ async def proxy_subscriptions(request: StarletteRequest, full_path: str):
         print(f"Response status: {response.status_code}")
         print(f"Response headers: {dict(response.headers)}")
         # Log response body for debugging
-        body = await response.body()
+        body = response.body
         print(f"Response body: {body.decode()}")
         return response
     except Exception as e:
