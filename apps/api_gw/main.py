@@ -247,3 +247,8 @@ async def preflight_handler(request: Request, full_path: str):
         "Access-Control-Max-Age": "600"
     }
     return Response(status_code=200, headers=headers)
+
+@app.api_route("/api/webhooks{full_path:path}", methods=["POST", "OPTIONS"])
+async def proxy_webhooks(request: StarletteRequest, full_path: str):
+    path = f"/api/webhooks{full_path}"
+    return await proxy(request, payment_service_url, path)
