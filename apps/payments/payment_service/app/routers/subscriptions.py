@@ -13,7 +13,9 @@ from app.routers.payments import get_email_for_user_id, USER_SERVICE_URL
 import traceback
 
 # Configure logger
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("payment_service")
+logger.setLevel(logging.INFO)
 
 # Initialize router
 router = APIRouter(prefix="/api/subscriptions")
@@ -157,7 +159,7 @@ async def create_checkout_session(
 
 @router.get("/user/{user_id}", response_model=Optional[UserSubscription])
 async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme)):
-    """Get the current subscription for a user (user_id is UUID)."""
+    print(f"DEBUG: get_user_subscription called for user_id={user_id}")
     try:
         logger.info(f"Getting subscription for user {user_id}")
         logger.info(f"Request headers: {dict(request.headers)}")
@@ -302,12 +304,14 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Unexpected error in get_user_subscription for user {user_id}: {str(e)}")
+            print(f"DEBUG: Exception in get_user_subscription: {e}")
+            logger.error(f"Exception in get_user_subscription: {str(e)}\n{traceback.format_exc()}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"An unexpected error occurred: {str(e)}"
             )
     except Exception as e:
+        print(f"DEBUG: Exception in get_user_subscription: {e}")
         logger.error(f"Exception in get_user_subscription: {str(e)}\n{traceback.format_exc()}")
         raise
 
