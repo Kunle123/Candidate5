@@ -196,6 +196,11 @@ def submit_feedback(req: FeedbackRequest, user_id: Optional[str] = Depends(get_c
     feedbacks.append({"user_id": user_id, **req.dict()})
     return {"success": True}
 
+@router.get("/user/{user_id}", response_model=UserProfile)
+def get_user_profile_by_id(user_id: str):
+    now = datetime.utcnow().isoformat()
+    return users.get(user_id, UserProfile(id=user_id, name="Demo User", email="demo@example.com", createdAt=now, updatedAt=now))
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
