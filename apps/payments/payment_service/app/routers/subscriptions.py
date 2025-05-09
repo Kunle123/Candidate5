@@ -158,7 +158,7 @@ async def create_checkout_session(
         )
 
 @router.get("/user/{user_id}", response_model=Optional[UserSubscription])
-async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme)):
+async def get_user_subscription(user_id: str, request: Request, token: str = Depends(oauth2_scheme)):
     print(f"DEBUG: get_user_subscription called for user_id={user_id}")
     try:
         logger.info(f"Getting subscription for user {user_id}")
