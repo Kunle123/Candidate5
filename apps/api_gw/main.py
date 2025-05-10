@@ -32,6 +32,9 @@ ai_service_url = os.environ.get("AI_SERVICE_URL")
 payment_service_url = os.environ.get("PAYMENT_SERVICE_URL")
 arc_service_url = os.environ.get("ARC_SERVICE_URL")
 
+# Register the user service for proxying /api/user/* endpoints
+USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL")
+
 # Generic proxy function
 async def proxy(request: StarletteRequest, base_url: str, path: str):
     url = f"{base_url}{path}"
@@ -255,5 +258,9 @@ async def proxy_webhooks(request: StarletteRequest, full_path: str):
 
 @app.api_route("/api/user{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_user(request: StarletteRequest, full_path: str):
+    """
+    Proxy all /api/user/* requests to the user service.
+    Make sure USER_SERVICE_URL is set to the user service base URL.
+    """
     path = f"/api/user{full_path}"
-    return await proxy(request, os.environ.get("USER_SERVICE_URL"), path)
+    return await proxy(request, USER_SERVICE_URL, path)
