@@ -259,9 +259,6 @@ async def proxy_webhooks(request: StarletteRequest, full_path: str):
 
 @app.api_route("/api/user{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_user(request: StarletteRequest, full_path: str):
-    """
-    Proxy all /api/user/* requests to the user service.
-    Make sure USER_SERVICE_URL is set to the user service base URL.
-    """
+    print(f"[DEBUG] proxy_user called with full_path: {full_path}")
     path = f"/api/user{full_path}"
     return await proxy(request, USER_SERVICE_URL, path)
