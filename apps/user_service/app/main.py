@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, Body, status, BackgroundTasks
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Body, status, BackgroundTasks, Security
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List, Literal
 from uuid import uuid4
@@ -93,9 +93,16 @@ applications = {}
 jobs = {}
 feedbacks = []
 
+ADMIN_USER_ID = "50a5cb6e-6129-4f19-84cc-7afd6eab4363"  # Replace with your actual admin user ID
+
 def get_current_user():
     # Dummy user for demo
     return "demo_user_id"
+
+def get_admin_user(user_id: str = Depends(get_current_user)):
+    if user_id != ADMIN_USER_ID:
+        raise HTTPException(status_code=403, detail="Admin privileges required.")
+    return user_id
 
 # --- Profile Endpoints ---
 @router.get("/user/profile", response_model=UserProfile)
@@ -200,6 +207,11 @@ def submit_feedback(req: FeedbackRequest, user_id: Optional[str] = Depends(get_c
 def get_user_profile_by_id(user_id: str):
     now = datetime.utcnow().isoformat()
     return users.get(user_id, UserProfile(id=user_id, name="Demo User", email="demo@example.com", createdAt=now, updatedAt=now))
+
+@router.get("/user/list", response_model=List[UserProfile])
+def list_all_users(admin_user_id: str = Depends(get_admin_user)):
+    """List all users (admin only)."""
+    return list(users.values())
 
 @app.get("/health")
 def health():
