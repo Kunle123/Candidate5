@@ -34,6 +34,7 @@ arc_service_url = os.environ.get("ARC_SERVICE_URL")
 
 # Register the user service for proxying /api/user/* endpoints
 USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL")
+print(f"[DEBUG] USER_SERVICE_URL at startup: {USER_SERVICE_URL}")
 
 # Generic proxy function
 async def proxy(request: StarletteRequest, base_url: str, path: str):
