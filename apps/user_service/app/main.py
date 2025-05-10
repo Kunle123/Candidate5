@@ -6,7 +6,7 @@ from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from sqlalchemy.orm import Session
-from .models import UserProfile
+from .models import UserProfile as UserProfileORM
 from .db import get_db
 
 app = FastAPI(title="User Service", description="User profile, settings, jobs, applications, and feedback endpoints.")
@@ -25,12 +25,14 @@ app.add_middleware(
 router = APIRouter()
 
 # --- Models ---
-class UserProfile(BaseModel):
+class UserProfileSchema(BaseModel):
     id: str
-    name: str
     email: EmailStr
-    createdAt: str
-    updatedAt: str
+    name: str
+    created_at: str
+    updated_at: str
+    class Config:
+        orm_mode = True
 
 class UpdateUserProfileRequest(BaseModel):
     name: str
@@ -115,40 +117,39 @@ def get_admin_user(user_id: str = Depends(get_current_user)):
     return user_id
 
 # --- Profile Endpoints ---
-@router.get("/user/list", response_model=List[UserProfile])
+@router.get("/user/list", response_model=List[UserProfileSchema])
 def list_all_users(admin_user_id: str = Depends(get_admin_user), db: Session = Depends(get_db)):
     """List all users (admin only)."""
-    return db.query(UserProfile).all()
+    return db.query(UserProfileORM).all()
 
-@router.get("/user/profile", response_model=UserProfile)
+@router.get("/user/profile", response_model=UserProfileSchema)
 def get_user_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
     if user:
         return user
-    # Only return a default if user is not found (for demo)
-    now = datetime.utcnow().isoformat()
-    return UserProfile(id=user_id, name="Demo User", email="demo@example.com", createdAt=now, updatedAt=now)
+    now = datetime.datetime.utcnow().isoformat()
+    return UserProfileSchema(id=user_id, name="Demo User", email="demo@example.com", created_at=now, updated_at=now)
 
-@router.patch("/user/profile")
+@router.patch("/user/profile", response_model=UserProfileSchema)
 def patch_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
-    now = datetime.utcnow()
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
+    now = datetime.datetime.utcnow()
     if user:
         user.name = req.name
         user.email = req.email
-        user.updatedAt = now.isoformat()
+        user.updated_at = now
     else:
-        user = UserProfile(
+        user = UserProfileORM(
             id=user_id,
             name=req.name,
             email=req.email,
-            createdAt=now.isoformat(),
-            updatedAt=now.isoformat()
+            created_at=now,
+            updated_at=now
         )
         db.add(user)
     db.commit()
     db.refresh(user)
-    return {"success": True, "profile": user}
+    return user
 
 @router.post("/user/send-verification")
 def send_verification_email(background_tasks: BackgroundTasks, user_id: str = Depends(get_current_user)):
@@ -162,31 +163,37 @@ def change_password(old_password: str, new_password: str, user_id: str = Depends
     print(f"Password changed for user {user_id}")
     return {"success": True, "message": "Password changed."}
 
-@router.post("/user/profile", response_model=UserProfile)
+@router.post("/user/profile", response_model=UserProfileSchema)
 def create_user_profile(
     req: CreateUserProfileRequest,
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
-    # Interservice secret check
     if authorization != f"Bearer {INTER_SERVICE_SECRET}":
         raise HTTPException(status_code=403, detail="Forbidden: Invalid interservice secret.")
-    # Check if user already exists
-    user = db.query(UserProfile).filter(UserProfile.id == req.id).first()
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == req.id).first()
     if user:
         raise HTTPException(status_code=409, detail="User already exists.")
     now = datetime.datetime.utcnow()
-    user = UserProfile(
+    user = UserProfileORM(
         id=req.id,
         email=req.email,
         name=req.name,
-        createdAt=now.isoformat(),
-        updatedAt=now.isoformat()
+        created_at=now,
+        updated_at=now
     )
     db.add(user)
     db.commit()
     db.refresh(user)
     return user
+
+@router.get("/user/{user_id}", response_model=UserProfileSchema)
+def get_user_profile_by_id(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
+    if user:
+        return user
+    now = datetime.datetime.utcnow().isoformat()
+    return UserProfileSchema(id=user_id, name="Demo User", email="demo@example.com", created_at=now, updated_at=now)
 
 # --- Settings Endpoints ---
 @router.get("/user/settings", response_model=UserSettings)
@@ -261,13 +268,6 @@ def delete_job(job_id: str, user_id: str = Depends(get_current_user)):
 def submit_feedback(req: FeedbackRequest, user_id: Optional[str] = Depends(get_current_user)):
     feedbacks.append({"user_id": user_id, **req.dict()})
     return {"success": True}
-
-def get_user_profile_by_id(user_id: str, db: Session = Depends(get_db)):
-    user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
-    if user:
-        return user
-    now = datetime.utcnow().isoformat()
-    return UserProfile(id=user_id, name="Demo User", email="demo@example.com", createdAt=now, updatedAt=now)
 
 @app.get("/health")
 def health():
