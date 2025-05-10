@@ -34,8 +34,8 @@ class UserProfileResponse(BaseModel):
     id: str
     email: EmailStr
     name: str
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
     model_config = {
         "from_attributes": True
     }
