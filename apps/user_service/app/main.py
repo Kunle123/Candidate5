@@ -5,6 +5,9 @@ from uuid import uuid4
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 import os
+from sqlalchemy.orm import Session
+from .models import UserProfile
+from .db import get_db
 
 app = FastAPI(title="User Service", description="User profile, settings, jobs, applications, and feedback endpoints.")
 
@@ -105,17 +108,40 @@ def get_admin_user(user_id: str = Depends(get_current_user)):
     return user_id
 
 # --- Profile Endpoints ---
+@router.get("/user/list", response_model=List[UserProfile])
+def list_all_users(admin_user_id: str = Depends(get_admin_user), db: Session = Depends(get_db)):
+    """List all users (admin only)."""
+    return db.query(UserProfile).all()
+
 @router.get("/user/profile", response_model=UserProfile)
-def get_user_profile(user_id: str = Depends(get_current_user)):
+def get_user_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
+    if user:
+        return user
+    # Only return a default if user is not found (for demo)
     now = datetime.utcnow().isoformat()
-    return users.get(user_id, UserProfile(id=user_id, name="Demo User", email="demo@example.com", createdAt=now, updatedAt=now))
+    return UserProfile(id=user_id, name="Demo User", email="demo@example.com", createdAt=now, updatedAt=now)
 
 @router.patch("/user/profile")
-def patch_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get_current_user)):
-    now = datetime.utcnow().isoformat()
-    profile = UserProfile(id=user_id, name=req.name, email=req.email, createdAt=now, updatedAt=now)
-    users[user_id] = profile
-    return {"success": True, "profile": profile}
+def patch_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
+    now = datetime.utcnow()
+    if user:
+        user.name = req.name
+        user.email = req.email
+        user.updatedAt = now.isoformat()
+    else:
+        user = UserProfile(
+            id=user_id,
+            name=req.name,
+            email=req.email,
+            createdAt=now.isoformat(),
+            updatedAt=now.isoformat()
+        )
+        db.add(user)
+    db.commit()
+    db.refresh(user)
+    return {"success": True, "profile": user}
 
 @router.post("/user/send-verification")
 def send_verification_email(background_tasks: BackgroundTasks, user_id: str = Depends(get_current_user)):
@@ -203,15 +229,12 @@ def submit_feedback(req: FeedbackRequest, user_id: Optional[str] = Depends(get_c
     feedbacks.append({"user_id": user_id, **req.dict()})
     return {"success": True}
 
-@router.get("/user/{user_id}", response_model=UserProfile)
-def get_user_profile_by_id(user_id: str):
+def get_user_profile_by_id(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
+    if user:
+        return user
     now = datetime.utcnow().isoformat()
-    return users.get(user_id, UserProfile(id=user_id, name="Demo User", email="demo@example.com", createdAt=now, updatedAt=now))
-
-@router.get("/user/list", response_model=List[UserProfile])
-def list_all_users(admin_user_id: str = Depends(get_admin_user)):
-    """List all users (admin only)."""
-    return list(users.values())
+    return UserProfile(id=user_id, name="Demo User", email="demo@example.com", createdAt=now, updatedAt=now)
 
 @app.get("/health")
 def health():
