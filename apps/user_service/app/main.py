@@ -127,13 +127,13 @@ def get_user_profile(user_id: str = Depends(get_current_user), db: Session = Dep
     user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
     if user:
         return user
-    now = datetime.datetime.utcnow().isoformat()
+    now = datetime.utcnow().isoformat()
     return UserProfileSchema(id=user_id, name="Demo User", email="demo@example.com", created_at=now, updated_at=now)
 
 @router.patch("/user/profile", response_model=UserProfileSchema)
 def patch_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
-    now = datetime.datetime.utcnow()
+    now = datetime.utcnow()
     if user:
         user.name = req.name
         user.email = req.email
@@ -174,7 +174,7 @@ def create_user_profile(
     user = db.query(UserProfileORM).filter(UserProfileORM.id == req.id).first()
     if user:
         raise HTTPException(status_code=409, detail="User already exists.")
-    now = datetime.datetime.utcnow()
+    now = datetime.utcnow()
     user = UserProfileORM(
         id=req.id,
         email=req.email,
@@ -192,7 +192,7 @@ def get_user_profile_by_id(user_id: str, db: Session = Depends(get_db)):
     user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
     if user:
         return user
-    now = datetime.datetime.utcnow().isoformat()
+    now = datetime.utcnow().isoformat()
     return UserProfileSchema(id=user_id, name="Demo User", email="demo@example.com", created_at=now, updated_at=now)
 
 # --- Settings Endpoints ---
