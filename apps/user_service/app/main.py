@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, Body, status, BackgroundTasks, Security
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Body, status, BackgroundTasks, Security, Header
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List, Literal
 from uuid import uuid4
@@ -89,6 +89,11 @@ class FeedbackRequest(BaseModel):
     type: Literal["bug", "feature", "general"]
     email: Optional[EmailStr]
 
+class CreateUserProfileRequest(BaseModel):
+    id: str
+    email: EmailStr
+    name: str
+
 # --- Dummy in-memory stores for demo ---
 users = {}
 settings = {}
@@ -97,6 +102,8 @@ jobs = {}
 feedbacks = []
 
 ADMIN_USER_ID = "50a5cb6e-6129-4f19-84cc-7afd6eab4363"  # Replace with your actual admin user ID
+
+INTER_SERVICE_SECRET = os.getenv("INTER_SERVICE_SECRET", "")
 
 def get_current_user():
     # Dummy user for demo
@@ -154,6 +161,32 @@ def change_password(old_password: str, new_password: str, user_id: str = Depends
     # Stub: Simulate password change
     print(f"Password changed for user {user_id}")
     return {"success": True, "message": "Password changed."}
+
+@router.post("/user/profile", response_model=UserProfile)
+def create_user_profile(
+    req: CreateUserProfileRequest,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    # Interservice secret check
+    if authorization != f"Bearer {INTER_SERVICE_SECRET}":
+        raise HTTPException(status_code=403, detail="Forbidden: Invalid interservice secret.")
+    # Check if user already exists
+    user = db.query(UserProfile).filter(UserProfile.id == req.id).first()
+    if user:
+        raise HTTPException(status_code=409, detail="User already exists.")
+    now = datetime.datetime.utcnow()
+    user = UserProfile(
+        id=req.id,
+        email=req.email,
+        name=req.name,
+        createdAt=now.isoformat(),
+        updatedAt=now.isoformat()
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 # --- Settings Endpoints ---
 @router.get("/user/settings", response_model=UserSettings)
