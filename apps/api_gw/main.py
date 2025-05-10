@@ -252,3 +252,8 @@ async def preflight_handler(request: Request, full_path: str):
 async def proxy_webhooks(request: StarletteRequest, full_path: str):
     path = f"/api/webhooks{full_path}"
     return await proxy(request, payment_service_url, path)
+
+@app.api_route("/api/user{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_user(request: StarletteRequest, full_path: str):
+    path = f"/api/user{full_path}"
+    return await proxy(request, os.environ.get("USER_SERVICE_URL"), path)
