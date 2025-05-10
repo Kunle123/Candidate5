@@ -5,14 +5,19 @@ from uuid import uuid4
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import logging
 from sqlalchemy.orm import Session
 from .models import UserProfile as UserProfileORM
 from .db import get_db
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="User Service", description="User profile, settings, jobs, applications, and feedback endpoints.")
 
-# Add CORS middleware
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,https://c5-frontend-pied.vercel.app").split(",")
+# Add CORS middleware with updated origins
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,https://c5-frontend-pied.vercel.app,https://c5-api-gateway-production.up.railway.app").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -25,7 +30,7 @@ app.add_middleware(
 router = APIRouter()
 
 # --- Models ---
-class UserProfileSchema(BaseModel):
+class UserProfileResponse(BaseModel):
     id: str
     email: EmailStr
     name: str
@@ -118,38 +123,62 @@ def get_admin_user(user_id: str = Depends(get_current_user)):
     return user_id
 
 # --- Profile Endpoints ---
-@router.get("/user/list", response_model=List[UserProfileSchema])
+@router.get("/user/list", response_model=List[UserProfileResponse])
 def list_all_users(admin_user_id: str = Depends(get_admin_user), db: Session = Depends(get_db)):
     """List all users (admin only)."""
-    return db.query(UserProfileORM).all()
+    try:
+        users = db.query(UserProfileORM).all()
+        logger.info(f"Successfully retrieved {len(users)} users")
+        return users
+    except Exception as e:
+        logger.error(f"Error retrieving users: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving users")
 
-@router.get("/user/profile", response_model=UserProfileSchema)
+@router.get("/user/profile", response_model=UserProfileResponse)
 def get_user_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
-    if user:
+    try:
+        user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
+        if not user:
+            logger.warning(f"User profile not found for user_id: {user_id}")
+            raise HTTPException(status_code=404, detail="User profile not found")
+        logger.info(f"Successfully retrieved profile for user_id: {user_id}")
         return user
-    raise HTTPException(status_code=404, detail="User not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving user profile: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving user profile")
 
-@router.patch("/user/profile", response_model=UserProfileSchema)
+@router.patch("/user/profile", response_model=UserProfileResponse)
 def patch_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
-    now = datetime.utcnow()
-    if user:
-        user.name = req.name
-        user.email = req.email
-        user.updated_at = now
-    else:
-        user = UserProfileORM(
-            id=user_id,
-            name=req.name,
-            email=req.email,
-            created_at=now,
-            updated_at=now
-        )
-        db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    try:
+        user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
+        now = datetime.utcnow()
+        
+        if user:
+            user.name = req.name
+            user.email = req.email
+            user.updated_at = now
+        else:
+            user = UserProfileORM(
+                id=user_id,
+                name=req.name,
+                email=req.email,
+                created_at=now,
+                updated_at=now
+            )
+            db.add(user)
+            
+        db.commit()
+        db.refresh(user)
+        
+        logger.info(f"Successfully updated profile for user_id: {user_id}")
+        return user
+        
+    except Exception as e:
+        logger.error(f"Error updating user profile: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Internal server error while updating user profile")
 
 @router.post("/user/send-verification")
 def send_verification_email(background_tasks: BackgroundTasks, user_id: str = Depends(get_current_user)):
@@ -163,31 +192,48 @@ def change_password(old_password: str, new_password: str, user_id: str = Depends
     print(f"Password changed for user {user_id}")
     return {"success": True, "message": "Password changed."}
 
-@router.post("/user/profile", response_model=UserProfileSchema)
+@router.post("/user/profile", response_model=UserProfileResponse)
 def create_user_profile(
     req: CreateUserProfileRequest,
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
-    if authorization != f"Bearer {INTER_SERVICE_SECRET}":
-        raise HTTPException(status_code=403, detail="Forbidden: Invalid interservice secret.")
-    user = db.query(UserProfileORM).filter(UserProfileORM.id == req.id).first()
-    if user:
-        raise HTTPException(status_code=409, detail="User already exists.")
-    now = datetime.utcnow()
-    user = UserProfileORM(
-        id=req.id,
-        email=req.email,
-        name=req.name,
-        created_at=now,
-        updated_at=now
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    try:
+        if authorization != f"Bearer {INTER_SERVICE_SECRET}":
+            logger.warning("Invalid interservice secret provided")
+            raise HTTPException(status_code=403, detail="Forbidden: Invalid interservice secret.")
+        
+        # Check if user already exists
+        existing_user = db.query(UserProfileORM).filter(UserProfileORM.id == req.id).first()
+        if existing_user:
+            logger.warning(f"User already exists with id: {req.id}")
+            raise HTTPException(status_code=409, detail="User already exists.")
+        
+        # Create new user
+        now = datetime.utcnow()
+        new_user = UserProfileORM(
+            id=req.id,
+            email=req.email,
+            name=req.name,
+            created_at=now,
+            updated_at=now
+        )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        logger.info(f"Successfully created profile for user_id: {req.id}")
+        return new_user
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating user profile: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Internal server error while creating user profile")
 
-@router.get("/user/{user_id}", response_model=UserProfileSchema)
+@router.get("/user/{user_id}", response_model=UserProfileResponse)
 def get_user_profile_by_id(user_id: str, db: Session = Depends(get_db)):
     user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
     if user:
