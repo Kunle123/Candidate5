@@ -260,3 +260,8 @@ async def proxy_user(request: StarletteRequest, full_path: str):
     print(f"[DEBUG] proxy_user called with full_path: {full_path}")
     path = f"/api/user/{full_path}"
     return await proxy(request, USER_SERVICE_URL, path)
+
+@app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def catch_all(request: StarletteRequest, full_path: str):
+    print(f"[DEBUG] catch_all called with full_path: {full_path}")
+    return Response(content="Catch-all route hit", status_code=200)
