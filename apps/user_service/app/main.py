@@ -185,6 +185,27 @@ def put_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get_c
         db.rollback()
         raise HTTPException(status_code=500, detail="Internal server error while putting user profile")
 
+@router.patch("/user/profile", response_model=UserProfileResponse)
+def patch_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
+        now = datetime.utcnow()
+        if not user:
+            raise HTTPException(status_code=404, detail="User profile not found")
+        if req.name is not None:
+            user.name = req.name
+        if req.email is not None:
+            user.email = req.email
+        user.updated_at = now
+        db.commit()
+        db.refresh(user)
+        logger.info(f"Successfully PATCHed profile for user_id: {user_id}")
+        return user
+    except Exception as e:
+        logger.error(f"Error patching user profile: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Internal server error while patching user profile")
+
 @router.post("/user/send-verification")
 def send_verification_email(background_tasks: BackgroundTasks, user_id: str = Depends(get_current_user)):
     # Stub: Simulate sending email
