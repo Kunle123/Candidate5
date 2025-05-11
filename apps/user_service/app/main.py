@@ -158,12 +158,11 @@ def get_user_profile(user_id: str = Depends(get_current_user), db: Session = Dep
         logger.error(f"Error retrieving user profile: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error while retrieving user profile")
 
-@router.patch("/user/profile", response_model=UserProfileResponse)
-def patch_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+@router.put("/user/profile", response_model=UserProfileResponse)
+def put_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
         now = datetime.utcnow()
-        
         if user:
             user.name = req.name
             user.email = req.email
@@ -177,17 +176,14 @@ def patch_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get
                 updated_at=now
             )
             db.add(user)
-            
         db.commit()
         db.refresh(user)
-        
-        logger.info(f"Successfully updated profile for user_id: {user_id}")
+        logger.info(f"Successfully put (fully updated) profile for user_id: {user_id}")
         return user
-        
     except Exception as e:
-        logger.error(f"Error updating user profile: {str(e)}")
+        logger.error(f"Error putting user profile: {str(e)}")
         db.rollback()
-        raise HTTPException(status_code=500, detail="Internal server error while updating user profile")
+        raise HTTPException(status_code=500, detail="Internal server error while putting user profile")
 
 @router.post("/user/send-verification")
 def send_verification_email(background_tasks: BackgroundTasks, user_id: str = Depends(get_current_user)):
