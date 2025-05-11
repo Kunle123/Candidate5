@@ -42,6 +42,9 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
     method = request.method
     headers = dict(request.headers)
     headers.pop("host", None)
+    # Inject Authorization header for user service
+    if base_url == USER_SERVICE_URL:
+        headers["Authorization"] = f"Bearer {os.environ['INTER_SERVICE_SECRET']}"
     data = await request.body()
     print(f"Proxying request: {method} {url}")
     print(f"Headers: {headers}")
@@ -58,29 +61,22 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
             )
             print(f"Response status: {resp.status_code}")
             print(f"Response headers: {dict(resp.headers)}")
-            # Log response body for debugging
             body = resp.content
             print(f"Response body: {body.decode()}")
-            
-            # Create response with original headers
             response = Response(
                 content=body,
                 status_code=resp.status_code,
                 headers=dict(resp.headers)
             )
-            
-            # Ensure CORS headers are set
             origin = request.headers.get("origin")
             if origin in cors_origins:
                 response.headers["Access-Control-Allow-Origin"] = origin
                 response.headers["Access-Control-Allow-Credentials"] = "true"
                 response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
                 response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
-            
             return response
         except Exception as e:
             print(f"Error proxying request: {str(e)}")
-            # Create error response with CORS headers
             error_response = Response(
                 content=str(e).encode(),
                 status_code=500,
