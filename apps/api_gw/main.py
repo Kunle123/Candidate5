@@ -1,3 +1,8 @@
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger("api_gw")
+
 print("DEBUG: This is the deployed API Gateway main.py")
 import os
 from fastapi import FastAPI, Request, HTTPException, Depends, Response
@@ -46,11 +51,11 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
     if base_url == USER_SERVICE_URL:
         headers["Authorization"] = f"Bearer {os.environ['INTER_SERVICE_SECRET']}"
     data = await request.body()
-    print(f"Proxying request: {method} {url}")
-    print(f"Headers: {headers}")
-    print(f"Query params: {request.query_params}")
+    logger.debug(f"Proxying request: {method} {url}")
+    logger.debug(f"Headers: {headers}")
+    logger.debug(f"Query params: {request.query_params}")
     if method in ["POST", "PUT"]:
-        print(f"Body: {data.decode()}")
+        logger.debug(f"Body: {data.decode()}")
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.request(
@@ -61,10 +66,10 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
                 params=request.query_params,
                 timeout=60.0
             )
-            print(f"Response status: {resp.status_code}")
-            print(f"Response headers: {dict(resp.headers)}")
+            logger.debug(f"Response status: {resp.status_code}")
+            logger.debug(f"Response headers: {dict(resp.headers)}")
             body = resp.content
-            print(f"Response body: {body.decode()}")
+            logger.debug(f"Response body: {body.decode()}")
             response = Response(
                 content=body,
                 status_code=resp.status_code,
@@ -78,7 +83,7 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
                 response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
             return response
         except Exception as e:
-            print(f"Error proxying request: {str(e)}")
+            logger.error(f"Error proxying request: {str(e)}")
             error_response = Response(
                 content=str(e).encode(),
                 status_code=500,
@@ -257,11 +262,11 @@ async def proxy_webhooks(request: StarletteRequest, full_path: str):
 
 @app.api_route("/api/user/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_user(request: StarletteRequest, full_path: str):
-    print(f"[DEBUG] proxy_user called with full_path: {full_path}")
+    logger.info(f"[DEBUG] proxy_user called with full_path: {full_path}")
     path = f"/api/user/{full_path}"
     return await proxy(request, USER_SERVICE_URL, path)
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def catch_all(request: StarletteRequest, full_path: str):
-    print(f"[DEBUG] catch_all called with full_path: {full_path}")
+    logger.info(f"[DEBUG] catch_all called with full_path: {full_path}")
     return Response(content="Catch-all route hit", status_code=200)
