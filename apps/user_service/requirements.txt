@@ -8,4 +8,5 @@ granian
 fastapi
 pydantic
 uvicorn[standard]
-email-validator 
+email-validator
+PyJWT>=2.0 
