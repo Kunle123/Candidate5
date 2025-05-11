@@ -9,8 +9,6 @@ import logging
 from sqlalchemy.orm import Session
 from .models import UserProfile as UserProfileORM
 from .db import get_db
-from fastapi.security import OAuth2PasswordBearer
-import jwt
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -115,16 +113,9 @@ ADMIN_USER_ID = "50a5cb6e-6129-4f19-84cc-7afd6eab4363"  # Replace with your actu
 
 INTER_SERVICE_SECRET = os.getenv("INTER_SERVICE_SECRET", "")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
-JWT_SECRET = os.getenv("JWT_SECRET", "development_secret_key")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        return payload.get("id")  # Use 'id' as in your JWT
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
+def get_current_user():
+    # Dummy user for demo
+    return "demo_user_id"
 
 def get_admin_user(user_id: str = Depends(get_current_user)):
     if user_id != ADMIN_USER_ID:
