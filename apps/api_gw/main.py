@@ -49,6 +49,8 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
     print(f"Proxying request: {method} {url}")
     print(f"Headers: {headers}")
     print(f"Query params: {request.query_params}")
+    if method in ["POST", "PUT"]:
+        print(f"Body: {data.decode()}")
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.request(
