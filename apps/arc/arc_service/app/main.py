@@ -544,4 +544,74 @@ if openai_api_key_startup:
 else:
     print("OPENAI_API_KEY at startup: None")
 
+# --- Career Ark Endpoints ---
+
+# In-memory user data for demo
+career_ark_data = {}
+
+def get_user_ark(user_id):
+    if user_id not in career_ark_data:
+        career_ark_data[user_id] = {
+            "work_experience": [],
+            "education": [],
+            "training": []
+        }
+    return career_ark_data[user_id]
+
+@router.get("")
+async def get_all_arc_data(user_id: str = Depends(get_current_user)):
+    """Fetch all career data for the logged-in user."""
+    return get_user_ark(user_id)
+
+@router.post("/work_experience")
+async def add_work_experience(entry: dict = Body(...), user_id: str = Depends(get_current_user)):
+    ark = get_user_ark(user_id)
+    entry = dict(entry)
+    entry["id"] = str(uuid4())
+    ark["work_experience"].append(entry)
+    return entry
+
+@router.post("/education")
+async def add_education(entry: dict = Body(...), user_id: str = Depends(get_current_user)):
+    ark = get_user_ark(user_id)
+    entry = dict(entry)
+    entry["id"] = str(uuid4())
+    ark["education"].append(entry)
+    return entry
+
+@router.post("/training")
+async def add_training(entry: dict = Body(...), user_id: str = Depends(get_current_user)):
+    ark = get_user_ark(user_id)
+    entry = dict(entry)
+    entry["id"] = str(uuid4())
+    ark["training"].append(entry)
+    return entry
+
+@router.patch("/work_experience/{id}")
+async def update_work_experience(id: str, update: dict = Body(...), user_id: str = Depends(get_current_user)):
+    ark = get_user_ark(user_id)
+    for entry in ark["work_experience"]:
+        if entry["id"] == id:
+            entry.update(update)
+            return entry
+    raise HTTPException(status_code=404, detail="Work experience not found")
+
+@router.patch("/education/{id}")
+async def update_education(id: str, update: dict = Body(...), user_id: str = Depends(get_current_user)):
+    ark = get_user_ark(user_id)
+    for entry in ark["education"]:
+        if entry["id"] == id:
+            entry.update(update)
+            return entry
+    raise HTTPException(status_code=404, detail="Education not found")
+
+@router.patch("/training/{id}")
+async def update_training(id: str, update: dict = Body(...), user_id: str = Depends(get_current_user)):
+    ark = get_user_ark(user_id)
+    for entry in ark["training"]:
+        if entry["id"] == id:
+            entry.update(update)
+            return entry
+    raise HTTPException(status_code=404, detail="Training not found")
+
 app.include_router(router) 
