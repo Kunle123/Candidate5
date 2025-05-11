@@ -7,6 +7,7 @@ import jwt
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.responses import FileResponse
 
 # Create FastAPI app
 app = FastAPI(title="CandidateV CV Service")
@@ -328,10 +329,31 @@ async def get_template(template_id: str, auth: dict = Depends(verify_token)):
     return MOCK_TEMPLATES[template_id]
 
 @app.get("/api/cv", response_model=List[CV])
-async def get_cvs(auth: dict = Depends(verify_token)):
-    """Get all CVs for the current user."""
+async def get_cvs(
+    auth: dict = Depends(verify_token),
+    limit: Optional[int] = Query(None, description="Limit the number of CVs returned"),
+    source: Optional[str] = Query(None, description="Filter by CV creation source (e.g., 'wizard')")
+):
+    """Get all CVs for the current user, with optional filtering and limiting."""
     user_id = auth["user_id"]
-    return get_user_cvs(user_id)
+    cvs = get_user_cvs(user_id)
+
+    # Filter by source (stub: assume all CVs are from 'wizard' for now)
+    if source:
+        # If you later add a 'source' field to CV, filter here
+        if source == "wizard":
+            cvs = cvs  # All are from wizard in this mock
+        else:
+            cvs = []  # No other sources in mock
+
+    # Sort by created_at descending (most recent first)
+    cvs = sorted(cvs, key=lambda cv: cv.created_at, reverse=True)
+
+    # Apply limit
+    if limit is not None:
+        cvs = cvs[:limit]
+
+    return cvs
 
 @app.post("/api/cv", response_model=CV, status_code=status.HTTP_201_CREATED)
 async def create_cv(cv_data: CVCreate, auth: dict = Depends(verify_token)):
@@ -589,6 +611,14 @@ async def duplicate_cv(
     MOCK_CVS[user_id][new_cv_id] = new_cv
     
     return new_cv
+
+@app.get("/api/cv/{cv_id}/download")
+async def download_cv(cv_id: str):
+    # Assume generated CVs are stored as RTF files in 'generated_cvs/{cv_id}.rtf'
+    file_path = os.path.join("generated_cvs", f"{cv_id}.rtf")
+    if not os.path.exists(file_path):
+        return {"detail": "CV file not found"}, 404
+    return FileResponse(file_path, filename=f"cv_{cv_id}.rtf", media_type="application/rtf")
 
 # For testing and development
 if __name__ == "__main__":
