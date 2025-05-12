@@ -707,4 +707,8 @@ async def update_training(id: str, update: dict = Body(...), user_id: str = Depe
             return entry
     raise HTTPException(status_code=404, detail="Training not found")
 
+@app.get("/debug/ai-parse-error")
+def get_ai_parse_error_file():
+    return FileResponse("ai_parse_error_output.txt", media_type="text/plain")
+
 app.include_router(router) 
