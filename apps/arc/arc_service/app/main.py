@@ -17,6 +17,7 @@ from .db import SessionLocal
 import tiktoken
 import jwt
 from fastapi.middleware.cors import CORSMiddleware
+import itertools
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -260,13 +261,53 @@ def ensure_list_fields(data):
                     role[field] = [s.strip() for s in role[field].split(",") if s.strip()]
     return data
 
-def parse_cv_with_ai(text: str) -> ArcData:
+SECTION_HEADERS = [
+    r"work experience", r"professional experience", r"employment history",
+    r"education", r"academic background",
+    r"skills", r"technical skills",
+    r"projects", r"certifications", r"training"
+]
+
+section_header_regex = re.compile(rf"^({'|'.join(SECTION_HEADERS)})[:\s]*$", re.IGNORECASE | re.MULTILINE)
+
+def split_cv_by_sections(text):
+    # Find all section headers and their positions
+    matches = list(section_header_regex.finditer(text))
+    if not matches:
+        return [("full", text)]
+    sections = []
+    for i, match in enumerate(matches):
+        start = match.start()
+        header = match.group(1).strip().lower()
+        end = matches[i+1].start() if i+1 < len(matches) else len(text)
+        section_text = text[start:end].strip()
+        sections.append((header, section_text))
+    return sections
+
+def chunk_work_experience_section(section_text, max_chunk_chars=3000):
+    # Split by job entries (simple heuristic: lines with years or company names)
+    jobs = re.split(r"\n(?=\s*\S.*(\d{4}|company|employer|position|role))", section_text, flags=re.IGNORECASE)
+    # Further chunk if needed
+    chunks = []
+    current = ""
+    for job in jobs:
+        if len(current) + len(job) > max_chunk_chars and current:
+            chunks.append(current)
+            current = job
+        else:
+            current += ("\n" if current else "") + job
+    if current:
+        chunks.append(current)
+    return chunks
+
+def parse_cv_with_ai_chunk(text):
+    # Use the existing parse_cv_with_ai logic, but for a single chunk
+    # (Copy the body of parse_cv_with_ai here, but without token truncation logic)
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if not openai_api_key:
         logger.error("OpenAI API key not set in environment variables.")
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
-    # Improved prompt for robust extraction
     prompt_instructions = (
         "You are an expert CV parser. Extract all unique, detailed information from this CV text as a JSON object. "
         "Handle a wide variety of CV formats, layouts, and section names. "
@@ -280,36 +321,22 @@ def parse_cv_with_ai(text: str) -> ArcData:
         "Do NOT summarise, merge, or omit ANY unique bullet point or achievement. If an item is unique, keep it as a separate bullet point, even if it is similar to others.\n\n"
         "CV Text:\n"
     )
-    # Use tiktoken to count tokens
-    import tiktoken
-    model_name = "gpt-3.5-turbo-1106"
-    max_context_tokens = 16385
-    reserved_response_tokens = 1800
-    enc = tiktoken.encoding_for_model(model_name)
-    instr_tokens = len(enc.encode(prompt_instructions))
-    available_tokens = max_context_tokens - reserved_response_tokens - instr_tokens
-    cv_text_tokens = enc.encode(text)
-    if len(cv_text_tokens) > available_tokens:
-        cv_text_tokens = cv_text_tokens[:available_tokens]
-    truncated_cv_text = enc.decode(cv_text_tokens)
-    prompt = prompt_instructions + truncated_cv_text
+    prompt = prompt_instructions + text
     try:
         response = client.chat.completions.create(
-            model=model_name,
+            model="gpt-3.5-turbo-1106",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=reserved_response_tokens,
+            max_tokens=1800,
             temperature=0.2,
             response_format={"type": "json_object"}
         )
         import json
         try:
             data = json.loads(response.choices[0].message.content)
-            # Ensure list fields are correct
             data = ensure_list_fields(data)
         except Exception as e:
             logger.error(f"AI parsing failed: {e}")
             logger.error(f"Raw response: {response.choices[0].message.content}")
-            # Fallback: try to extract JSON object from the response
             match = re.search(r'\{.*\}', response.choices[0].message.content, re.DOTALL)
             if match:
                 try:
@@ -317,7 +344,6 @@ def parse_cv_with_ai(text: str) -> ArcData:
                     data = ensure_list_fields(data)
                 except Exception as e2:
                     logger.error(f"Fallback JSON parse also failed: {e2}")
-                    # Save raw output to a file for manual inspection
                     try:
                         with open("ai_parse_error_output.txt", "w", encoding="utf-8") as f:
                             f.write(response.choices[0].message.content)
@@ -326,7 +352,6 @@ def parse_cv_with_ai(text: str) -> ArcData:
                         logger.error(f"Failed to save raw AI output: {file_err}")
                     data = {}
             else:
-                # Save raw output to a file for manual inspection
                 try:
                     with open("ai_parse_error_output.txt", "w", encoding="utf-8") as f:
                         f.write(response.choices[0].message.content)
@@ -334,7 +359,6 @@ def parse_cv_with_ai(text: str) -> ArcData:
                 except Exception as file_err:
                     logger.error(f"Failed to save raw AI output: {file_err}")
                 data = {}
-        # Fallback: convert string entries in education, projects, certifications to objects
         for key in ["education", "projects", "certifications"]:
             if key in data and isinstance(data[key], list):
                 new_list = []
@@ -348,6 +372,24 @@ def parse_cv_with_ai(text: str) -> ArcData:
     except Exception as e:
         logger.error(f"AI parsing failed: {e}")
         raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
+
+def parse_cv_with_ai(text: str) -> ArcData:
+    # Split by section headers
+    sections = split_cv_by_sections(text)
+    arc_datas = []
+    for header, section_text in sections:
+        if header in ["work experience", "professional experience", "employment history"]:
+            # Further chunk work experience if needed
+            work_chunks = chunk_work_experience_section(section_text)
+            for chunk in work_chunks:
+                arc_datas.append(parse_cv_with_ai_chunk(chunk))
+        else:
+            arc_datas.append(parse_cv_with_ai_chunk(section_text))
+    # Merge all ArcData objects
+    merged = arc_datas[0] if arc_datas else ArcData()
+    for arc_data in arc_datas[1:]:
+        merged = merge_arc_data(merged, arc_data)
+    return merged
 
 # --- Dependency: Database Session ---
 def get_db():
