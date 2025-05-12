@@ -55,7 +55,14 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
     logger.debug(f"Headers: {headers}")
     logger.debug(f"Query params: {request.query_params}")
     if method in ["POST", "PUT"]:
-        logger.debug(f"Body: {data.decode()}")
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type or "text" in content_type:
+            try:
+                logger.debug(f"Body: {data.decode('utf-8')}")
+            except UnicodeDecodeError:
+                logger.debug("Body: [unreadable text data]")
+        else:
+            logger.debug("Body: [binary or multipart data not logged]")
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.request(
