@@ -317,8 +317,22 @@ def parse_cv_with_ai(text: str) -> ArcData:
                     data = ensure_list_fields(data)
                 except Exception as e2:
                     logger.error(f"Fallback JSON parse also failed: {e2}")
+                    # Save raw output to a file for manual inspection
+                    try:
+                        with open("ai_parse_error_output.txt", "w", encoding="utf-8") as f:
+                            f.write(response.choices[0].message.content)
+                        logger.error("Raw AI output saved to ai_parse_error_output.txt for debugging.")
+                    except Exception as file_err:
+                        logger.error(f"Failed to save raw AI output: {file_err}")
                     data = {}
             else:
+                # Save raw output to a file for manual inspection
+                try:
+                    with open("ai_parse_error_output.txt", "w", encoding="utf-8") as f:
+                        f.write(response.choices[0].message.content)
+                    logger.error("Raw AI output saved to ai_parse_error_output.txt for debugging.")
+                except Exception as file_err:
+                    logger.error(f"Failed to save raw AI output: {file_err}")
                 data = {}
         # Fallback: convert string entries in education, projects, certifications to objects
         for key in ["education", "projects", "certifications"]:
