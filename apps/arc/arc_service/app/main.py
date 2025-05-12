@@ -305,7 +305,7 @@ def count_tokens(text, model="gpt-3.5-turbo"):
     enc = tiktoken.encoding_for_model(model)
     return len(enc.encode(text))
 
-def chunk_texts_by_tokens(texts, max_tokens=4000, model="gpt-3.5-turbo"):
+def chunk_texts_by_tokens(texts, max_tokens=1500, model="gpt-3.5-turbo"):
     """
     Group a list of texts (e.g., jobs or sections) into chunks not exceeding max_tokens.
     If a single text exceeds max_tokens, split it by paragraphs.
@@ -415,12 +415,12 @@ def parse_cv_with_ai(text: str) -> ArcData:
                 # Split work experience into jobs (by job entries)
                 jobs = re.split(r"\n(?=\s*\S.*(\d{4}|company|employer|position|role))", section_text, flags=re.IGNORECASE)
                 # Chunk jobs by tokens
-                job_chunks = chunk_texts_by_tokens(jobs, max_tokens=4000)
+                job_chunks = chunk_texts_by_tokens(jobs, max_tokens=1500)
                 for chunk in job_chunks:
                     futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
             else:
                 # For other sections, chunk if needed
-                section_chunks = chunk_texts_by_tokens([section_text], max_tokens=4000)
+                section_chunks = chunk_texts_by_tokens([section_text], max_tokens=1500)
                 for chunk in section_chunks:
                     futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
         for future in as_completed(futures):
