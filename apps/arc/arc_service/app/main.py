@@ -351,7 +351,10 @@ def parse_cv_with_ai_chunk(text):
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
     prompt_instructions = (
-        "You are an expert CV parser. Extract all unique, detailed information from this CV text as a JSON object. "
+        "You are an expert CV parser. Extract ALL unique, detailed information from this CV text as a JSON object. "
+        "Do NOT summarize, abbreviate, or omit any bullet point, sentence, or achievement. "
+        "For each work experience, return every unique bullet point, even if similar to others. "
+        "Return all information in full detail, with no merging or summarization. "
         "Handle a wide variety of CV formats, layouts, and section names. "
         "Use UK English spelling and conventions throughout. "
         "All property names and string values must be enclosed in double quotes. Do not use single quotes or omit quotes. "
