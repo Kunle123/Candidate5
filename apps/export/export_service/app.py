@@ -8,7 +8,7 @@ from app.routes import router as export_router
 from app.export_manager import ExportManager
 
 # Environment variables
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost,http://localhost:3000,https://candidatev.vercel.app").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,https://c5-frontend-pied.vercel.app").split(",")
 
 # Create FastAPI app
 app = FastAPI(title="CandidateV Export Service")
