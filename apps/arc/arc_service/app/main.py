@@ -18,6 +18,7 @@ import tiktoken
 import jwt
 from fastapi.middleware.cors import CORSMiddleware
 import itertools
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -300,6 +301,37 @@ def chunk_work_experience_section(section_text, max_chunk_chars=3000):
         chunks.append(current)
     return chunks
 
+def count_tokens(text, model="gpt-3.5-turbo"):
+    enc = tiktoken.encoding_for_model(model)
+    return len(enc.encode(text))
+
+def chunk_texts_by_tokens(texts, max_tokens=4000, model="gpt-3.5-turbo"):
+    """
+    Group a list of texts (e.g., jobs or sections) into chunks not exceeding max_tokens.
+    If a single text exceeds max_tokens, split it by paragraphs.
+    """
+    chunks = []
+    current_chunk = []
+    current_tokens = 0
+    for text in texts:
+        tokens = count_tokens(text, model)
+        if tokens > max_tokens:
+            # Split this text further by paragraphs
+            paras = text.split("\n\n")
+            para_chunks = chunk_texts_by_tokens(paras, max_tokens, model)
+            chunks.extend(para_chunks)
+            continue
+        if current_tokens + tokens > max_tokens and current_chunk:
+            chunks.append(current_chunk)
+            current_chunk = [text]
+            current_tokens = tokens
+        else:
+            current_chunk.append(text)
+            current_tokens += tokens
+    if current_chunk:
+        chunks.append(current_chunk)
+    return ["\n\n".join(chunk) for chunk in chunks]
+
 def parse_cv_with_ai_chunk(text):
     # Use the existing parse_cv_with_ai logic, but for a single chunk
     # (Copy the body of parse_cv_with_ai here, but without token truncation logic)
@@ -374,17 +406,25 @@ def parse_cv_with_ai_chunk(text):
         raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
 
 def parse_cv_with_ai(text: str) -> ArcData:
-    # Split by section headers
     sections = split_cv_by_sections(text)
     arc_datas = []
-    for header, section_text in sections:
-        if header in ["work experience", "professional experience", "employment history"]:
-            # Further chunk work experience if needed
-            work_chunks = chunk_work_experience_section(section_text)
-            for chunk in work_chunks:
-                arc_datas.append(parse_cv_with_ai_chunk(chunk))
-        else:
-            arc_datas.append(parse_cv_with_ai_chunk(section_text))
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for header, section_text in sections:
+            if header in ["work experience", "professional experience", "employment history"]:
+                # Split work experience into jobs (by job entries)
+                jobs = re.split(r"\n(?=\s*\S.*(\d{4}|company|employer|position|role))", section_text, flags=re.IGNORECASE)
+                # Chunk jobs by tokens
+                job_chunks = chunk_texts_by_tokens(jobs, max_tokens=4000)
+                for chunk in job_chunks:
+                    futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
+            else:
+                # For other sections, chunk if needed
+                section_chunks = chunk_texts_by_tokens([section_text], max_tokens=4000)
+                for chunk in section_chunks:
+                    futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
+        for future in as_completed(futures):
+            arc_datas.append(future.result())
     # Merge all ArcData objects
     merged = arc_datas[0] if arc_datas else ArcData()
     for arc_data in arc_datas[1:]:
