@@ -180,12 +180,29 @@ def merge_arc_data(existing: ArcData, new: ArcData) -> ArcData:
                     result.append(item_dict)
         return result
 
+    def merge_work_experience(existing_list, new_list):
+        # Index existing jobs by (company, title, start_date, end_date)
+        job_key = lambda job: (
+            job.get("company"), job.get("title"), job.get("start_date"), job.get("end_date")
+        )
+        existing_jobs = {job_key(job): dict(job) for job in existing_list or []}
+        for new_job in new_list or []:
+            key = job_key(new_job)
+            if key in existing_jobs:
+                # Merge bullet points (successes)
+                existing_successes = set(existing_jobs[key].get("successes", []) or [])
+                new_successes = set(new_job.get("successes", []) or [])
+                merged_successes = list(existing_successes.union(new_successes))
+                existing_jobs[key]["successes"] = merged_successes
+                # Optionally merge other fields (e.g., description, skills, training) if needed
+            else:
+                existing_jobs[key] = dict(new_job)
+        return list(existing_jobs.values())
+
     return ArcData(
-        work_experience=dedup_list_of_dicts(
+        work_experience=merge_work_experience(
             getattr(existing, 'work_experience', []),
-            getattr(new, 'work_experience', []),
-            key_fields=["company", "title", "start_date", "end_date"],
-            bullet_fields=["successes"]
+            getattr(new, 'work_experience', [])
         ),
         education=dedup_list_of_dicts(
             getattr(existing, 'education', []),
