@@ -139,7 +139,7 @@ def merge_arc_data(existing: ArcData, new: ArcData) -> ArcData:
     - Only add new, unique entries.
     - ArcData should only ever be deleted by an explicit admin or user delete function (not implemented here).
     """
-    def dedup_list_of_dicts(existing_list, new_list, key_fields):
+    def dedup_list_of_dicts(existing_list, new_list, key_fields, bullet_fields=None):
         if not existing_list:
             existing_list = []
         if not new_list:
@@ -154,18 +154,38 @@ def merge_arc_data(existing: ArcData, new: ArcData) -> ArcData:
                 item_dict = item
             if isinstance(item_dict, dict):
                 key = tuple(item_dict.get(f) for f in key_fields)
+                # If bullet_fields are specified, include each bullet point in the key
+                if bullet_fields:
+                    for bullet_field in bullet_fields:
+                        if bullet_field in item_dict and isinstance(item_dict[bullet_field], list):
+                            for bullet in item_dict[bullet_field]:
+                                bullet_key = key + (bullet,)
+                                if bullet_key not in seen:
+                                    seen.add(bullet_key)
+                                    # Add a copy of the item with only this bullet
+                                    item_copy = dict(item_dict)
+                                    item_copy[bullet_field] = [bullet]
+                                    result.append(item_copy)
+                        else:
+                            if key not in seen:
+                                seen.add(key)
+                                result.append(item_dict)
+                else:
+                    if key not in seen:
+                        seen.add(key)
+                        result.append(item_dict)
             else:
-                key = item_dict
-            if key not in seen:
-                seen.add(key)
-                result.append(item)
+                if item_dict not in seen:
+                    seen.add(item_dict)
+                    result.append(item_dict)
         return result
 
     return ArcData(
         work_experience=dedup_list_of_dicts(
             getattr(existing, 'work_experience', []),
             getattr(new, 'work_experience', []),
-            key_fields=["company", "title", "start_date", "end_date"]
+            key_fields=["company", "title", "start_date", "end_date"],
+            bullet_fields=["successes"]
         ),
         education=dedup_list_of_dicts(
             getattr(existing, 'education', []),
@@ -238,9 +258,9 @@ def parse_cv_with_ai(text: str) -> ArcData:
         "Return ONLY valid JSON, with no extra text, comments, or explanations.\n"
         "The JSON should have a 'work_experience' array (each item: company, title, start_date, end_date, description, successes, skills, training), "
         "an 'education' array (each item: institution, degree, year), 'skills' (array of strings), 'projects' (array of objects), and 'certifications' (array of objects).\n"
-        "For each work experience, extract as much detail as possible, including achievements and unique sentences.\n"
+        "For each work experience, extract as much detail as possible, including ALL achievements, bullet points, and unique sentences.\n"
         "If the CV uses non-standard section names or order, do your best to map them to the correct fields.\n"
-        "Do NOT summarise or omit any unique information. If an item is unique, keep it.\n\n"
+        "Do NOT summarise, merge, or omit ANY unique bullet point or achievement. If an item is unique, keep it as a separate bullet point, even if it is similar to others.\n\n"
         "CV Text:\n"
     )
     # Use tiktoken to count tokens
