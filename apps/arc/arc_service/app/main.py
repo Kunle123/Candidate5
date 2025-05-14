@@ -553,7 +553,7 @@ Instructions:
 13. Adjust the order of sections for maximum relevance.
 14. Generate a targeted cover letter that matches the tailored CV.
 
-Return ONLY a JSON object with two properties: "cv" (the tailored CV as a string) and "coverLetter" (the cover letter as a string). Do not return any other fields, explanations, or extra text. All property names and string values must be enclosed in double quotes.
+Return ONLY a JSON object with two properties: "cv" (the tailored CV as a string) and "coverLetter" (the cover letter as a string). The "coverLetter" property must contain exactly one, complete cover letter, and must not contain more than one. Do not return any other fields, explanations, or extra text. All property names and string values must be enclosed in double quotes.
 
 Job Posting:
 {req.jobAdvert[:4000]}
