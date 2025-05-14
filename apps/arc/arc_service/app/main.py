@@ -588,62 +588,20 @@ You are an expert CV and cover letter writer. Your task is to generate a profess
 {{User specifies desired CV length, e.g., "2 pages"}}
 [END SUGGESTED CV LENGTH])
 
+**Respond ONLY in valid JSON format as described below.**
+
 **Output Format Request:**
 
-Please provide the generated CV first, clearly demarcated, followed by the cover letter, also clearly demarcated.
+Return a single JSON object with two properties:
+- "cv": The generated CV as a string, clearly demarcated with [START CV] and [END CV].
+- "coverLetter": The generated cover letter as a string, clearly demarcated with [START COVER LETTER] and [END COVER LETTER].
 
 Example:
 
-[START CV]
-
-**[Applicant Name]**
-[Phone Number] | [Email Address] | [LinkedIn Profile URL if provided in history]
-
-**Summary**
-(If applicable, a concise summary tailored to the job posting, based on career history.)
-
-**Work Experience**
-
-**[Most Recent Job Title]** | [Company Name] | [Dates of Employment]
-*   [Responsibility/Achievement 1, optimized with keywords if factually supported]
-*   [Responsibility/Achievement 2, optimized with keywords if factually supported]
-
-**[Previous Job Title]** | [Company Name] | [Dates of Employment]
-*   [Responsibility/Achievement 1, optimized with keywords if factually supported]
-
-(Continue for all roles)
-
-**Education**
-(Details from career history)
-
-**Skills**
-(Skills derived from career history, relevant to job posting)
-
-[END CV]
-
-
-[START COVER LETTER]
-
-[Date]
-
-[Hiring Manager Name, if known, otherwise use title like "Hiring Team"]
-[Company Name]
-[Company Address]
-
-Dear [Mr./Ms./Mx. Hiring Manager Name or Hiring Team],
-
-I am writing to express my enthusiastic interest in the [Job Title] position at [Company Name], as advertised on [Platform where job was seen, if mentioned in job posting, otherwise omit this part]. With my extensive experience in [mention 1-2 key areas from career history relevant to job posting], as detailed in my career history, I am confident I possess the skills and qualifications necessary to excel in this role and contribute significantly to your team.
-
-In my previous role as [Previous Job Title] at [Previous Company], I was responsible for [mention a key responsibility/achievement from career history that aligns with job posting, using keywords if factually supported]. For instance, [provide a specific example if career history supports it]. This experience has equipped me with [mention specific skills relevant to the job posting, e.g., "strong analytical skills", "project management capabilities"], which are directly applicable to the requirements of this position.
-
-Furthermore, my background in [mention another relevant area from career history] has allowed me to [mention another key achievement/skill that aligns with job posting, using keywords if factually supported]. I am particularly drawn to [Company Name]'s commitment to [mention something specific about the company from the job posting or that can be reasonably inferred as a general positive attribute, e.g., "innovation", "customer satisfaction"] and believe my proactive approach and dedication to [mention a relevant value, e.g., "achieving results"] would make me a valuable asset.
-
-My resume provides further detail on my accomplishments. I am eager to discuss how my skills and experience align with the needs of [Company Name]. Thank you for your time and consideration.
-
-Sincerely,
-[Applicant Name]
-
-[END COVER LETTER]
+{
+  "cv": "[START CV]\n...CV content...\n[END CV]",
+  "coverLetter": "[START COVER LETTER]\n...cover letter content...\n[END COVER LETTER]"
+}
 
 **Final Check:** Before outputting, please ensure all constraints, especially regarding factual accuracy from the career history and the avoidance of placeholder text (except for the applicant's contact details in the CV header), have been strictly followed.
 """
