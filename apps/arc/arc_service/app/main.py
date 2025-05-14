@@ -537,6 +537,8 @@ async def generate_materials(req: GenerateRequest, user_id: str = Depends(get_cu
     prompt = f"""
 You are an expert CV and cover letter writer. Your task is to generate a professional, optimized CV and a tailored cover letter for an applicant based on their provided career history and a specific job posting. Follow these instructions meticulously:
 
+**Your response MUST be a single valid JSON object.**
+
 **Overall Constraints:**
 1.  **Factual Accuracy:** You MUST only use factual information explicitly stated in the provided "Applicant Career History". Do NOT infer, embellish, or invent any information, skills, experiences, or timelines.
 2.  **No Hallucination:** Absolutely no placeholder text (e.g., "[Insert Skill Here]", "[Company Name]") is allowed in the final CV or cover letter. Both documents must be in a ready-to-send state.
@@ -588,16 +590,11 @@ You are an expert CV and cover letter writer. Your task is to generate a profess
 {{User specifies desired CV length, e.g., "2 pages"}}
 [END SUGGESTED CV LENGTH])
 
-**Respond ONLY in valid JSON format as described below.**
-
-**Output Format Request:**
-
-Return a single JSON object with two properties:
+**Return a JSON object with two properties:**
 - "cv": The generated CV as a string, clearly demarcated with [START CV] and [END CV].
 - "coverLetter": The generated cover letter as a string, clearly demarcated with [START COVER LETTER] and [END COVER LETTER].
 
 Example:
-
 {
   "cv": "[START CV]\n...CV content...\n[END CV]",
   "coverLetter": "[START COVER LETTER]\n...cover letter content...\n[END COVER LETTER]"
