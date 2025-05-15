@@ -595,10 +595,10 @@ You are an expert CV and cover letter writer. Your task is to generate a profess
 - "coverLetter": The generated cover letter as a string, clearly demarcated with [START COVER LETTER] and [END COVER LETTER].
 
 Example:
-{
+{{
   "cv": "[START CV]\n...CV content...\n[END CV]",
   "coverLetter": "[START COVER LETTER]\n...cover letter content...\n[END COVER LETTER]"
-}
+}}
 
 **Final Check:** Before outputting, please ensure all constraints, especially regarding factual accuracy from the career history and the avoidance of placeholder text (except for the applicant's contact details in the CV header), have been strictly followed.
 """
