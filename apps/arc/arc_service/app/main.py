@@ -611,8 +611,10 @@ Example:
             response_format={"type": "json_object"}
         )
         import json
+        logger.info(f"Raw OpenAI response: {response.choices[0].message.content}")
         try:
             data = json.loads(response.choices[0].message.content)
+            logger.info(f"Parsed OpenAI data: {data}")
             # Defensive: Ensure both 'cv' and 'coverLetter' are present and are strings
             if not (isinstance(data, dict) and isinstance(data.get("cv"), str) and isinstance(data.get("coverLetter"), str)):
                 logger.error(f"AI CV/cover letter response missing required fields. Raw response: {response.choices[0].message.content}")
@@ -624,6 +626,7 @@ Example:
             if match:
                 try:
                     data = json.loads(match.group(0))
+                    logger.info(f"Parsed OpenAI data (fallback): {data}")
                     if not (isinstance(data, dict) and isinstance(data.get("cv"), str) and isinstance(data.get("coverLetter"), str)):
                         logger.error(f"AI CV/cover letter response missing required fields (fallback). Raw response: {response.choices[0].message.content}")
                         raise HTTPException(status_code=500, detail="AI did not return the expected cv and coverLetter fields (fallback).")
@@ -634,7 +637,7 @@ Example:
                 raise HTTPException(status_code=500, detail="AI CV/cover letter generation failed: No JSON object found in response.")
         return GenerateResponse(**data)
     except Exception as e:
-        logger.error(f"AI CV/cover letter generation failed: {e}")
+        logger.error(f"AI CV/cover letter generation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"AI CV/cover letter generation failed: {e}")
 
 # --- Endpoint: Download Processed CV or Extracted Data ---
