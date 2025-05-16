@@ -384,6 +384,8 @@ def parse_cv_with_ai_chunk(text):
             temperature=0.2,
             response_format={"type": "json_object"}
         )
+        # Optionally log the raw AI output for debugging in Railway logs
+        logger.info(f"Raw AI output: {response.choices[0].message.content}")
         import json
         try:
             data = json.loads(response.choices[0].message.content)
@@ -483,19 +485,17 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
     # Deduplicate and merge with existing data from DB
     db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
     if db_obj:
-        existing = ArcData(**db_obj.arc_data)
-        merged = merge_arc_data(existing, new_arc_data)
-        db_obj.arc_data = merged.dict()
+        # For testing: disable deduplication/merging, just overwrite with new data
+        db_obj.arc_data = new_arc_data.dict()
     else:
-        merged = new_arc_data
-        db_obj = UserArcData(user_id=user_id, arc_data=merged.dict())
+        db_obj = UserArcData(user_id=user_id, arc_data=new_arc_data.dict())
         db.add(db_obj)
     db.commit()
     db.refresh(db_obj)
     tasks[task_id] = {
         "status": "completed",
         "user_id": user_id,
-        "extractedDataSummary": {"workExperienceCount": len(merged.work_experience or []), "skillsFound": len(merged.skills or [])}
+        "extractedDataSummary": {"workExperienceCount": len(new_arc_data.work_experience or []), "skillsFound": len(new_arc_data.skills or [])}
     }
     return {"taskId": task_id}
 
