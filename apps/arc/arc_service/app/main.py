@@ -261,16 +261,30 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
 
 def extract_text_from_pdf(file: UploadFile):
-    with pdfplumber.open(file.file) as pdf:
-        text = "\n".join(page.extract_text() or "" for page in pdf.pages)
-    file.file.seek(0)
-    return text
+    try:
+        with pdfplumber.open(file.file) as pdf:
+            text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+        file.file.seek(0)
+        if not text.strip():
+            logger.error("[PDF EXTRACT] No text extracted from PDF file.")
+        return text
+    except Exception as e:
+        logger.error(f"[PDF EXTRACT] Exception during PDF extraction: {e}")
+        file.file.seek(0)
+        return ""
 
 def extract_text_from_docx(file: UploadFile):
-    doc = Document(file.file)
-    text = "\n".join([para.text for para in doc.paragraphs])
-    file.file.seek(0)
-    return text
+    try:
+        doc = Document(file.file)
+        text = "\n".join([para.text for para in doc.paragraphs])
+        file.file.seek(0)
+        if not text.strip():
+            logger.error("[DOCX EXTRACT] No text extracted from DOCX file.")
+        return text
+    except Exception as e:
+        logger.error(f"[DOCX EXTRACT] Exception during DOCX extraction: {e}")
+        file.file.seek(0)
+        return ""
 
 # --- Helper: Ensure List Fields in ArcData ---
 def ensure_list_fields(data):
