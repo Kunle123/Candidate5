@@ -368,6 +368,7 @@ def parse_cv_with_ai_chunk(text):
         "CV Text:\n"
     )
     prompt = prompt_instructions + text
+    logger.info(f"[AI CHUNK] Raw text sent to OpenAI for this chunk:\n{text}")
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo-1106",
@@ -376,8 +377,7 @@ def parse_cv_with_ai_chunk(text):
             temperature=0.2,
             response_format={"type": "json_object"}
         )
-        # Optionally log the raw AI output for debugging in Railway logs
-        logger.info(f"Raw AI output: {response.choices[0].message.content}")
+        logger.info(f"[AI CHUNK] Raw AI output for this chunk: {response.choices[0].message.content}")
         import json
         try:
             data = json.loads(response.choices[0].message.content)
