@@ -684,7 +684,7 @@ async def extract_keywords(req: KeywordsRequest, user_id: str = Depends(get_curr
         logger.error("OpenAI API key not set in environment variables.")
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
-    prompt = f"""Extract up to 20 of the most important recruiter-focused keywords from the following job description.
+    prompt = f'''Extract up to 20 of the most important recruiter-focused keywords from the following job description.
 Use UK English spelling and conventions throughout (e.g., 'organisation' not 'organization', 'specialise' not 'specialize').
 Return ONLY a JSON object with a single property 'keywords', which is an array of keywords, and no extra text, comments, or explanations.
 
@@ -702,9 +702,9 @@ Do NOT include:
 - Filler words, articles, or prepositions
 
 Format your response as a valid JSON object with this exact structure:
-{
+{{
   "keywords": ["keyword1", "keyword2", "keyword3", ...]
-}
+}}
 
 Ensure all keywords:
 - Use UK English spelling conventions
@@ -713,7 +713,7 @@ Ensure all keywords:
 - Would be valuable for a CV or application targeting this specific role
 
 Job Description:
-{req.jobDescription[:4000]}"""
+{req.jobDescription[:4000]}'''
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo-1106",
