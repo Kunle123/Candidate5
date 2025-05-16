@@ -553,6 +553,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         else:
             logger.error(f"Unsupported file type uploaded: {filename}")
             raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
+        logger.info(f"[CV UPLOAD] Extracted text from file:\n{text}")
         new_arc_data = parse_cv_with_ai(text)
     except Exception as e:
         logger.error(f"Error in /cv upload endpoint: {e}")
