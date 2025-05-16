@@ -364,6 +364,7 @@ def parse_cv_with_ai_chunk(text):
         "Do NOT summarize, abbreviate, or omit any information, regardless of how it is formatted (paragraphs, bullet points, sentences, etc.).\n"
         "For each work experience, extract EVERY piece of information including responsibilities, achievements, and descriptions in their original detail.\n"
         "Handle a wide variety of CV formats, layouts, and section names.\n"
+        "If the same company, title, and dates appear in both a 'Relevant Achievements' section and the main work experience section (or any other section), COMBINE all information (bullets, descriptions, achievements) into a single work experience entry. Do not create duplicates.\n"
         "Use UK English spelling and conventions throughout.\n"
         "All property names and string values must be enclosed in double quotes. Do not use single quotes or omit quotes.\n"
         "Return ONLY valid JSON, with no extra text, comments, or explanations.\n"
