@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import itertools
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import difflib
+import json
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -360,28 +361,9 @@ def parse_cv_with_ai_chunk(text):
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
     prompt_instructions = (
-        "You are an expert CV parser. Extract ALL unique, detailed information from this CV text as a JSON object. \n"
-        "Do NOT summarize, abbreviate, or omit any information, regardless of how it is formatted (paragraphs, bullet points, sentences, etc.).\n"
-        "For each work experience, extract EVERY piece of information including responsibilities, achievements, and descriptions in their original detail.\n"
-        "Handle a wide variety of CV formats, layouts, and section names.\n"
-        "If the same company, title, and dates appear in both a 'Relevant Achievements' section and the main work experience section (or any other section), COMBINE all information (bullets, descriptions, achievements) into a single work experience entry. Do not create duplicates.\n"
-        "Use UK English spelling and conventions throughout.\n"
-        "All property names and string values must be enclosed in double quotes. Do not use single quotes or omit quotes.\n"
-        "Return ONLY valid JSON, with no extra text, comments, or explanations.\n"
-        "The JSON should have:\n"
-        "- A 'work_experience' array (each item must include: 'company', 'title', 'start_date', 'end_date', and 'description' containing ALL text associated with that role)\n"
-        "  - For dates, use consistent ISO format (YYYY-MM-DD) where possible\n"
-        "  - If only month and year are available, use YYYY-MM\n"
-        "  - If only year is available, use YYYY\n"
-        "  - For present/current positions, use 'present' as the end_date\n"
-        "  - Include ALL text in the description field, whether it appears as bullet points, paragraphs, or any other format\n"
-        "  - Extract 'successes', 'skills', and 'training' when explicitly mentioned\n"
-        "- An 'education' array (each item: 'institution', 'degree', 'year')\n"
-        "- A 'skills' array (strings of all mentioned skills)\n"
-        "- A 'projects' array (objects with all project details)\n"
-        "- A 'certifications' array (objects with all certification details)\n"
-        "For each work experience, extract EVERY piece of information, treating each distinct statement as unique content that must be preserved.\n"
-        "If the CV uses non-standard section names or order, map them to the correct fields.\n"
+        "Extract all information related to each individual job role, combining any matching content from all sections such as 'Work Experience', 'Relevant Achievements', 'Projects', or others. "
+        "Group everything by job title and company, ensuring that dates, responsibilities, achievements, technologies used, and descriptions are preserved in full detail. "
+        "Output the result as a JSON array where each object contains: 'company', 'title', 'start_date', 'end_date', and 'description'.\n"
         "CV Text:\n"
     )
     prompt = prompt_instructions + text
@@ -440,29 +422,102 @@ def parse_cv_with_ai_chunk(text):
 
 def parse_cv_with_ai(text: str) -> ArcData:
     sections = split_cv_by_sections(text)
-    arc_datas = []
+    chunk_outputs = []
     with ThreadPoolExecutor() as executor:
         futures = []
         for header, section_text in sections:
             if header in ["work experience", "professional experience", "employment history"]:
-                # Split work experience into jobs (by job entries)
                 jobs = re.split(r"\n(?=\s*\S.*(\d{4}|company|employer|position|role))", section_text, flags=re.IGNORECASE)
-                # Chunk jobs by tokens
                 job_chunks = chunk_texts_by_tokens(jobs, max_tokens=1500)
                 for chunk in job_chunks:
                     futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
             else:
-                # For other sections, chunk if needed
                 section_chunks = chunk_texts_by_tokens([section_text], max_tokens=1500)
                 for chunk in section_chunks:
                     futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
         for future in as_completed(futures):
-            arc_datas.append(future.result())
-    # Merge all ArcData objects
-    merged = arc_datas[0] if arc_datas else ArcData()
-    for arc_data in arc_datas[1:]:
-        merged = merge_arc_data(merged, arc_data)
-    return merged
+            arc_data = future.result()
+            chunk_outputs.append(arc_data.dict())
+    # Log pre-merge chunk outputs
+    logger.info(f"Pre-merge chunk outputs: {json.dumps(chunk_outputs, indent=2)}")
+    # Prepare OpenAI merge prompt
+    merge_prompt = (
+        "You are given multiple partial entries for a candidate's CV, extracted from different sections and chunks of a document. Your task is to merge these into a single, comprehensive CV data object.\n"
+        "\n"
+        "**Instructions:**\n"
+        "- For each section (work_experience, education, skills, projects, certifications), merge entries that refer to the same entity by matching on key fields (e.g., company and title for work experience, institution and degree for education, name for projects/certifications).\n"
+        "- For each merged entry, combine all unique details (responsibilities, achievements, technologies, descriptions, etc.) into a single comprehensive description or field.\n"
+        "- Do not lose any unique information. Preserve all relevant dates, names, and details.\n"
+        "- Remove exact duplicates.\n"
+        "- Only include the fields specified in the schema below for each section.\n"
+        "\n"
+        "**Output Format:**\n"
+        "Return a single valid JSON object with the following structure:\n"
+        "{\n"
+        "  \"work_experience\": [\n"
+        "    {\n"
+        "      \"company\": \"string\",\n"
+        "      \"title\": \"string\",\n"
+        "      \"start_date\": \"YYYY-MM-DD or YYYY-MM or YYYY or 'present'\",\n"
+        "      \"end_date\": \"YYYY-MM-DD or YYYY-MM or YYYY or 'present'\",\n"
+        "      \"description\": \"string (all details, responsibilities, achievements, technologies, etc.)\"\n"
+        "    }\n"
+        "  ],\n"
+        "  \"education\": [\n"
+        "    {\n"
+        "      \"institution\": \"string\",\n"
+        "      \"degree\": \"string\",\n"
+        "      \"year\": \"YYYY or YYYY-MM or YYYY-MM-DD\"\n"
+        "    }\n"
+        "  ],\n"
+        "  \"skills\": [\"string\", \"...\"],\n"
+        "  \"projects\": [\n"
+        "    {\n"
+        "      \"name\": \"string\",\n"
+        "      \"description\": \"string\"\n"
+        "    }\n"
+        "  ],\n"
+        "  \"certifications\": [\n"
+        "    {\n"
+        "      \"name\": \"string\",\n"
+        "      \"issuer\": \"string\",\n"
+        "      \"year\": \"YYYY or YYYY-MM or YYYY-MM-DD\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+        "\n"
+        "**Input Data:**\n"
+        "Here is the combined list of all extracted entries from the CV (as a JSON array):\n"
+        f"{json.dumps(chunk_outputs, indent=2)}\n"
+        "\n"
+        "**Return ONLY the merged JSON object, with no extra text, comments, or explanations.**\n"
+    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo-1106",
+            messages=[{"role": "user", "content": merge_prompt}],
+            max_tokens=1800,
+            temperature=0.2,
+            response_format={"type": "json_object"}
+        )
+        logger.info(f"OpenAI post-merge output: {response.choices[0].message.content}")
+        try:
+            merged_data = json.loads(response.choices[0].message.content)
+            return ArcData(**merged_data)
+        except Exception as e:
+            logger.error(f"OpenAI merge output JSON parse failed: {e}")
+            logger.error(f"Raw merge response: {response.choices[0].message.content}")
+            # Fallback to Python merging logic
+            logger.warning("Falling back to Python merging logic due to OpenAI merge failure.")
+    except Exception as e:
+        logger.error(f"OpenAI merge step failed: {e}")
+        logger.warning("Falling back to Python merging logic due to OpenAI merge failure.")
+    # Fallback: merge all ArcData objects using Python logic
+    merged = chunk_outputs[0] if chunk_outputs else ArcData().dict()
+    for arc_data in chunk_outputs[1:]:
+        merged = merge_arc_data(ArcData(**merged), ArcData(**arc_data)).dict()
+    logger.warning("Returned data is from Python fallback merge, not OpenAI.")
+    return ArcData(**merged)
 
 # --- Dependency: Database Session ---
 def get_db():
