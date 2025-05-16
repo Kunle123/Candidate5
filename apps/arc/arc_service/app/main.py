@@ -442,7 +442,6 @@ def parse_cv_with_ai(text: str) -> ArcData:
     if not openai_api_key:
         logger.error("OpenAI API key not set in environment variables.")
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
-    client = openai.OpenAI(api_key=openai_api_key)
     sections = split_cv_by_sections(text)
     chunk_outputs = []
     with ThreadPoolExecutor() as executor:
@@ -460,90 +459,21 @@ def parse_cv_with_ai(text: str) -> ArcData:
         for future in as_completed(futures):
             arc_data = future.result()
             chunk_outputs.append(arc_data.dict())
-    # Log pre-merge chunk outputs
-    logger.info(f"[AI MERGE] Pre-merge chunk outputs: {json.dumps(chunk_outputs, indent=2)}")
-    # Prepare OpenAI merge prompt
-    merge_prompt = (
-        "You are given multiple partial entries for a candidate's CV, extracted from different sections and chunks of a document. Your task is to merge these into a single, comprehensive CV data object.\n"
-        "\n"
-        "**Instructions:**\n"
-        "- For each section (work_experience, education, skills, projects, certifications), merge entries that refer to the same entity by matching on key fields (e.g., company and title for work experience, institution and degree for education, name for projects/certifications).\n"
-        "- For each merged entry, combine all unique details (responsibilities, achievements, technologies, descriptions, etc.) into a single comprehensive description or field.\n"
-        "- Do not lose any unique information. Preserve all relevant dates, names, and details.\n"
-        "- Remove exact duplicates.\n"
-        "- Only include the fields specified in the schema below for each section.\n"
-        "\n"
-        "**Output Format:**\n"
-        "Return a single valid JSON object with the following structure:\n"
-        "{\n"
-        "  \"work_experience\": [\n"
-        "    {\n"
-        "      \"company\": \"string\",\n"
-        "      \"title\": \"string\",\n"
-        "      \"start_date\": \"YYYY-MM-DD or YYYY-MM or YYYY or 'present'\",\n"
-        "      \"end_date\": \"YYYY-MM-DD or YYYY-MM or YYYY or 'present'\",\n"
-        "      \"description\": \"string (all details, responsibilities, achievements, technologies, etc.)\"\n"
-        "    }\n"
-        "  ],\n"
-        "  \"education\": [\n"
-        "    {\n"
-        "      \"institution\": \"string\",\n"
-        "      \"degree\": \"string\",\n"
-        "      \"year\": \"YYYY or YYYY-MM or YYYY-MM-DD\"\n"
-        "    }\n"
-        "  ],\n"
-        "  \"skills\": [\"string\", \"...\"],\n"
-        "  \"projects\": [\n"
-        "    {\n"
-        "      \"name\": \"string\",\n"
-        "      \"description\": \"string\"\n"
-        "    }\n"
-        "  ],\n"
-        "  \"certifications\": [\n"
-        "    {\n"
-        "      \"name\": \"string\",\n"
-        "      \"issuer\": \"string\",\n"
-        "      \"year\": \"YYYY or YYYY-MM or YYYY-MM-DD\"\n"
-        "    }\n"
-        "  ]\n"
-        "}\n"
-        "\n"
-        "**Input Data:**\n"
-        "Here is the combined list of all extracted entries from the CV (as a JSON array):\n"
-        f"{json.dumps(chunk_outputs, indent=2)}\n"
-        "\n"
-        "**Return ONLY the merged JSON object, with no extra text, comments, or explanations.**\n"
-    )
-    logger.info(f"[AI MERGE] Merge prompt sent to OpenAI: {merge_prompt}")
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo-1106",
-            messages=[{"role": "user", "content": merge_prompt}],
-            max_tokens=1800,
-            temperature=0.2,
-            response_format={"type": "json_object"}
-        )
-        logger.info(f"[AI MERGE] OpenAI post-merge raw output: {response.choices[0].message.content}")
-        try:
-            merged_data = json.loads(response.choices[0].message.content)
-            logger.info(f"[AI MERGE] Parsed OpenAI merged data: {json.dumps(merged_data, indent=2)}")
-            logger.info(f"[AI MERGE] Final ArcData to be saved: {json.dumps(merged_data, indent=2)}")
-            return ArcData(**merged_data)
-        except Exception as e:
-            logger.error(f"[AI MERGE] OpenAI merge output JSON parse failed: {e}\n{traceback.format_exc()}")
-            logger.error(f"[AI MERGE] Raw merge response: {response.choices[0].message.content}")
-            # Fallback to Python merging logic
-            logger.warning("[AI MERGE] Falling back to Python merging logic due to OpenAI merge failure.")
-    except Exception as e:
-        logger.error(f"[AI MERGE] OpenAI merge step failed: {e}\n{traceback.format_exc()}")
-        logger.warning("[AI MERGE] Falling back to Python merging logic due to OpenAI merge failure.")
-    # Fallback: merge all ArcData objects using Python logic
-    merged = chunk_outputs[0] if chunk_outputs else ArcData().dict()
-    for arc_data in chunk_outputs[1:]:
-        merged = merge_arc_data(ArcData(**merged), ArcData(**arc_data)).dict()
-    logger.warning("[AI MERGE] Returned data is from Python fallback merge, not OpenAI.")
-    logger.info(f"[AI MERGE] Final ArcData to be saved (Python fallback): {json.dumps(merged, indent=2)}")
-    return ArcData(**merged)
+    # Combine all chunk outputs into a single ArcData object without merging/deduplication
+    combined = {"work_experience": [], "education": [], "skills": [], "projects": [], "certifications": []}
+    for chunk in chunk_outputs:
+        for key in combined.keys():
+            value = chunk.get(key)
+            if value:
+                if isinstance(value, list):
+                    combined[key].extend(value)
+                else:
+                    combined[key].append(value)
+    # Remove empty lists to match ArcData's optional fields
+    for key in list(combined.keys()):
+        if not combined[key]:
+            combined[key] = None
+    return ArcData(**combined)
 
 # --- Dependency: Database Session ---
 def get_db():
