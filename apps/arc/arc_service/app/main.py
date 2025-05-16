@@ -422,6 +422,13 @@ def parse_cv_with_ai_chunk(text):
         raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
 
 def parse_cv_with_ai(text: str) -> ArcData:
+    import json
+    import traceback
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = openai.OpenAI(api_key=openai_api_key)
     sections = split_cv_by_sections(text)
     chunk_outputs = []
     with ThreadPoolExecutor() as executor:
