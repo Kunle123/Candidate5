@@ -21,6 +21,7 @@ import itertools
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import difflib
 import json
+import traceback
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -439,7 +440,7 @@ def parse_cv_with_ai(text: str) -> ArcData:
             arc_data = future.result()
             chunk_outputs.append(arc_data.dict())
     # Log pre-merge chunk outputs
-    logger.info(f"Pre-merge chunk outputs: {json.dumps(chunk_outputs, indent=2)}")
+    logger.info(f"[AI MERGE] Pre-merge chunk outputs: {json.dumps(chunk_outputs, indent=2)}")
     # Prepare OpenAI merge prompt
     merge_prompt = (
         "You are given multiple partial entries for a candidate's CV, extracted from different sections and chunks of a document. Your task is to merge these into a single, comprehensive CV data object.\n"
@@ -492,6 +493,7 @@ def parse_cv_with_ai(text: str) -> ArcData:
         "\n"
         "**Return ONLY the merged JSON object, with no extra text, comments, or explanations.**\n"
     )
+    logger.info(f"[AI MERGE] Merge prompt sent to OpenAI: {merge_prompt}")
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo-1106",
@@ -500,23 +502,26 @@ def parse_cv_with_ai(text: str) -> ArcData:
             temperature=0.2,
             response_format={"type": "json_object"}
         )
-        logger.info(f"OpenAI post-merge output: {response.choices[0].message.content}")
+        logger.info(f"[AI MERGE] OpenAI post-merge raw output: {response.choices[0].message.content}")
         try:
             merged_data = json.loads(response.choices[0].message.content)
+            logger.info(f"[AI MERGE] Parsed OpenAI merged data: {json.dumps(merged_data, indent=2)}")
+            logger.info(f"[AI MERGE] Final ArcData to be saved: {json.dumps(merged_data, indent=2)}")
             return ArcData(**merged_data)
         except Exception as e:
-            logger.error(f"OpenAI merge output JSON parse failed: {e}")
-            logger.error(f"Raw merge response: {response.choices[0].message.content}")
+            logger.error(f"[AI MERGE] OpenAI merge output JSON parse failed: {e}\n{traceback.format_exc()}")
+            logger.error(f"[AI MERGE] Raw merge response: {response.choices[0].message.content}")
             # Fallback to Python merging logic
-            logger.warning("Falling back to Python merging logic due to OpenAI merge failure.")
+            logger.warning("[AI MERGE] Falling back to Python merging logic due to OpenAI merge failure.")
     except Exception as e:
-        logger.error(f"OpenAI merge step failed: {e}")
-        logger.warning("Falling back to Python merging logic due to OpenAI merge failure.")
+        logger.error(f"[AI MERGE] OpenAI merge step failed: {e}\n{traceback.format_exc()}")
+        logger.warning("[AI MERGE] Falling back to Python merging logic due to OpenAI merge failure.")
     # Fallback: merge all ArcData objects using Python logic
     merged = chunk_outputs[0] if chunk_outputs else ArcData().dict()
     for arc_data in chunk_outputs[1:]:
         merged = merge_arc_data(ArcData(**merged), ArcData(**arc_data)).dict()
-    logger.warning("Returned data is from Python fallback merge, not OpenAI.")
+    logger.warning("[AI MERGE] Returned data is from Python fallback merge, not OpenAI.")
+    logger.info(f"[AI MERGE] Final ArcData to be saved (Python fallback): {json.dumps(merged, indent=2)}")
     return ArcData(**merged)
 
 # --- Dependency: Database Session ---
