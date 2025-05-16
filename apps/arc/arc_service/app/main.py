@@ -19,6 +19,7 @@ import jwt
 from fastapi.middleware.cors import CORSMiddleware
 import itertools
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import difflib
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -196,15 +197,23 @@ def merge_arc_data(existing: ArcData, new: ArcData) -> ArcData:
                     getattr(job, "start_date", None),
                     getattr(job, "end_date", None),
                 )
+        def is_duplicate(new_bullet, existing_bullets, threshold=0.95):
+            for bullet in existing_bullets:
+                if difflib.SequenceMatcher(None, new_bullet.strip(), bullet.strip()).ratio() >= threshold:
+                    return True
+            return False
         existing_jobs = {job_key(job): dict(job) if isinstance(job, dict) else job.dict() for job in existing_list or []}
         for new_job in new_list or []:
             key = job_key(new_job)
             new_job_dict = dict(new_job) if isinstance(new_job, dict) else new_job.dict()
             if key in existing_jobs:
-                # Merge bullet points (successes)
-                existing_successes = set(existing_jobs[key].get("successes", []) or [])
-                new_successes = set(new_job_dict.get("successes", []) or [])
-                merged_successes = list(existing_successes.union(new_successes))
+                # Fuzzy merge bullet points (successes)
+                existing_successes = existing_jobs[key].get("successes", []) or []
+                new_successes = new_job_dict.get("successes", []) or []
+                merged_successes = list(existing_successes)  # preserve order
+                for new_bullet in new_successes:
+                    if not is_duplicate(new_bullet, existing_successes):
+                        merged_successes.append(new_bullet)
                 existing_jobs[key]["successes"] = merged_successes
                 # Optionally merge other fields (e.g., description, skills, training) if needed
             else:
@@ -675,14 +684,36 @@ async def extract_keywords(req: KeywordsRequest, user_id: str = Depends(get_curr
         logger.error("OpenAI API key not set in environment variables.")
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
-    prompt = (
-        "Extract up to 20 of the most important recruiter-focused keywords from the following job description. "
-        "Use UK English spelling and conventions throughout. "
-        "Return ONLY a JSON object with a single property 'keywords', which is an array of keywords, and no extra text, comments, or explanations. "
-        "Prioritise essential skills, technologies, certifications, and role-specific terms. "
-        "Do not include generic words like 'job', 'candidate', or 'requirements'.\n\n"
-        f"Job Description:\n{req.jobDescription[:4000]}"
-    )
+    prompt = f"""Extract up to 20 of the most important recruiter-focused keywords from the following job description.
+Use UK English spelling and conventions throughout (e.g., 'organisation' not 'organization', 'specialise' not 'specialize').
+Return ONLY a JSON object with a single property 'keywords', which is an array of keywords, and no extra text, comments, or explanations.
+
+Prioritise the following types of terms in order of importance:
+1. Technical skills and specific technologies mentioned as requirements
+2. Industry-specific qualifications and certifications
+3. Role-specific responsibilities and competencies
+4. Domain expertise and knowledge areas
+5. Relevant software, tools, and platforms
+
+Do NOT include:
+- Generic terms like 'job', 'candidate', 'requirements', 'responsibilities', 'team', 'company'
+- Common soft skills unless specifically emphasized as critical (e.g., avoid 'communication skills' unless highlighted as essential)
+- Basic qualifications unless specifically required (e.g., 'Bachelor's degree' can be included if explicitly required)
+- Filler words, articles, or prepositions
+
+Format your response as a valid JSON object with this exact structure:
+{
+  "keywords": ["keyword1", "keyword2", "keyword3", ...]
+}
+
+Ensure all keywords:
+- Use UK English spelling conventions
+- Are formatted consistently (lowercase unless proper nouns)
+- Are relevant to Applicant Tracking Systems (ATS)
+- Would be valuable for a CV or application targeting this specific role
+
+Job Description:
+{req.jobDescription[:4000]}"""
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo-1106",
