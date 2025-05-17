@@ -1030,6 +1030,6 @@ async def test_parse_cv_with_ai_chunk_new(request: Request, user_id: str = Depen
     except Exception as e:
         return {"error": str(e)}
 
-@router.get("/chunk-test")
+@router.post("/chunk-test")
 async def chunk_test():
     return {"message": "chunk-test endpoint works!"} 
