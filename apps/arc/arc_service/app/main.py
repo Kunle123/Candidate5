@@ -158,6 +158,65 @@ async def get_logs(taskId: str, user_id: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=404, detail="Task not found")
     return {"logs": task.get("logs", "No logs available")}
 
+# --- Batch 3: Admin/Sectioned Data and Patch Endpoints ---
+
+@router.get("")
+async def get_all_arc_data(user_id: str = Depends(oauth2_scheme)):
+    # Dummy: return all arc data for the user
+    return arc_data_store.get(user_id, ArcData())
+
+@router.post("/work_experience")
+async def add_work_experience(entry: dict = Body(...), user_id: str = Depends(oauth2_scheme)):
+    # Dummy: append to work_experience
+    data = arc_data_store.setdefault(user_id, ArcData())
+    if data.work_experience is None:
+        data.work_experience = []
+    data.work_experience.append(entry)
+    return data
+
+@router.post("/education")
+async def add_education(entry: dict = Body(...), user_id: str = Depends(oauth2_scheme)):
+    data = arc_data_store.setdefault(user_id, ArcData())
+    if data.education is None:
+        data.education = []
+    data.education.append(entry)
+    return data
+
+@router.post("/training")
+async def add_training(entry: dict = Body(...), user_id: str = Depends(oauth2_scheme)):
+    data = arc_data_store.setdefault(user_id, ArcData())
+    if data.certifications is None:
+        data.certifications = []
+    data.certifications.append(entry)
+    return data
+
+@router.patch("/work_experience/{id}")
+async def update_work_experience(id: str, update: dict = Body(...), user_id: str = Depends(oauth2_scheme)):
+    data = arc_data_store.setdefault(user_id, ArcData())
+    if data.work_experience:
+        for entry in data.work_experience:
+            if entry.get("id") == id:
+                entry.update(update)
+    return data
+
+@router.patch("/education/{id}")
+async def update_education(id: str, update: dict = Body(...), user_id: str = Depends(oauth2_scheme)):
+    data = arc_data_store.setdefault(user_id, ArcData())
+    if data.education:
+        for entry in data.education:
+            if entry.get("id") == id:
+                entry.update(update)
+    return data
+
+@router.patch("/training/{id}")
+async def update_training(id: str, update: dict = Body(...), user_id: str = Depends(oauth2_scheme)):
+    data = arc_data_store.setdefault(user_id, ArcData())
+    if data.certifications:
+        for entry in data.certifications:
+            if entry.get("id") == id:
+                entry.update(update)
+    return data
+
 app.include_router(router)
 
 @app.get("/health")
