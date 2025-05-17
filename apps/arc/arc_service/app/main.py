@@ -114,6 +114,50 @@ async def generate_materials(req: GenerateRequest, user_id: str = Depends(oauth2
     # Dummy implementation for demo
     return GenerateResponse(cv="Generated CV for: " + req.jobAdvert, coverLetter="Generated Cover Letter for: " + req.jobAdvert)
 
+# --- Batch 2: Advanced CV Task Debug Endpoints ---
+
+@router.get("/cv/text/{taskId}")
+async def get_raw_text(taskId: str, user_id: str = Depends(oauth2_scheme)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"raw_text": task.get("raw_text", "No raw text available")}
+
+@router.get("/cv/ai-raw/{taskId}")
+async def get_ai_raw(taskId: str, user_id: str = Depends(oauth2_scheme)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"ai_raw": task.get("ai_raw_chunks", [])}
+
+@router.get("/cv/ai-combined/{taskId}")
+async def get_ai_combined(taskId: str, user_id: str = Depends(oauth2_scheme)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"ai_combined": task.get("ai_combined", {})}
+
+@router.get("/cv/ai-filtered/{taskId}")
+async def get_ai_filtered(taskId: str, user_id: str = Depends(oauth2_scheme)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"ai_filtered": task.get("ai_filtered", {})}
+
+@router.get("/cv/arcdata/{taskId}")
+async def get_arcdata(taskId: str, user_id: str = Depends(oauth2_scheme)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"arcdata": task.get("arcdata", {})}
+
+@router.get("/cv/logs/{taskId}")
+async def get_logs(taskId: str, user_id: str = Depends(oauth2_scheme)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"logs": task.get("logs", "No logs available")}
+
 app.include_router(router)
 
 @app.get("/health")
