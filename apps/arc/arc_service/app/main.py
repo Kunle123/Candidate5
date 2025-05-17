@@ -1,14 +1,16 @@
-from fastapi import FastAPI, APIRouter, Request, Body, Depends, HTTPException
+from fastapi import FastAPI, APIRouter, Request, Body, Depends, HTTPException, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+from uuid import uuid4
 
 app = FastAPI(title="Minimal Arc Service Debug")
 router = APIRouter(prefix="/api/arc")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-# In-memory store for demo
+# In-memory stores for demo
 arc_data_store = {}
+tasks = {}
 
 class ArcData(BaseModel):
     work_experience: Optional[List[Dict[str, Any]]] = None
@@ -22,6 +24,14 @@ class KeywordsRequest(BaseModel):
 
 class KeywordsResponse(BaseModel):
     keywords: List[str]
+
+class CVUploadResponse(BaseModel):
+    taskId: str
+
+class CVStatusResponse(BaseModel):
+    status: str
+    extractedDataSummary: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
 
 @router.post("/chunk-test")
 async def chunk_test(request: Request):
@@ -43,6 +53,23 @@ async def get_arc_data(user_id: str = Depends(oauth2_scheme)):
 async def update_arc_data(data: ArcData = Body(...), user_id: str = Depends(oauth2_scheme)):
     arc_data_store[user_id] = data
     return data
+
+@router.post("/cv", response_model=CVUploadResponse)
+async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(oauth2_scheme)):
+    task_id = str(uuid4())
+    tasks[task_id] = {"status": "completed", "user_id": user_id, "extractedDataSummary": {"workExperienceCount": 0, "skillsFound": 0}}
+    return {"taskId": task_id}
+
+@router.get("/cv/status/{taskId}", response_model=CVStatusResponse)
+async def poll_cv_status(taskId: str, user_id: str = Depends(oauth2_scheme)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {
+        "status": task["status"],
+        "extractedDataSummary": task.get("extractedDataSummary"),
+        "error": task.get("error")
+    }
 
 app.include_router(router)
 
