@@ -447,19 +447,12 @@ def parse_cv_with_ai(text: str) -> ArcData:
     with ThreadPoolExecutor() as executor:
         futures = []
         for header, section_text in sections:
-            if header in ["work experience", "professional experience", "employment history"]:
-                jobs = re.split(r"\n(?=\s*\S.*(\d{4}|company|employer|position|role))", section_text, flags=re.IGNORECASE)
-                job_chunks = chunk_texts_by_tokens(jobs, max_tokens=1500)
-                for chunk in job_chunks:
-                    futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
-            else:
-                section_chunks = chunk_texts_by_tokens([section_text], max_tokens=1500)
-                for chunk in section_chunks:
-                    futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
+            # Remove all chunking: just send the full section_text to the AI
+            futures.append(executor.submit(parse_cv_with_ai_chunk, section_text))
         for future in as_completed(futures):
             arc_data = future.result()
             chunk_outputs.append(arc_data.dict())
-    # Combine all chunk outputs into a single ArcData object without merging/deduplication
+    # Combine all outputs into a single ArcData object without merging/deduplication
     combined = {"work_experience": [], "education": [], "skills": [], "projects": [], "certifications": []}
     for chunk in chunk_outputs:
         for key in combined.keys():
