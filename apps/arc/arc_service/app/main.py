@@ -1,14 +1,49 @@
-from fastapi import FastAPI, APIRouter, Request, Body, Depends, HTTPException, UploadFile, File
+from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException, status, Body, Request
 from fastapi.security import OAuth2PasswordBearer
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from uuid import uuid4
-from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse, FileResponse
 import io
+import os
+import openai
+import pdfplumber
+from docx import Document
+import logging
+import re
+from sqlalchemy.orm import Session
+from .models import UserArcData
+from .db import SessionLocal
+import tiktoken
+import jwt
+from fastapi.middleware.cors import CORSMiddleware
+import itertools
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import difflib
+import json
+import traceback
+import spacy
 
-app = FastAPI(title="Minimal Arc Service Debug")
+app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+logger = logging.getLogger("arc_service")
+logging.basicConfig(level=logging.INFO)
+
+JWT_SECRET = os.getenv("JWT_SECRET", "development_secret_key")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,https://c5-frontend-pied.vercel.app").split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"]
+)
 
 # In-memory stores for demo
 arc_data_store = {}
