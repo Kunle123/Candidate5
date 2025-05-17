@@ -1,3 +1,4 @@
+print("DEPLOYMENT TEST: v2024-06-11-arc-chunk-test")
 from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException, status, Body, Request
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, Field
