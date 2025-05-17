@@ -464,6 +464,16 @@ def nlp_chunk_text(text, max_tokens=1500, model="gpt-3.5-turbo"):
         logger.info(f"[NLP CHUNKING] Chunk {i+1} token count: {len(enc.encode(chunk))}")
     return chunks
 
+def filter_non_empty_entries(entries, key_fields=None):
+    if not entries:
+        return []
+    if key_fields is None:
+        key_fields = ['company', 'title', 'description', 'start_date', 'end_date']
+    return [
+        entry for entry in entries
+        if any(entry.get(field) for field in key_fields)
+    ]
+
 def parse_cv_with_ai(text: str) -> ArcData:
     import json
     import traceback
@@ -493,6 +503,12 @@ def parse_cv_with_ai(text: str) -> ArcData:
                     combined[key].extend(value)
                 else:
                     combined[key].append(value)
+    # Filter out empty or blank entries
+    combined["work_experience"] = filter_non_empty_entries(combined["work_experience"], ["company", "title", "description", "start_date", "end_date"])
+    combined["education"] = filter_non_empty_entries(combined["education"], ["institution", "degree", "field", "start_date", "end_date"])
+    combined["skills"] = [s for s in combined["skills"] if s]
+    combined["projects"] = filter_non_empty_entries(combined["projects"], ["name", "description"])
+    combined["certifications"] = filter_non_empty_entries(combined["certifications"], ["name", "issuer", "year"])
     # Remove empty lists to match ArcData's optional fields
     for key in list(combined.keys()):
         if not combined[key]:
