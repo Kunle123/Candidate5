@@ -22,6 +22,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import difflib
 import json
 import traceback
+import spacy
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -435,6 +436,34 @@ def parse_cv_with_ai_chunk(text):
         logger.error(f"AI parsing failed: {e}")
         raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
 
+def nlp_chunk_text(text, max_tokens=1500, model="gpt-3.5-turbo"):
+    """
+    Use spaCy to split text into sentences, then group sentences into chunks under max_tokens.
+    """
+    import tiktoken
+    nlp = spacy.load("en_core_web_sm")
+    enc = tiktoken.encoding_for_model(model)
+    doc = nlp(text)
+    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
+    chunks = []
+    current_chunk = []
+    current_tokens = 0
+    for sent in sentences:
+        sent_tokens = len(enc.encode(sent))
+        if current_tokens + sent_tokens > max_tokens and current_chunk:
+            chunks.append(" ".join(current_chunk))
+            current_chunk = [sent]
+            current_tokens = sent_tokens
+        else:
+            current_chunk.append(sent)
+            current_tokens += sent_tokens
+    if current_chunk:
+        chunks.append(" ".join(current_chunk))
+    logger.info(f"[NLP CHUNKING] Created {len(chunks)} chunks (max {max_tokens} tokens each)")
+    for i, chunk in enumerate(chunks):
+        logger.info(f"[NLP CHUNKING] Chunk {i+1} token count: {len(enc.encode(chunk))}")
+    return chunks
+
 def parse_cv_with_ai(text: str) -> ArcData:
     import json
     import traceback
@@ -447,8 +476,10 @@ def parse_cv_with_ai(text: str) -> ArcData:
     with ThreadPoolExecutor() as executor:
         futures = []
         for header, section_text in sections:
-            # Remove all chunking: just send the full section_text to the AI
-            futures.append(executor.submit(parse_cv_with_ai_chunk, section_text))
+            # Use NLP-based chunking for each section
+            nlp_chunks = nlp_chunk_text(section_text, max_tokens=1500)
+            for chunk in nlp_chunks:
+                futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
         for future in as_completed(futures):
             arc_data = future.result()
             chunk_outputs.append(arc_data.dict())
