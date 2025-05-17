@@ -550,7 +550,50 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             logger.error(f"Unsupported file type uploaded: {filename}")
             raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
         logger.info(f"[CV UPLOAD] Extracted text from file:\n{text}")
-        new_arc_data = parse_cv_with_ai(text)
+        tasks[task_id]["raw_text"] = text
+        # --- AI Extraction ---
+        # Save per-chunk raw AI output
+        sections = split_cv_by_sections(text)
+        chunk_outputs = []
+        raw_ai_outputs = []
+        with ThreadPoolExecutor() as executor:
+            futures = []
+            for header, section_text in sections:
+                nlp_chunks = nlp_chunk_text(section_text, max_tokens=1500)
+                for chunk in nlp_chunks:
+                    futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
+            for future in as_completed(futures):
+                arc_data = future.result()
+                chunk_outputs.append(arc_data.dict())
+                # Save raw AI output if available (from logger or arc_data)
+                if hasattr(arc_data, 'raw_ai_output'):
+                    raw_ai_outputs.append(arc_data.raw_ai_output)
+        tasks[task_id]["ai_raw_chunks"] = raw_ai_outputs
+        # --- Combined AI Output ---
+        combined = {"work_experience": [], "education": [], "skills": [], "projects": [], "certifications": []}
+        for chunk in chunk_outputs:
+            for key in combined.keys():
+                value = chunk.get(key)
+                if value:
+                    if isinstance(value, list):
+                        combined[key].extend(value)
+                    else:
+                        combined[key].append(value)
+        tasks[task_id]["ai_combined"] = combined.copy()
+        # --- Filtering ---
+        filtered = {}
+        filtered["work_experience"] = filter_non_empty_entries(combined["work_experience"], ["company", "title", "description", "start_date", "end_date"], section_name="work_experience")
+        filtered["education"] = filter_non_empty_entries(combined["education"], ["institution", "degree", "field", "start_date", "end_date"], section_name="education")
+        filtered["skills"] = [s for s in combined["skills"] if s]
+        filtered["projects"] = filter_non_empty_entries(combined["projects"], ["name", "description"], section_name="projects")
+        filtered["certifications"] = filter_non_empty_entries(combined["certifications"], ["name", "issuer", "year"], section_name="certifications")
+        for key in list(filtered.keys()):
+            if not filtered[key]:
+                filtered[key] = None
+        tasks[task_id]["ai_filtered"] = filtered.copy()
+        # --- Final ArcData ---
+        new_arc_data = ArcData(**filtered)
+        tasks[task_id]["arcdata"] = new_arc_data.dict()
     except Exception as e:
         logger.error(f"Error in /cv upload endpoint: {e}")
         tasks[task_id] = {"status": "failed", "user_id": user_id, "error": str(e)}
@@ -558,19 +601,56 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
     # Deduplicate and merge with existing data from DB
     db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
     if db_obj:
-        # For testing: disable deduplication/merging, just overwrite with new data
         db_obj.arc_data = new_arc_data.dict()
     else:
         db_obj = UserArcData(user_id=user_id, arc_data=new_arc_data.dict())
         db.add(db_obj)
     db.commit()
     db.refresh(db_obj)
-    tasks[task_id] = {
-        "status": "completed",
-        "user_id": user_id,
-        "extractedDataSummary": {"workExperienceCount": len(new_arc_data.work_experience or []), "skillsFound": len(new_arc_data.skills or [])}
-    }
+    tasks[task_id]["status"] = "completed"
+    tasks[task_id]["extractedDataSummary"] = {"workExperienceCount": len(new_arc_data.work_experience or []), "skillsFound": len(new_arc_data.skills or [])}
     return {"taskId": task_id}
+
+# --- New Debug/Inspection Endpoints ---
+@router.get("/cv/text/{taskId}")
+async def get_raw_text(taskId: str, user_id: str = Depends(get_current_user)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"raw_text": task.get("raw_text")}
+
+@router.get("/cv/ai-raw/{taskId}")
+async def get_ai_raw(taskId: str, user_id: str = Depends(get_current_user)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"ai_raw_chunks": task.get("ai_raw_chunks")}
+
+@router.get("/cv/ai-combined/{taskId}")
+async def get_ai_combined(taskId: str, user_id: str = Depends(get_current_user)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"ai_combined": task.get("ai_combined")}
+
+@router.get("/cv/ai-filtered/{taskId}")
+async def get_ai_filtered(taskId: str, user_id: str = Depends(get_current_user)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"ai_filtered": task.get("ai_filtered")}
+
+@router.get("/cv/arcdata/{taskId}")
+async def get_arcdata(taskId: str, user_id: str = Depends(get_current_user)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"arcdata": task.get("arcdata")}
+
+@router.get("/cv/logs/{taskId}")
+async def get_logs(taskId: str, user_id: str = Depends(get_current_user)):
+    # For now, just return a placeholder or log file if implemented
+    return {"logs": "Verbose logs not implemented in API yet. Check backend logs."}
 
 # --- Endpoint: Poll CV Processing Status ---
 @router.get("/cv/status/{taskId}", response_model=CVStatusResponse)
