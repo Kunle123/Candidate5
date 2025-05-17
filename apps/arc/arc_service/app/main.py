@@ -994,16 +994,14 @@ def get_ai_parse_error_file():
 
 app.include_router(router)
 
-@router.post("/cv/chunk-test")
-async def test_parse_cv_with_ai_chunk(request: Request, user_id: str = Depends(get_current_user)):
+@router.post("/chunk")
+async def test_parse_cv_with_ai_chunk_new(request: Request, user_id: str = Depends(get_current_user)):
     body = await request.json()
     text = body.get("text")
     if not text:
         raise HTTPException(status_code=400, detail="Missing 'text' in request body.")
-    # Call the chunk parser
     import json as pyjson
     try:
-        # Patch: capture both parsed and raw
         openai_api_key = os.getenv("OPENAI_API_KEY")
         if not openai_api_key:
             raise HTTPException(status_code=500, detail="OpenAI API key not set")
