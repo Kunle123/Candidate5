@@ -472,10 +472,14 @@ def filter_non_empty_entries(entries, key_fields=None, section_name=None):
         key_fields = ['company', 'title', 'description', 'start_date', 'end_date']
     filtered = []
     for entry in entries:
-        if any(entry.get(field) for field in key_fields):
+        # Only keep if at least one key field is a non-empty, non-whitespace string
+        if any(
+            isinstance(entry.get(field), str) and entry.get(field).strip()
+            for field in key_fields
+        ):
             filtered.append(entry)
         else:
-            logger.info(f"[FILTER] {section_name}: Filtered out empty entry: {entry}")
+            logger.info(f"[FILTER] {section_name}: Filtered out empty/whitespace entry: {entry}")
     logger.info(f"[FILTER] {section_name}: {len(filtered)} of {len(entries)} entries kept after filtering.")
     return filtered
 
