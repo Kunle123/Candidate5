@@ -35,6 +35,14 @@ class CVStatusResponse(BaseModel):
     extractedDataSummary: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
 
+class GenerateRequest(BaseModel):
+    jobAdvert: str
+    arcData: Dict[str, Any]
+
+class GenerateResponse(BaseModel):
+    cv: str
+    coverLetter: str
+
 @router.post("/chunk-test")
 async def chunk_test(request: Request):
     body = await request.json()
@@ -93,6 +101,18 @@ async def download_processed_cv(taskId: str, user_id: str = Depends(oauth2_schem
         raise HTTPException(status_code=404, detail="Task not found")
     dummy_content = f"Processed CV data for task {taskId}"
     return FileResponse(io.BytesIO(dummy_content.encode()), media_type="text/plain", filename=f"processed_cv_{taskId}.txt")
+
+@router.post("/chunk")
+async def test_parse_cv_with_ai_chunk_new(request: Request, user_id: str = Depends(oauth2_scheme)):
+    body = await request.json()
+    text = body.get("text")
+    # Dummy chunk parse logic
+    return {"chunked": True, "text": text}
+
+@router.post("/generate", response_model=GenerateResponse)
+async def generate_materials(req: GenerateRequest, user_id: str = Depends(oauth2_scheme)):
+    # Dummy implementation for demo
+    return GenerateResponse(cv="Generated CV for: " + req.jobAdvert, coverLetter="Generated Cover Letter for: " + req.jobAdvert)
 
 app.include_router(router)
 
