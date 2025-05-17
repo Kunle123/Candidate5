@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException, status, Body
+from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException, status, Body, Request
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
@@ -992,4 +992,41 @@ async def update_training(id: str, update: dict = Body(...), user_id: str = Depe
 def get_ai_parse_error_file():
     return FileResponse("ai_parse_error_output.txt", media_type="text/plain")
 
-app.include_router(router) 
+app.include_router(router)
+
+@router.post("/cv/chunk-test")
+async def test_parse_cv_with_ai_chunk(request: Request, user_id: str = Depends(get_current_user)):
+    body = await request.json()
+    text = body.get("text")
+    if not text:
+        raise HTTPException(status_code=400, detail="Missing 'text' in request body.")
+    # Call the chunk parser
+    import json as pyjson
+    try:
+        # Patch: capture both parsed and raw
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if not openai_api_key:
+            raise HTTPException(status_code=500, detail="OpenAI API key not set")
+        client = openai.OpenAI(api_key=openai_api_key)
+        prompt_instructions = (
+            "Extract all information related to each individual job role, combining any matching content from all sections such as 'Work Experience', 'Relevant Achievements', 'Projects', or others. "
+            "Group everything by job title and company, ensuring that dates, responsibilities, achievements, technologies used, and descriptions are preserved in full detail. "
+            "Output the result as a JSON array where each object contains: 'company', 'title', 'start_date', 'end_date', and 'description'.\n"
+            "CV Text:\n"
+        )
+        prompt = prompt_instructions + text
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo-1106",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1800,
+            temperature=0.2,
+            response_format={"type": "json_object"}
+        )
+        raw_content = response.choices[0].message.content
+        try:
+            parsed = pyjson.loads(raw_content)
+        except Exception as e:
+            parsed = {"error": str(e), "raw": raw_content}
+        return {"parsed": parsed, "raw": raw_content}
+    except Exception as e:
+        return {"error": str(e)} 
