@@ -12,4 +12,8 @@ async def chunk_test(request: Request):
     text = body.get("text")
     return {"message": "chunk-test endpoint works!", "received_text": text}
 
-app.include_router(router) 
+app.include_router(router)
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"} 
