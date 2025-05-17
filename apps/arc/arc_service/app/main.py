@@ -3,6 +3,8 @@ from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from uuid import uuid4
+from fastapi.responses import FileResponse
+import io
 
 app = FastAPI(title="Minimal Arc Service Debug")
 router = APIRouter(prefix="/api/arc")
@@ -70,6 +72,27 @@ async def poll_cv_status(taskId: str, user_id: str = Depends(oauth2_scheme)):
         "extractedDataSummary": task.get("extractedDataSummary"),
         "error": task.get("error")
     }
+
+@router.get("/cv/tasks")
+async def list_cv_tasks(user_id: str = Depends(oauth2_scheme)):
+    user_tasks = [ {"taskId": tid, **{k:v for k,v in t.items() if k != "user_id"}} for tid, t in tasks.items() if t["user_id"] == user_id ]
+    return {"tasks": user_tasks}
+
+@router.delete("/cv/{taskId}")
+async def delete_cv_task(taskId: str, user_id: str = Depends(oauth2_scheme)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    del tasks[taskId]
+    return {"success": True}
+
+@router.get("/cv/download/{taskId}")
+async def download_processed_cv(taskId: str, user_id: str = Depends(oauth2_scheme)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    dummy_content = f"Processed CV data for task {taskId}"
+    return FileResponse(io.BytesIO(dummy_content.encode()), media_type="text/plain", filename=f"processed_cv_{taskId}.txt")
 
 app.include_router(router)
 
