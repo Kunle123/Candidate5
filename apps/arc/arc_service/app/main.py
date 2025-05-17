@@ -464,15 +464,20 @@ def nlp_chunk_text(text, max_tokens=1500, model="gpt-3.5-turbo"):
         logger.info(f"[NLP CHUNKING] Chunk {i+1} token count: {len(enc.encode(chunk))}")
     return chunks
 
-def filter_non_empty_entries(entries, key_fields=None):
+def filter_non_empty_entries(entries, key_fields=None, section_name=None):
     if not entries:
+        logger.info(f"[FILTER] {section_name}: No entries to filter.")
         return []
     if key_fields is None:
         key_fields = ['company', 'title', 'description', 'start_date', 'end_date']
-    return [
-        entry for entry in entries
-        if any(entry.get(field) for field in key_fields)
-    ]
+    filtered = []
+    for entry in entries:
+        if any(entry.get(field) for field in key_fields):
+            filtered.append(entry)
+        else:
+            logger.info(f"[FILTER] {section_name}: Filtered out empty entry: {entry}")
+    logger.info(f"[FILTER] {section_name}: {len(filtered)} of {len(entries)} entries kept after filtering.")
+    return filtered
 
 def parse_cv_with_ai(text: str) -> ArcData:
     import json
@@ -503,16 +508,19 @@ def parse_cv_with_ai(text: str) -> ArcData:
                     combined[key].extend(value)
                 else:
                     combined[key].append(value)
-    # Filter out empty or blank entries
-    combined["work_experience"] = filter_non_empty_entries(combined["work_experience"], ["company", "title", "description", "start_date", "end_date"])
-    combined["education"] = filter_non_empty_entries(combined["education"], ["institution", "degree", "field", "start_date", "end_date"])
+    logger.info(f"[AI VERBOSE] Combined raw AI output: {json.dumps(combined, indent=2)[:2000]} ... (truncated)")
+    # Filter out empty or blank entries with verbose logging
+    combined["work_experience"] = filter_non_empty_entries(combined["work_experience"], ["company", "title", "description", "start_date", "end_date"], section_name="work_experience")
+    combined["education"] = filter_non_empty_entries(combined["education"], ["institution", "degree", "field", "start_date", "end_date"], section_name="education")
     combined["skills"] = [s for s in combined["skills"] if s]
-    combined["projects"] = filter_non_empty_entries(combined["projects"], ["name", "description"])
-    combined["certifications"] = filter_non_empty_entries(combined["certifications"], ["name", "issuer", "year"])
+    logger.info(f"[FILTER] skills: {len(combined['skills'])} entries kept after filtering.")
+    combined["projects"] = filter_non_empty_entries(combined["projects"], ["name", "description"], section_name="projects")
+    combined["certifications"] = filter_non_empty_entries(combined["certifications"], ["name", "issuer", "year"], section_name="certifications")
     # Remove empty lists to match ArcData's optional fields
     for key in list(combined.keys()):
         if not combined[key]:
             combined[key] = None
+    logger.info(f"[AI VERBOSE] Final filtered ArcData: {json.dumps(combined, indent=2)[:2000]} ... (truncated)")
     return ArcData(**combined)
 
 # --- Dependency: Database Session ---
