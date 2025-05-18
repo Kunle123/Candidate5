@@ -517,13 +517,26 @@ async def get_arc_data(user_id: str = Depends(get_current_user), db: Session = D
     try:
         db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
         if not db_user_arc or not db_user_arc.arc_data:
-            logger.error(f"UserArcData not found for user {user_id}")
-            raise HTTPException(status_code=404, detail="No extracted data found for user")
+            # Return an empty profile if no data exists
+            return {
+                "work_experience": [],
+                "education": [],
+                "skills": [],
+                "projects": [],
+                "certifications": []
+            }
         arc_data = db_user_arc.arc_data
         if not isinstance(arc_data, dict):
             logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
             raise HTTPException(status_code=400, detail="arc_data is malformed")
-        return arc_data
+        # Ensure all required fields are present
+        return {
+            "work_experience": arc_data.get("work_experience", []),
+            "education": arc_data.get("education", []),
+            "skills": arc_data.get("skills", []),
+            "projects": arc_data.get("projects", []),
+            "certifications": arc_data.get("certifications", [])
+        }
     except HTTPException:
         raise
     except Exception as e:
