@@ -222,7 +222,7 @@ def parse_cv_with_ai_chunk(text):
                         new_list.append(entry)
                 data[key] = new_list
         arc_data = ArcData(**data)
-        arc_data.raw_ai_output = raw_response  # Attach raw response for debugging
+        setattr(arc_data, "raw_ai_output", raw_response)  # Attach as a dynamic attribute
         return arc_data
     except Exception as e:
         logger.error(f"AI parsing failed: {e}")
