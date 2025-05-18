@@ -212,6 +212,9 @@ def parse_cv_with_ai_chunk(text):
                     data = {}
             else:
                 data = {}
+        # Defensive: remove raw_ai_output if present
+        if "raw_ai_output" in data:
+            del data["raw_ai_output"]
         for key in ["education", "projects", "certifications"]:
             if key in data and isinstance(data[key], list):
                 new_list = []
@@ -221,7 +224,11 @@ def parse_cv_with_ai_chunk(text):
                     else:
                         new_list.append(entry)
                 data[key] = new_list
-        arc_data = ArcData(**data)
+        try:
+            arc_data = ArcData(**data)
+        except Exception as e:
+            logger.error(f"ArcData construction failed: {e}")
+            arc_data = ArcData()  # Return empty ArcData on error
         setattr(arc_data, "raw_ai_output", raw_response)  # Attach as a dynamic attribute
         return arc_data
     except Exception as e:
