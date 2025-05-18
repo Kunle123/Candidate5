@@ -403,4 +403,132 @@ async def generate_materials(req: GenerateRequest, user_id: str = Depends(get_cu
         return GenerateResponse(**data)
     except Exception as e:
         logger.error(f"AI CV/cover letter generation failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"AI CV/cover letter generation failed: {e}") 
+        raise HTTPException(status_code=500, detail=f"AI CV/cover letter generation failed: {e}")
+
+# --- Add remaining endpoints ---
+
+@router.get("/cv/status/{taskId}", response_model=CVStatusResponse)
+async def poll_cv_status(taskId: str, user_id: str = Depends(get_current_user)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {
+        "status": task["status"],
+        "extractedDataSummary": task.get("extractedDataSummary"),
+        "error": task.get("error")
+    }
+
+@router.get("/data", response_model=ArcData)
+async def get_arc_data(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj:
+        return db_obj.arc_data
+    return ArcData()
+
+@router.put("/data", response_model=ArcData)
+@router.post("/data", response_model=ArcData)
+async def update_arc_data(data: ArcData = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj:
+        db_obj.arc_data = data.dict()
+    else:
+        db_obj = UserArcData(user_id=user_id, arc_data=data.dict())
+        db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return data
+
+@router.get("")
+async def get_all_arc_data(user_id: str = Depends(get_current_user)):
+    db = next(get_db())
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj:
+        return db_obj.arc_data
+    return {}
+
+@router.post("/work_experience")
+async def add_work_experience(entry: dict = Body(...), user_id: str = Depends(get_current_user)):
+    db = next(get_db())
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj:
+        arc_data = ArcData(**db_obj.arc_data)
+        arc_data.work_experience = (arc_data.work_experience or []) + [entry]
+        db_obj.arc_data = arc_data.dict()
+    else:
+        arc_data = ArcData(work_experience=[entry])
+        db_obj = UserArcData(user_id=user_id, arc_data=arc_data.dict())
+        db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return entry
+
+@router.post("/education")
+async def add_education(entry: dict = Body(...), user_id: str = Depends(get_current_user)):
+    db = next(get_db())
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj:
+        arc_data = ArcData(**db_obj.arc_data)
+        arc_data.education = (arc_data.education or []) + [entry]
+        db_obj.arc_data = arc_data.dict()
+    else:
+        arc_data = ArcData(education=[entry])
+        db_obj = UserArcData(user_id=user_id, arc_data=arc_data.dict())
+        db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return entry
+
+@router.post("/training")
+async def add_training(entry: dict = Body(...), user_id: str = Depends(get_current_user)):
+    db = next(get_db())
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj:
+        arc_data = ArcData(**db_obj.arc_data)
+        arc_data.certifications = (arc_data.certifications or []) + [entry]
+        db_obj.arc_data = arc_data.dict()
+    else:
+        arc_data = ArcData(certifications=[entry])
+        db_obj = UserArcData(user_id=user_id, arc_data=arc_data.dict())
+        db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return entry
+
+@router.patch("/work_experience/{id}")
+async def update_work_experience(id: str, update: dict = Body(...), user_id: str = Depends(get_current_user)):
+    db = next(get_db())
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj and db_obj.arc_data.get("work_experience"):
+        for entry in db_obj.arc_data["work_experience"]:
+            if entry.get("id") == id:
+                entry.update(update)
+        db.commit()
+        db.refresh(db_obj)
+        return update
+    raise HTTPException(status_code=404, detail="Work experience not found")
+
+@router.patch("/education/{id}")
+async def update_education(id: str, update: dict = Body(...), user_id: str = Depends(get_current_user)):
+    db = next(get_db())
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj and db_obj.arc_data.get("education"):
+        for entry in db_obj.arc_data["education"]:
+            if entry.get("id") == id:
+                entry.update(update)
+        db.commit()
+        db.refresh(db_obj)
+        return update
+    raise HTTPException(status_code=404, detail="Education not found")
+
+@router.patch("/training/{id}")
+async def update_training(id: str, update: dict = Body(...), user_id: str = Depends(get_current_user)):
+    db = next(get_db())
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if db_obj and db_obj.arc_data.get("certifications"):
+        for entry in db_obj.arc_data["certifications"]:
+            if entry.get("id") == id:
+                entry.update(update)
+        db.commit()
+        db.refresh(db_obj)
+        return update
+    raise HTTPException(status_code=404, detail="Training not found") 
