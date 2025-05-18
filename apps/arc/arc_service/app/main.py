@@ -338,6 +338,19 @@ async def delete_cv_task(taskId: str, user_id: str = Depends(get_current_user), 
     # Optionally, remove associated data from user_arc_data if needed
     return {"success": True}
 
+# --- Endpoint: Download Processed CV ---
+@router.get("/cv/download/{taskId}")
+async def download_processed_cv(taskId: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if not db_user_arc or not db_user_arc.arc_data:
+        raise HTTPException(status_code=404, detail="No extracted data found for user")
+    import json
+    data_bytes = json.dumps(db_user_arc.arc_data, indent=2).encode()
+    return FileResponse(io.BytesIO(data_bytes), media_type="application/json", filename=f"extracted_cv_{taskId}.json")
+
 app.include_router(router)
 
 @app.get("/health")
