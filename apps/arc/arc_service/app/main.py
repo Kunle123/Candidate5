@@ -274,7 +274,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             db_task.error = f"Unsupported file type uploaded: {filename}"
             db.commit()
             raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
-        logger.info(f"[CV UPLOAD] Extracted text from file:\n{text}")
+        logger.info(f"[CV UPLOAD] Extracted text from file (first 500 chars):\n{text[:500]}")
         # --- AI Extraction ---
         sections = split_cv_by_sections(text)
         chunk_outputs = []
@@ -287,10 +287,12 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                     futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
             for future in as_completed(futures):
                 arc_data = future.result()
+                logger.info(f"[CV UPLOAD] AI chunk output: {arc_data}")
                 chunk_outputs.append(arc_data.dict())
                 # Only use raw_ai_output for debugging, never for DB storage
                 if hasattr(arc_data, 'raw_ai_output'):
                     ai_raw_chunks.append(getattr(arc_data, 'raw_ai_output'))
+        logger.info(f"[CV UPLOAD] All AI chunk outputs: {chunk_outputs}")
         combined = {"work_experience": [], "education": [], "skills": [], "projects": [], "certifications": []}
         for chunk in chunk_outputs:
             for key in combined.keys():
@@ -309,12 +311,14 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         for key in list(filtered.keys()):
             if not filtered[key]:
                 filtered[key] = None
+        logger.info(f"[CV UPLOAD] Filtered data: {filtered}")
         new_arc_data = ArcData(**filtered)
         # Save to Career Ark (user_arc_data)
         db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
         arc_data_dict = new_arc_data.dict()
         arc_data_dict["raw_text"] = text  # Persist the raw extracted text
         arc_data_dict["ai_raw_chunks"] = ai_raw_chunks  # Only the raw strings, not the attribute
+        logger.info(f"[CV UPLOAD] Final arc_data_dict to be saved: {arc_data_dict}")
         if db_obj:
             db_obj.arc_data = arc_data_dict
         else:
