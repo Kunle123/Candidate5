@@ -8,7 +8,6 @@ import logging
 import stripe
 import json
 from app.config import settings
-import httpx
 
 # Configure logger
 logger = logging.getLogger("payment_service")
@@ -21,9 +20,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_API_KEY
-
-# Service URLs
-USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "https://api-gw-production.up.railway.app")
 
 # Pydantic models
 class PaymentMethod(BaseModel):
@@ -52,62 +48,28 @@ class UserPaymentProfile(BaseModel):
     default_payment_method_id: Optional[str] = None
     has_payment_method: bool = False
 
-async def get_email_for_user_id(user_id: str, token: str) -> str:
-    """Fetch the user's email from the user service using their UUID."""
-    logger.info(f"Getting email for user {user_id}")
-    headers = {"Authorization": f"Bearer {token}"}
-    try:
-        async with httpx.AsyncClient() as client:
-            logger.info(f"Making request to {USER_SERVICE_URL}/api/user/{user_id}")
-            resp = await client.get(f"{USER_SERVICE_URL}/api/user/{user_id}", headers=headers)
-            logger.info(f"User service response status: {resp.status_code}")
-            logger.info(f"User service response: {resp.text}")
-            
-            if resp.status_code != 200:
-                logger.error(f"Error getting user profile: {resp.status_code} - {resp.text}")
-                raise HTTPException(
-                    status_code=resp.status_code,
-                    detail=f"Could not fetch user profile for Stripe lookup: {resp.text}"
-                )
-            
-            data = resp.json()
-            if "email" not in data:
-                logger.error(f"No email found in user profile data: {data}")
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="User profile does not contain email"
-                )
-                
-            logger.info(f"Successfully got email for user {user_id}")
-            return data["email"]
-    except httpx.RequestError as e:
-        logger.error(f"Request error getting user profile: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error connecting to user service: {str(e)}"
-        )
-    except Exception as e:
-        logger.error(f"Unexpected error getting user profile: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error getting user profile: {str(e)}"
-        )
-
 @router.get("/methods/{user_id}", response_model=List[PaymentMethod])
 async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme)):
-    """Get all payment methods for a user (user_id is UUID)."""
+    """Get all payment methods for a user"""
     try:
-        email = await get_email_for_user_id(user_id, token)
-        customers = stripe.Customer.list(email=email, limit=1)
+        # First, check if the user has a customer ID in Stripe
+        customers = stripe.Customer.list(email=user_id, limit=1)
+        
         if not customers.data:
             return []
+        
         customer_id = customers.data[0].id
+        
+        # Get payment methods for the customer
         payment_methods = stripe.PaymentMethod.list(
             customer=customer_id,
             type="card"
         )
+        
+        # Get the default payment method
         customer = stripe.Customer.retrieve(customer_id)
         default_payment_method_id = customer.get("invoice_settings", {}).get("default_payment_method")
+        
         result = []
         for pm in payment_methods.data:
             if pm.type == "card":
@@ -120,7 +82,9 @@ async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme))
                     card_exp_year=pm.card.exp_year,
                     is_default=(pm.id == default_payment_method_id)
                 ))
+        
         return result
+    
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in get_payment_methods: {str(e)}")
         raise HTTPException(
@@ -136,25 +100,34 @@ async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme))
 
 @router.get("/history/{user_id}", response_model=List[PaymentHistory])
 async def get_payment_history(user_id: str, token: str = Depends(oauth2_scheme)):
-    """Get payment history for a user (user_id is UUID)."""
+    """Get payment history for a user"""
     try:
-        email = await get_email_for_user_id(user_id, token)
-        customers = stripe.Customer.list(email=email, limit=1)
+        # First, check if the user has a customer ID in Stripe
+        customers = stripe.Customer.list(email=user_id, limit=1)
+        
         if not customers.data:
             return []
+        
         customer_id = customers.data[0].id
+        
+        # Get payment intents for the customer
         payment_intents = stripe.PaymentIntent.list(
             customer=customer_id,
             limit=100
         )
+        
+        # Get invoices
         invoices = stripe.Invoice.list(
             customer=customer_id,
             limit=100,
             status="paid"
         )
+        
+        # Process payment intents
         payment_history = []
         for pi in payment_intents.data:
             if pi.status == "succeeded":
+                # Try to find payment method details
                 payment_method = None
                 if pi.payment_method:
                     try:
@@ -170,11 +143,14 @@ async def get_payment_history(user_id: str, token: str = Depends(oauth2_scheme))
                             )
                     except Exception as e:
                         logger.warning(f"Error retrieving payment method {pi.payment_method}: {str(e)}")
+                
+                # Find related invoice
                 invoice_url = None
                 for inv in invoices.data:
                     if inv.payment_intent == pi.id:
                         invoice_url = inv.hosted_invoice_url
                         break
+                
                 payment_history.append(PaymentHistory(
                     id=pi.id,
                     amount=pi.amount,
@@ -186,8 +162,12 @@ async def get_payment_history(user_id: str, token: str = Depends(oauth2_scheme))
                     receipt_url=pi.charges.data[0].receipt_url if pi.charges.data else None,
                     payment_method=payment_method
                 ))
+        
+        # Sort by most recent first
         payment_history.sort(key=lambda x: x.created, reverse=True)
+        
         return payment_history
+    
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in get_payment_history: {str(e)}")
         raise HTTPException(
@@ -209,11 +189,8 @@ async def add_payment_method(
 ):
     """Create a Stripe SetupIntent for adding a payment method"""
     try:
-        # Get user's email from user service
-        email = await get_email_for_user_id(user_id, token)
-        
         # First, get or create a customer in Stripe
-        customers = stripe.Customer.list(email=email, limit=1)
+        customers = stripe.Customer.list(email=user_id, limit=1)
         
         customer_id = None
         if customers.data:
@@ -221,7 +198,7 @@ async def add_payment_method(
         else:
             # Create a new customer
             customer = stripe.Customer.create(
-                email=email,
+                email=user_id,
                 metadata={"user_id": user_id}
             )
             customer_id = customer.id
