@@ -1,3 +1,4 @@
+the endpoints
 # CV API Frontend Integration Guide
 
 This guide explains how to use the new `/cvs` endpoints via the API Gateway for all CV-related operations. All requests must be made to the gateway (e.g., `<GATEWAY_URL>/cvs`).

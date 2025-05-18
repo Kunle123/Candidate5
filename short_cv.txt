@@ -1,0 +1,36 @@
+John Doe
+Email: john.doe@email.com
+Phone: +44 1234 567890
+Location: London, UK
+
+Professional Summary
+Motivated software developer with 3 years of experience in web development and a passion for building user-friendly applications.
+
+Work Experience
+
+Software Developer
+ABC Tech, London, UK
+Jan 2022 – Present
+- Developed and maintained web applications using Python and JavaScript.
+- Collaborated with designers and product managers to deliver new features.
+- Improved application performance by 20% through code optimization.
+
+Junior Developer
+XYZ Solutions, London, UK
+Jun 2020 – Dec 2021
+- Assisted in the development of internal tools for data analysis.
+- Wrote unit tests and participated in code reviews.
+
+Education
+
+BSc Computer Science
+University of London, 2017 – 2020
+
+Skills
+- Python
+- JavaScript
+- HTML/CSS
+- SQL
+
+Certifications
+- AWS Certified Cloud Practitioner (2021) 
