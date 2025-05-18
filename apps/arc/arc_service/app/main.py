@@ -12,7 +12,7 @@ import logging
 import jwt
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from .models import UserArcData
+from .models import UserArcData, CVTask, TaskStatusEnum
 from .db import SessionLocal
 import tiktoken
 import re
@@ -231,8 +231,13 @@ class CVUploadResponse(BaseModel):
 
 @router.post("/cv", response_model=CVUploadResponse)
 async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    task_id = str(uuid4())
-    tasks[task_id] = {"status": "pending", "user_id": user_id}
+    import uuid
+    task_id = str(uuid.uuid4())
+    # Create DB task row (status: pending)
+    db_task = CVTask(id=task_id, user_id=user_id, status=TaskStatusEnum.pending)
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
     filename = file.filename.lower()
     try:
         if filename.endswith(".pdf"):
@@ -240,13 +245,14 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         elif filename.endswith(".docx"):
             text = extract_text_from_docx(file)
         else:
-            logger.error(f"Unsupported file type uploaded: {filename}")
+            db_task.status = TaskStatusEnum.failed
+            db_task.error = f"Unsupported file type uploaded: {filename}"
+            db.commit()
             raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
         logger.info(f"[CV UPLOAD] Extracted text from file:\n{text}")
-        tasks[task_id]["raw_text"] = text
+        # --- AI Extraction ---
         sections = split_cv_by_sections(text)
         chunk_outputs = []
-        raw_ai_outputs = []
         with ThreadPoolExecutor() as executor:
             futures = []
             for header, section_text in sections:
@@ -256,9 +262,6 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             for future in as_completed(futures):
                 arc_data = future.result()
                 chunk_outputs.append(arc_data.dict())
-                if hasattr(arc_data, 'raw_ai_output'):
-                    raw_ai_outputs.append(arc_data.raw_ai_output)
-        tasks[task_id]["ai_raw_chunks"] = raw_ai_outputs
         combined = {"work_experience": [], "education": [], "skills": [], "projects": [], "certifications": []}
         for chunk in chunk_outputs:
             for key in combined.keys():
@@ -268,7 +271,6 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                         combined[key].extend(value)
                     else:
                         combined[key].append(value)
-        tasks[task_id]["ai_combined"] = combined.copy()
         filtered = {}
         filtered["work_experience"] = filter_non_empty_entries(combined["work_experience"], ["company", "title", "description", "start_date", "end_date"], section_name="work_experience")
         filtered["education"] = filter_non_empty_entries(combined["education"], ["institution", "degree", "field", "start_date", "end_date"], section_name="education")
@@ -278,24 +280,39 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         for key in list(filtered.keys()):
             if not filtered[key]:
                 filtered[key] = None
-        tasks[task_id]["ai_filtered"] = filtered.copy()
         new_arc_data = ArcData(**filtered)
-        tasks[task_id]["arcdata"] = new_arc_data.dict()
+        # Save to Career Ark (user_arc_data)
+        db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if db_obj:
+            db_obj.arc_data = new_arc_data.dict()
+        else:
+            db_obj = UserArcData(user_id=user_id, arc_data=new_arc_data.dict())
+            db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        # Update task status to completed
+        db_task.status = TaskStatusEnum.completed
+        db_task.extracted_data_summary = {"workExperienceCount": len(new_arc_data.work_experience or []), "skillsFound": len(new_arc_data.skills or [])}
+        db.commit()
     except Exception as e:
         logger.error(f"Error in /cv upload endpoint: {e}")
-        tasks[task_id] = {"status": "failed", "user_id": user_id, "error": str(e)}
+        db_task.status = TaskStatusEnum.failed
+        db_task.error = str(e)
+        db.commit()
         raise
-    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
-    if db_obj:
-        db_obj.arc_data = new_arc_data.dict()
-    else:
-        db_obj = UserArcData(user_id=user_id, arc_data=new_arc_data.dict())
-        db.add(db_obj)
-    db.commit()
-    db.refresh(db_obj)
-    tasks[task_id]["status"] = "completed"
-    tasks[task_id]["extractedDataSummary"] = {"workExperienceCount": len(new_arc_data.work_experience or []), "skillsFound": len(new_arc_data.skills or [])}
     return {"taskId": task_id}
+
+# --- Endpoint: Poll CV Processing Status ---
+@router.get("/cv/status/{taskId}", response_model=CVStatusResponse)
+async def poll_cv_status(taskId: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {
+        "status": db_task.status,
+        "extractedDataSummary": db_task.extracted_data_summary,
+        "error": db_task.error
+    }
 
 # --- Endpoint: Chunk ---
 @router.post("/chunk")
