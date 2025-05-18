@@ -288,10 +288,12 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         new_arc_data = ArcData(**filtered)
         # Save to Career Ark (user_arc_data)
         db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        arc_data_dict = new_arc_data.dict()
+        arc_data_dict["raw_text"] = text  # Persist the raw extracted text
         if db_obj:
-            db_obj.arc_data = new_arc_data.dict()
+            db_obj.arc_data = arc_data_dict
         else:
-            db_obj = UserArcData(user_id=user_id, arc_data=new_arc_data.dict())
+            db_obj = UserArcData(user_id=user_id, arc_data=arc_data_dict)
             db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
