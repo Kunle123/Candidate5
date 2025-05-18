@@ -339,16 +339,6 @@ async def list_cv_tasks(user_id: str = Depends(get_current_user), db: Session = 
         } for task in db_tasks
     ]}
 
-# --- Endpoint: Download Processed CV or Extracted Data ---
-@router.get("/cv/download/{taskId}")
-async def download_processed_cv(taskId: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
-    if not db_task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    # For now, return a dummy text file (replace with actual data as needed)
-    dummy_content = f"Processed CV data for task {taskId}"
-    return FileResponse(io.BytesIO(dummy_content.encode()), media_type="text/plain", filename=f"processed_cv_{taskId}.txt")
-
 # --- Endpoint: Delete a CV or Task ---
 @router.delete("/cv/{taskId}")
 async def delete_cv_task(taskId: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
