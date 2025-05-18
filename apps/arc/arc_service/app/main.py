@@ -305,4 +305,102 @@ app.include_router(router)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"} 
+    return {"status": "ok"}
+
+# --- Add debug and data endpoints ---
+
+@router.get("/cv/download/{taskId}")
+async def download_processed_cv(taskId: str, user_id: str = Depends(get_current_user)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    dummy_content = f"Processed CV data for task {taskId}"
+    return FileResponse(io.BytesIO(dummy_content.encode()), media_type="text/plain", filename=f"processed_cv_{taskId}.txt")
+
+@router.get("/cv/tasks")
+async def list_cv_tasks(user_id: str = Depends(get_current_user)):
+    user_tasks = [ {"taskId": tid, **{k:v for k,v in t.items() if k != "user_id"}} for tid, t in tasks.items() if t["user_id"] == user_id ]
+    return {"tasks": user_tasks}
+
+@router.delete("/cv/{taskId}")
+async def delete_cv_task(taskId: str, user_id: str = Depends(get_current_user)):
+    task = tasks.get(taskId)
+    if not task or task["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    del tasks[taskId]
+    return {"success": True}
+
+class KeywordsRequest(BaseModel):
+    jobDescription: str
+
+class KeywordsResponse(BaseModel):
+    keywords: list[str]
+
+@router.post("/ai/keywords", response_model=KeywordsResponse)
+async def extract_keywords(req: KeywordsRequest, user_id: str = Depends(get_current_user)):
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = openai.OpenAI(api_key=openai_api_key)
+    prompt = f'''Extract up to 20 of the most important recruiter-focused keywords from the following job description.\nUse UK English spelling and conventions throughout (e.g., 'organisation' not 'organization', 'specialise' not 'specialize').\nReturn ONLY a JSON object with a single property 'keywords', which is an array of keywords, and no extra text, comments, or explanations.\n\nJob Description:\n{req.jobDescription[:4000]}'''
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo-1106",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300,
+            temperature=0.2,
+            response_format={"type": "json_object"}
+        )
+        import json
+        try:
+            data = json.loads(response.choices[0].message.content)
+            keywords = data.get("keywords", [])
+        except Exception as e:
+            logger.error(f"Keyword extraction JSON parse failed: {e}")
+            logger.error(f"Raw response: {response.choices[0].message.content}")
+            match = re.search(r'\{.*\}', response.choices[0].message.content, re.DOTALL)
+            if match:
+                try:
+                    data = json.loads(match.group(0))
+                    keywords = data.get("keywords", [])
+                except Exception as e2:
+                    logger.error(f"Fallback JSON parse also failed: {e2}")
+                    keywords = []
+            else:
+                keywords = []
+        return KeywordsResponse(keywords=keywords)
+    except Exception as e:
+        logger.error(f"Keyword extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Keyword extraction failed: {e}")
+
+class GenerateRequest(BaseModel):
+    jobAdvert: str
+    arcData: Dict[str, Any]
+
+class GenerateResponse(BaseModel):
+    cv: str
+    coverLetter: str
+
+@router.post("/generate", response_model=GenerateResponse)
+async def generate_materials(req: GenerateRequest, user_id: str = Depends(get_current_user)):
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = openai.OpenAI(api_key=openai_api_key)
+    prompt = f"""You are an expert CV and cover letter writer. Your task is to generate a professional, optimized CV and a tailored cover letter for an applicant based on their provided career history and a specific job posting.\n\n[START APPLICANT CAREER HISTORY]\n{str(req.arcData)}\n[END APPLICANT CAREER HISTORY]\n\n[START JOB POSTING]\n{req.jobAdvert}\n[END JOB POSTING]\n"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo-1106",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=3000,
+            temperature=0.2,
+            response_format={"type": "json_object"}
+        )
+        import json
+        data = json.loads(response.choices[0].message.content)
+        return GenerateResponse(**data)
+    except Exception as e:
+        logger.error(f"AI CV/cover letter generation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"AI CV/cover letter generation failed: {e}") 
