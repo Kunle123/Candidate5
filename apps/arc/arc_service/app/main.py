@@ -258,6 +258,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         # --- AI Extraction ---
         sections = split_cv_by_sections(text)
         chunk_outputs = []
+        ai_raw_chunks = []
         with ThreadPoolExecutor() as executor:
             futures = []
             for header, section_text in sections:
@@ -267,6 +268,9 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             for future in as_completed(futures):
                 arc_data = future.result()
                 chunk_outputs.append(arc_data.dict())
+                # Save the raw AI output (as string) for each chunk
+                if hasattr(arc_data, 'raw_ai_output'):
+                    ai_raw_chunks.append(arc_data.raw_ai_output)
         combined = {"work_experience": [], "education": [], "skills": [], "projects": [], "certifications": []}
         for chunk in chunk_outputs:
             for key in combined.keys():
@@ -290,6 +294,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
         arc_data_dict = new_arc_data.dict()
         arc_data_dict["raw_text"] = text  # Persist the raw extracted text
+        arc_data_dict["ai_raw_chunks"] = ai_raw_chunks
         if db_obj:
             db_obj.arc_data = arc_data_dict
         else:
