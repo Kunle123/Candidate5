@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException, Request, Path
+from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException, Request, Path, Body
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from uuid import uuid4
@@ -508,6 +508,123 @@ async def get_arc_data(user_id: str = Depends(get_current_user), db: Session = D
         raise
     except Exception as e:
         logger.error(f"Unexpected error in get_arc_data: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.put("/data")
+async def update_arc_data(data: dict = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        if not isinstance(data, dict):
+            logger.error(f"Input data is malformed: {data}")
+            raise HTTPException(status_code=400, detail="Input data is malformed")
+        db_user_arc.arc_data = data
+        db.commit()
+        db.refresh(db_user_arc)
+        return db_user_arc.arc_data
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in update_arc_data: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/work_experience")
+async def add_work_experience(entry: dict = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc or not db_user_arc.arc_data:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        arc_data = db_user_arc.arc_data
+        if not isinstance(arc_data, dict):
+            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
+            raise HTTPException(status_code=400, detail="arc_data is malformed")
+        work_experience = arc_data.get("work_experience", [])
+        if not isinstance(work_experience, list):
+            logger.error(f"work_experience for user {user_id} is malformed: {work_experience}")
+            raise HTTPException(status_code=400, detail="work_experience is malformed")
+        # Assign a unique id to the new entry if not present
+        import uuid
+        if "id" not in entry:
+            entry["id"] = str(uuid.uuid4())
+        work_experience.append(entry)
+        arc_data["work_experience"] = work_experience
+        db_user_arc.arc_data = arc_data
+        db.commit()
+        db.refresh(db_user_arc)
+        return entry
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in add_work_experience: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.patch("/work_experience/{id}")
+async def update_work_experience(id: str, update: dict = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc or not db_user_arc.arc_data:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        arc_data = db_user_arc.arc_data
+        if not isinstance(arc_data, dict):
+            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
+            raise HTTPException(status_code=400, detail="arc_data is malformed")
+        work_experience = arc_data.get("work_experience", [])
+        if not isinstance(work_experience, list):
+            logger.error(f"work_experience for user {user_id} is malformed: {work_experience}")
+            raise HTTPException(status_code=400, detail="work_experience is malformed")
+        found = False
+        for entry in work_experience:
+            if entry.get("id") == id:
+                entry.update(update)
+                found = True
+                break
+        if not found:
+            logger.error(f"Work experience entry with id {id} not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="Work experience entry not found")
+        arc_data["work_experience"] = work_experience
+        db_user_arc.arc_data = arc_data
+        db.commit()
+        db.refresh(db_user_arc)
+        return update
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in update_work_experience: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/education")
+async def add_education(entry: dict = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc or not db_user_arc.arc_data:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        arc_data = db_user_arc.arc_data
+        if not isinstance(arc_data, dict):
+            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
+            raise HTTPException(status_code=400, detail="arc_data is malformed")
+        education = arc_data.get("education", [])
+        if not isinstance(education, list):
+            logger.error(f"education for user {user_id} is malformed: {education}")
+            raise HTTPException(status_code=400, detail="education is malformed")
+        # Assign a unique id to the new entry if not present
+        import uuid
+        if "id" not in entry:
+            entry["id"] = str(uuid.uuid4())
+        education.append(entry)
+        arc_data["education"] = education
+        db_user_arc.arc_data = arc_data
+        db.commit()
+        db.refresh(db_user_arc)
+        return entry
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in add_education: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 app.include_router(router)
