@@ -281,9 +281,9 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             for future in as_completed(futures):
                 arc_data = future.result()
                 chunk_outputs.append(arc_data.dict())
-                # Save the raw AI output (as string) for each chunk
+                # Only use raw_ai_output for debugging, never for DB storage
                 if hasattr(arc_data, 'raw_ai_output'):
-                    ai_raw_chunks.append(arc_data.raw_ai_output)
+                    ai_raw_chunks.append(getattr(arc_data, 'raw_ai_output'))
         combined = {"work_experience": [], "education": [], "skills": [], "projects": [], "certifications": []}
         for chunk in chunk_outputs:
             for key in combined.keys():
@@ -307,7 +307,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
         arc_data_dict = new_arc_data.dict()
         arc_data_dict["raw_text"] = text  # Persist the raw extracted text
-        arc_data_dict["ai_raw_chunks"] = ai_raw_chunks
+        arc_data_dict["ai_raw_chunks"] = ai_raw_chunks  # Only the raw strings, not the attribute
         if db_obj:
             db_obj.arc_data = arc_data_dict
         else:
