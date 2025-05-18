@@ -177,10 +177,13 @@ def parse_cv_with_ai_chunk(text):
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
     prompt_instructions = (
-        "Extract all information related to each individual job role, combining any matching content from all sections such as 'Work Experience', 'Relevant Achievements', 'Projects', or others. "
-        "Group everything by job title and company, ensuring that dates, responsibilities, achievements, technologies used, and descriptions are preserved in full detail. "
-        "Output the result as a JSON array where each object contains: 'company', 'title', 'start_date', 'end_date', and 'description'.\n"
-        "CV Text:\n"
+        "Extract the following information from the CV text below:\n"
+        "- Work Experience: List of roles with company, title, start_date, end_date, and description.\n"
+        "- Education: List of entries with institution, degree, field, start_date, end_date, and description.\n"
+        "- Skills: List of skills.\n"
+        "- Projects: List of projects with name, description, and relevant dates.\n"
+        "- Certifications: List of certifications with name, issuer, and year.\n"
+        "\nOutput a single JSON object with these keys: work_experience, education, skills, projects, certifications. Each should be an array of objects (except skills, which is an array of strings).\n\nCV Text:\n"
     )
     prompt = prompt_instructions + text
     logger.info(f"[AI CHUNK] Raw text sent to OpenAI for this chunk:\n{text}")
@@ -192,14 +195,15 @@ def parse_cv_with_ai_chunk(text):
             temperature=0.2,
             response_format={"type": "json_object"}
         )
-        logger.info(f"[AI CHUNK] Raw AI output for this chunk: {response.choices[0].message.content}")
+        raw_response = response.choices[0].message.content
+        logger.info(f"[AI CHUNK] Raw AI output for this chunk: {raw_response}")
         import json
         try:
-            data = json.loads(response.choices[0].message.content)
+            data = json.loads(raw_response)
         except Exception as e:
             logger.error(f"AI parsing failed: {e}")
-            logger.error(f"Raw response: {response.choices[0].message.content}")
-            match = re.search(r'\{.*\}', response.choices[0].message.content, re.DOTALL)
+            logger.error(f"Raw response: {raw_response}")
+            match = re.search(r'\{.*\}', raw_response, re.DOTALL)
             if match:
                 try:
                     data = json.loads(match.group(0))
@@ -217,7 +221,9 @@ def parse_cv_with_ai_chunk(text):
                     else:
                         new_list.append(entry)
                 data[key] = new_list
-        return ArcData(**data)
+        arc_data = ArcData(**data)
+        arc_data.raw_ai_output = raw_response  # Attach raw response for debugging
+        return arc_data
     except Exception as e:
         logger.error(f"AI parsing failed: {e}")
         raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
