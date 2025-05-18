@@ -369,27 +369,53 @@ async def poll_cv_status(taskId: str = Path(...), user_id: str = Depends(get_cur
 
 @router.get("/cv/text/{taskId}")
 async def get_raw_text(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
-    if not db_task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    # Assume raw text is stored in user_arc_data (if not, stop and ask user)
-    db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
-    if not db_user_arc or not db_user_arc.arc_data or not db_user_arc.arc_data.get("raw_text"):
-        # STOP: raw_text is not stored persistently. Ask user what to do.
-        raise HTTPException(status_code=501, detail="raw_text is not stored persistently. Please advise how you want to handle this.")
-    return {"raw_text": db_user_arc.arc_data["raw_text"]}
+    try:
+        db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+        if not db_task:
+            logger.error(f"Task {taskId} not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="Task not found")
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc or not db_user_arc.arc_data:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        arc_data = db_user_arc.arc_data
+        if not isinstance(arc_data, dict):
+            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
+            raise HTTPException(status_code=400, detail="arc_data is malformed")
+        if "raw_text" not in arc_data:
+            logger.warning(f"raw_text not persisted for user {user_id}, task {taskId}")
+            raise HTTPException(status_code=501, detail="raw_text is not stored persistently. Please advise how you want to handle this.")
+        return {"raw_text": arc_data["raw_text"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in get_raw_text: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/cv/ai-raw/{taskId}")
 async def get_ai_raw(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
-    if not db_task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    # Assume ai_raw_chunks is stored in user_arc_data (if not, stop and ask user)
-    db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
-    if not db_user_arc or not db_user_arc.arc_data or not db_user_arc.arc_data.get("ai_raw_chunks"):
-        # STOP: ai_raw_chunks is not stored persistently. Ask user what to do.
-        raise HTTPException(status_code=501, detail="ai_raw_chunks is not stored persistently. Please advise how you want to handle this.")
-    return {"ai_raw_chunks": db_user_arc.arc_data["ai_raw_chunks"]}
+    try:
+        db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+        if not db_task:
+            logger.error(f"Task {taskId} not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="Task not found")
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc or not db_user_arc.arc_data:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        arc_data = db_user_arc.arc_data
+        if not isinstance(arc_data, dict):
+            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
+            raise HTTPException(status_code=400, detail="arc_data is malformed")
+        if "ai_raw_chunks" not in arc_data:
+            logger.warning(f"ai_raw_chunks not persisted for user {user_id}, task {taskId}")
+            raise HTTPException(status_code=501, detail="ai_raw_chunks is not stored persistently. Please advise how you want to handle this.")
+        return {"ai_raw_chunks": arc_data["ai_raw_chunks"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in get_ai_raw: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 app.include_router(router)
 
