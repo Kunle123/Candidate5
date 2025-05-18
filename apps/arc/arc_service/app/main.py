@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException, Request
+from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException, Request, Path
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from uuid import uuid4
@@ -74,6 +74,11 @@ class ArcData(BaseModel):
     projects: Optional[List[Dict[str, Any]]] = None
     certifications: Optional[List[Dict[str, Any]]] = None
     # Add more fields as needed
+
+class CVStatusResponse(BaseModel):
+    status: str
+    extractedDataSummary: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
 
 def extract_text_from_pdf(file: UploadFile):
     try:
@@ -350,6 +355,41 @@ async def download_processed_cv(taskId: str, user_id: str = Depends(get_current_
     import json
     data_bytes = json.dumps(db_user_arc.arc_data, indent=2).encode()
     return FileResponse(io.BytesIO(data_bytes), media_type="application/json", filename=f"extracted_cv_{taskId}.json")
+
+@router.get("/cv/status/{taskId}", response_model=CVStatusResponse)
+async def poll_cv_status(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {
+        "status": db_task.status,
+        "extractedDataSummary": db_task.extracted_data_summary,
+        "error": db_task.error
+    }
+
+@router.get("/cv/text/{taskId}")
+async def get_raw_text(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    # Assume raw text is stored in user_arc_data (if not, stop and ask user)
+    db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if not db_user_arc or not db_user_arc.arc_data or not db_user_arc.arc_data.get("raw_text"):
+        # STOP: raw_text is not stored persistently. Ask user what to do.
+        raise HTTPException(status_code=501, detail="raw_text is not stored persistently. Please advise how you want to handle this.")
+    return {"raw_text": db_user_arc.arc_data["raw_text"]}
+
+@router.get("/cv/ai-raw/{taskId}")
+async def get_ai_raw(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    # Assume ai_raw_chunks is stored in user_arc_data (if not, stop and ask user)
+    db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if not db_user_arc or not db_user_arc.arc_data or not db_user_arc.arc_data.get("ai_raw_chunks"):
+        # STOP: ai_raw_chunks is not stored persistently. Ask user what to do.
+        raise HTTPException(status_code=501, detail="ai_raw_chunks is not stored persistently. Please advise how you want to handle this.")
+    return {"ai_raw_chunks": db_user_arc.arc_data["ai_raw_chunks"]}
 
 app.include_router(router)
 
