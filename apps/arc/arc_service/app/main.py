@@ -302,18 +302,6 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         raise
     return {"taskId": task_id}
 
-# --- Endpoint: Poll CV Processing Status ---
-@router.get("/cv/status/{taskId}", response_model=CVStatusResponse)
-async def poll_cv_status(taskId: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
-    if not db_task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return {
-        "status": db_task.status,
-        "extractedDataSummary": db_task.extracted_data_summary,
-        "error": db_task.error
-    }
-
 # --- Endpoint: Chunk ---
 @router.post("/chunk")
 async def test_parse_cv_with_ai_chunk_new(request: Request, user_id: str = Depends(get_current_user)):
