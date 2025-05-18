@@ -238,6 +238,13 @@ class CVUploadResponse(BaseModel):
 async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     import uuid
     task_id = str(uuid.uuid4())
+    # Ensure user_arc_data record exists before creating CVTask
+    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if not db_obj:
+        db_obj = UserArcData(user_id=user_id, arc_data={})
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
     # Create DB task row (status: pending)
     db_task = CVTask(id=task_id, user_id=user_id, status=TaskStatusEnum.pending)
     db.add(db_task)
