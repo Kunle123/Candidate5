@@ -24,8 +24,10 @@ app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark 
 router = APIRouter(prefix="/api/arc")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-logger = logging.getLogger("arc_service")
-logging.basicConfig(level=logging.INFO)
+# Update logging configuration to enable verbose logging for the Ark service
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("arc")
+logger.setLevel(logging.DEBUG)
 
 JWT_SECRET = os.getenv("JWT_SECRET", "development_secret_key")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
