@@ -183,6 +183,7 @@ def parse_cv_with_ai_chunk(text):
     prompt_instructions = (
         "Extract the following information from the CV text below:\n"
         "- Work Experience: List of roles with company, title, start_date, end_date, and description.\n"
+        "  If a role is mentioned in multiple places (e.g., in an introduction or highlights section and later in a career history section), combine these mentions into a single entry under the same job title.\n"
         "- Education: List of entries with institution, degree, field, start_date, end_date, and description.\n"
         "- Skills: List of skills.\n"
         "- Projects: List of projects with name, description, and relevant dates.\n"
