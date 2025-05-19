@@ -287,23 +287,32 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         logger.info(f"[CV UPLOAD] Extracted text from file (first 500 chars):\n{text[:500]}")
         # --- AI Extraction ---
         sections = split_cv_by_sections(text)
+        logger.info(f"[CV UPLOAD] Found {len(sections)} section(s) in CV.")
         chunk_outputs = []
         ai_raw_chunks = []
+        total_chunks = 0
         with ThreadPoolExecutor() as executor:
             futures = []
-            for header, section_text in sections:
+            for section_idx, (header, section_text) in enumerate(sections):
                 nlp_chunks = nlp_chunk_text(section_text, max_tokens=1500)
-                for chunk in nlp_chunks:
+                logger.info(f"[CV UPLOAD] Section {section_idx+1} ('{header}') split into {len(nlp_chunks)} chunk(s).")
+                for chunk_idx, chunk in enumerate(nlp_chunks):
+                    logger.info(f"[CV UPLOAD] Section {section_idx+1} Chunk {chunk_idx+1} content (first 200 chars): {chunk[:200]}")
                     futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
+                total_chunks += len(nlp_chunks)
+            logger.info(f"[CV UPLOAD] Total NLP chunks to process: {total_chunks}")
             for future in as_completed(futures):
                 arc_data = future.result()
                 logger.info(f"[CV UPLOAD] AI chunk output: {arc_data}")
                 arc_data_dict = arc_data.dict()
                 arc_data_dict.pop("raw_ai_output", None)
+                if not any(arc_data_dict.values()):
+                    logger.warning(f"[CV UPLOAD] WARNING: Empty or skipped chunk output: {arc_data_dict}")
                 chunk_outputs.append(arc_data_dict)
                 # Only use raw_ai_output for debugging, never for DB storage
                 if hasattr(arc_data, 'raw_ai_output'):
                     ai_raw_chunks.append(getattr(arc_data, 'raw_ai_output'))
+        logger.info(f"[CV UPLOAD] Number of AI chunk outputs: {len(chunk_outputs)}")
         logger.info(f"[CV UPLOAD] All AI chunk outputs: {chunk_outputs}")
         combined = {"work_experience": [], "education": [], "skills": [], "projects": [], "certifications": []}
         for chunk in chunk_outputs:
