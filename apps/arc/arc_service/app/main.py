@@ -120,6 +120,7 @@ section_header_regex = re.compile(rf"^({'|'.join(SECTION_HEADERS)})[:\s]*$", re.
 def split_cv_by_sections(text):
     matches = list(section_header_regex.finditer(text))
     if not matches:
+        logger.info("[SECTION SPLIT] No section headers found. Treating entire CV as one section.")
         return [("full", text)]
     sections = []
     for i, match in enumerate(matches):
@@ -127,10 +128,11 @@ def split_cv_by_sections(text):
         header = match.group(1).strip().lower()
         end = matches[i+1].start() if i+1 < len(matches) else len(text)
         section_text = text[start:end].strip()
+        logger.info(f"[SECTION SPLIT] Found section header: '{header}' (chars {start}-{end})")
         sections.append((header, section_text))
     return sections
 
-def nlp_chunk_text(text, max_tokens=1500, model="gpt-3.5-turbo"):
+def nlp_chunk_text(text, max_tokens=800, model="gpt-3.5-turbo"):
     nlp = spacy.load("en_core_web_sm")
     enc = tiktoken.encoding_for_model(model)
     doc = nlp(text)
@@ -185,10 +187,11 @@ def parse_cv_with_ai_chunk(text):
         "- Skills: List of skills.\n"
         "- Projects: List of projects with name, description, and relevant dates.\n"
         "- Certifications: List of certifications with name, issuer, and year.\n"
-        "\nOutput a single JSON object with these keys: work_experience, education, skills, projects, certifications. Each should be an array of objects (except skills, which is an array of strings).\n\nCV Text:\n"
+        "\nOutput a single JSON object with these keys: work_experience, education, skills, projects, certifications. Each should be an array of objects (except skills, which is an array of strings).\n"
+        "If a section is incomplete or fragmented, still include whatever is present. If you are unsure, make your best guess. Do not omit any relevant data.\n\nCV Text:\n"
     )
     prompt = prompt_instructions + text
-    logger.info(f"[AI CHUNK] Raw text sent to OpenAI for this chunk:\n{text}")
+    logger.info(f"[AI CHUNK] Raw text sent to OpenAI for this chunk:\n{text[:500]} ... (truncated)")
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo-1106",
@@ -294,7 +297,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         with ThreadPoolExecutor() as executor:
             futures = []
             for section_idx, (header, section_text) in enumerate(sections):
-                nlp_chunks = nlp_chunk_text(section_text, max_tokens=1500)
+                nlp_chunks = nlp_chunk_text(section_text, max_tokens=800)
                 logger.info(f"[CV UPLOAD] Section {section_idx+1} ('{header}') split into {len(nlp_chunks)} chunk(s).")
                 for chunk_idx, chunk in enumerate(nlp_chunks):
                     logger.info(f"[CV UPLOAD] Section {section_idx+1} Chunk {chunk_idx+1} content (first 200 chars): {chunk[:200]}")
