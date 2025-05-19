@@ -253,6 +253,8 @@ class CVUploadResponse(BaseModel):
 async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     import uuid
     task_id = str(uuid.uuid4())
+    # Log file details
+    logger.info(f"[CV UPLOAD] Received file: filename={file.filename}, content_type={file.content_type}")
     # Ensure user_arc_data record exists before creating CVTask
     db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
     if not db_obj:
@@ -267,11 +269,15 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
     db.refresh(db_task)
     filename = file.filename.lower()
     try:
+        logger.info(f"[CV UPLOAD] Processing file: {filename}")
         if filename.endswith(".pdf"):
+            logger.info("[CV UPLOAD] File is PDF, extracting text...")
             text = extract_text_from_pdf(file)
         elif filename.endswith(".docx"):
+            logger.info("[CV UPLOAD] File is DOCX, extracting text...")
             text = extract_text_from_docx(file)
         else:
+            logger.error(f"[CV UPLOAD] Unsupported file type: {filename}")
             db_task.status = TaskStatusEnum.failed
             db_task.error = f"Unsupported file type uploaded: {filename}"
             db.commit()
