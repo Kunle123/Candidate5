@@ -332,7 +332,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                     else:
                         combined[key].append(value)
         filtered = {}
-        filtered["work_experience"] = filter_non_empty_entries(combined["work_experience"], ["company", "title", "description", "start_date", "end_date"], section_name="work_experience")
+        filtered["work_experience"] = deduplicate_job_roles(filter_non_empty_entries(combined["work_experience"], ["company", "title", "description", "start_date", "end_date"], section_name="work_experience"))
         filtered["education"] = filter_non_empty_entries(combined["education"], ["institution", "degree", "field", "start_date", "end_date"], section_name="education")
         filtered["skills"] = [s for s in combined["skills"] if s]
         filtered["projects"] = filter_non_empty_entries(combined["projects"], ["name", "description"], section_name="projects")
@@ -352,7 +352,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             db_obj.arc_data = arc_data_dict
         else:
             db_obj = UserArcData(user_id=user_id, arc_data=arc_data_dict)
-            db.add(db_obj)
+        db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
         # Update task status to completed
@@ -366,6 +366,19 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db.commit()
         raise
     return {"taskId": task_id}
+
+def deduplicate_job_roles(job_roles):
+    unique_roles = {}
+    for role in job_roles:
+        key = (role.get("title", ""), role.get("company", ""), role.get("start_date", ""), role.get("end_date", ""))
+        if key in unique_roles:
+            # If the role is a duplicate, prompt the user for confirmation
+            logger.info(f"Duplicate job role detected: {role}")
+            # For now, we'll just log the duplicate and keep the first occurrence
+            # In a real implementation, you would prompt the user for confirmation
+        else:
+            unique_roles[key] = role
+    return list(unique_roles.values())
 
 # --- Endpoint: Chunk ---
 @router.post("/chunk")
