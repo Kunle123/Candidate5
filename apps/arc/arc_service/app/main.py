@@ -812,6 +812,41 @@ async def update_training(id: str, update: dict = Body(...), user_id: str = Depe
         logger.error(f"Unexpected error in update_training: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@router.delete("/work_experience/{id}")
+async def delete_work_experience(id: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc or not db_user_arc.arc_data:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        arc_data = db_user_arc.arc_data
+        if not isinstance(arc_data, dict):
+            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
+            raise HTTPException(status_code=400, detail="arc_data is malformed")
+        work_experience = arc_data.get("work_experience", [])
+        if not isinstance(work_experience, list):
+            logger.error(f"work_experience for user {user_id} is malformed: {work_experience}")
+            raise HTTPException(status_code=400, detail="work_experience is malformed")
+        found = False
+        for entry in work_experience:
+            if entry.get("id") == id:
+                work_experience.remove(entry)
+                found = True
+                break
+        if not found:
+            logger.error(f"Work experience entry with id {id} not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="Work experience entry not found")
+        arc_data["work_experience"] = work_experience
+        db_user_arc.arc_data = arc_data
+        db.commit()
+        db.refresh(db_user_arc)
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in delete_work_experience: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 app.include_router(router)
 
 @app.get("/health")
