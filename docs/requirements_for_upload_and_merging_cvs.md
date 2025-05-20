@@ -1,4 +1,4 @@
-# CV Classification & Job Role Management System
+# Requirements for Upload and Merging CVs
 
 ## Requirements
 
@@ -29,7 +29,7 @@
 ## Progress Tracking
 
 ### Current Status
-- [ ] Create a restore point for the current state.
+- [x] Create a restore point for the current state.
 - [ ] Enhance AI extraction logic to merge non-contiguous mentions of the same role.
 - [ ] Implement deduplication logic based on job dates and job role/function.
 - [ ] Add endpoints for editing job roles.
@@ -39,9 +39,21 @@
 ### Errors Encountered & Resolutions
 - No errors encountered yet.
 
+## Potential Issues & Challenges
+- **Ambiguity in Job Role Merging:**  
+  If the same job role is mentioned in different sections with slight variations, the system may struggle to merge them correctly. A robust deduplication strategy and user confirmation will be essential.
+
+- **Handling Malformed CVs:**  
+  If a CV is poorly formatted or contains inconsistent data, the AI extraction may fail or produce incorrect results. Logging and error handling will be critical to diagnose and address these issues.
+
+- **Performance with Multiple CVs:**  
+  Importing multiple CVs sequentially may lead to performance issues or timeouts. The system should be optimized to handle large volumes of data efficiently.
+
+- **User Experience During Merging:**  
+  Prompting the user for confirmation during merging may disrupt the workflow. The system should provide clear, concise prompts and allow for easy resolution.
+
 ## Next Steps
-1. Create a restore point for the current state.
-2. Implement the enhanced AI extraction and deduplication logic.
-3. Add endpoints for editing job roles.
-4. Enhance logging and error handling.
-5. Test the implementation thoroughly. 
+1. Implement the enhanced AI extraction and deduplication logic.
+2. Add endpoints for editing job roles.
+3. Enhance logging and error handling.
+4. Test the implementation thoroughly. 
