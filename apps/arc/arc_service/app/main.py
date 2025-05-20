@@ -847,6 +847,16 @@ async def delete_work_experience(id: str, user_id: str = Depends(get_current_use
         logger.error(f"Unexpected error in delete_work_experience: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@router.get("/logs")
+async def get_logs(user_id: str = Depends(get_current_user)):
+    try:
+        # In a real implementation, you would fetch logs from a logging service or file
+        # For now, we'll return a placeholder message
+        return {"message": "Logs are not yet implemented. This endpoint will return logs for debugging purposes."}
+    except Exception as e:
+        logger.error(f"Unexpected error in get_logs: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 app.include_router(router)
 
 @app.get("/health")
