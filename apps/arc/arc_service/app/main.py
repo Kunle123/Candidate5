@@ -372,10 +372,13 @@ def deduplicate_job_roles(job_roles):
     for role in job_roles:
         key = (role.get("title", ""), role.get("company", ""), role.get("start_date", ""), role.get("end_date", ""))
         if key in unique_roles:
-            # If the role is a duplicate, prompt the user for confirmation
-            logger.info(f"Duplicate job role detected: {role}")
-            # For now, we'll just log the duplicate and keep the first occurrence
-            # In a real implementation, you would prompt the user for confirmation
+            # If the role is a duplicate, combine descriptions
+            existing_role = unique_roles[key]
+            existing_description = existing_role.get("description", "")
+            new_description = role.get("description", "")
+            combined_description = existing_description + " " + new_description
+            existing_role["description"] = combined_description
+            logger.info(f"Combined descriptions for duplicate job role: {role}")
         else:
             unique_roles[key] = role
     return list(unique_roles.values())
