@@ -30,8 +30,8 @@
 
 ### Current Status
 - [x] Create a restore point for the current state.
-- [ ] Enhance AI extraction logic to merge non-contiguous mentions of the same role.
-- [ ] Implement deduplication logic based on job dates and job role/function.
+- [x] Enhance AI extraction logic to merge non-contiguous mentions of the same role.
+- [x] Implement deduplication logic based on job dates and job role/function.
 - [ ] Add endpoints for editing job roles.
 - [ ] Enhance logging and error handling.
 - [ ] Test the implementation with multiple CV imports and duplicates.
@@ -53,7 +53,6 @@
   Prompting the user for confirmation during merging may disrupt the workflow. The system should provide clear, concise prompts and allow for easy resolution.
 
 ## Next Steps
-1. Implement the enhanced AI extraction and deduplication logic.
-2. Add endpoints for editing job roles.
-3. Enhance logging and error handling.
-4. Test the implementation thoroughly. 
+1. Add endpoints for editing job roles.
+2. Enhance logging and error handling.
+3. Test the implementation thoroughly. 
