@@ -368,15 +368,25 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
     return {"taskId": task_id}
 
 def deduplicate_job_roles(job_roles):
+    import re
     unique_roles = {}
     for role in job_roles:
         key = (role.get("title", ""), role.get("company", ""), role.get("start_date", ""), role.get("end_date", ""))
+        desc = role.get("description", "")
         if key in unique_roles:
-            # If the role is a duplicate, combine descriptions
             existing_role = unique_roles[key]
-            existing_description = existing_role.get("description", "")
-            new_description = role.get("description", "")
-            combined_description = existing_description + " " + new_description
+            existing_desc = existing_role.get("description", "")
+            # Split into sentences, remove duplicates, and preserve order
+            def split_sentences(text):
+                return [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
+            all_sentences = split_sentences(existing_desc) + split_sentences(desc)
+            seen = set()
+            unique_sentences = []
+            for s in all_sentences:
+                if s not in seen:
+                    unique_sentences.append(s)
+                    seen.add(s)
+            combined_description = " ".join(unique_sentences)
             existing_role["description"] = combined_description
             logger.info(f"Combined descriptions for duplicate job role: {role}")
         else:
