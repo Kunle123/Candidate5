@@ -13,7 +13,7 @@ import jwt
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from .models import UserArcData, CVTask, TaskStatusEnum
-from .db import SessionLocal
+from .db import SessionLocal, Base, engine
 import tiktoken
 import re
 import spacy
@@ -22,6 +22,21 @@ from typing import Optional, List, Dict, Any
 from .career_ark_router import router as career_ark_router
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
+
+# --- Database Table Creation ---
+@app.on_event("startup")
+def startup_event():
+    import logging
+    logger = logging.getLogger("arc")
+    logger.info("Running startup event: Creating database tables if they don't exist...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables checked/created successfully.")
+    except Exception as e:
+        logger.error(f"Error creating database tables: {e}", exc_info=True)
+        # Depending on the error, you might want to prevent startup
+# --- End Database Table Creation ---
+
 router = APIRouter(prefix="/api/arc")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
