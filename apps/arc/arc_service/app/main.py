@@ -132,7 +132,7 @@ def split_cv_by_sections(text):
         sections.append((header, section_text))
     return sections
 
-def nlp_chunk_text(text, max_tokens=800, model="gpt-3.5-turbo"):
+def nlp_chunk_text(text, max_tokens=12000, model="gpt-4-turbo"):
     nlp = spacy.load("en_core_web_sm")
     enc = tiktoken.encoding_for_model(model)
     doc = nlp(text)
