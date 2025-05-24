@@ -286,16 +286,13 @@ class CVUploadResponse(BaseModel):
 async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     import uuid
     task_id = str(uuid.uuid4())
-    # Log file details
     logger.info(f"[CV UPLOAD] Received file: filename={file.filename}, content_type={file.content_type}")
-    # Ensure user_arc_data record exists before creating CVTask
     db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
     if not db_obj:
         db_obj = UserArcData(user_id=user_id, arc_data={})
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
-    # Create DB task row (status: pending)
     db_task = CVTask(id=task_id, user_id=user_id, status=TaskStatusEnum.pending)
     db.add(db_task)
     db.commit()
@@ -316,7 +313,6 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             db.commit()
             raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
         logger.info(f"[CV UPLOAD] Extracted text from file (first 500 chars):\n{text[:500]}")
-        # --- AI Extraction ---
         sections = split_cv_by_sections(text)
         logger.info(f"[CV UPLOAD] Found {len(sections)} section(s) in CV.")
         chunk_outputs = []
@@ -340,7 +336,6 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                 if not any(arc_data_dict.values()):
                     logger.warning(f"[CV UPLOAD] WARNING: Empty or skipped chunk output: {arc_data_dict}")
                 chunk_outputs.append(arc_data_dict)
-                # Only use raw_ai_output for debugging, never for DB storage
                 if hasattr(arc_data, 'raw_ai_output'):
                     ai_raw_chunks.append(getattr(arc_data, 'raw_ai_output'))
         logger.info(f"[CV UPLOAD] Number of AI chunk outputs: {len(chunk_outputs)}")
@@ -360,25 +355,35 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         filtered["skills"] = [s for s in combined["skills"] if s]
         filtered["projects"] = filter_non_empty_entries(combined["projects"], ["name", "description"], section_name="projects")
         filtered["certifications"] = filter_non_empty_entries(combined["certifications"], ["name", "issuer", "year"], section_name="certifications")
+        # --- Split description into details for work_experience and education ---
+        for entry in filtered.get("work_experience", []):
+            entry["details"] = split_description_to_details(entry.get("description", ""))
+        for entry in filtered.get("education", []):
+            entry["details"] = split_description_to_details(entry.get("description", ""))
+        # --- Optionally map projects.name to title and certifications.year to date ---
+        for entry in filtered.get("projects", []):
+            if "name" in entry:
+                entry["title"] = entry["name"]
+        for entry in filtered.get("certifications", []):
+            if "year" in entry:
+                entry["date"] = entry["year"]
         for key in list(filtered.keys()):
             if not filtered[key]:
                 filtered[key] = None
         logger.info(f"[CV UPLOAD] Filtered data: {filtered}")
         new_arc_data = ArcData(**filtered)
-        # Save to Career Ark (user_arc_data)
         db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
         arc_data_dict = new_arc_data.dict()
-        arc_data_dict["raw_text"] = text  # Persist the raw extracted text
-        arc_data_dict["ai_raw_chunks"] = ai_raw_chunks  # Only the raw strings, not the attribute
+        arc_data_dict["raw_text"] = text
+        arc_data_dict["ai_raw_chunks"] = ai_raw_chunks
         logger.info(f"[CV UPLOAD] Final arc_data_dict to be saved: {arc_data_dict}")
         if db_obj:
             db_obj.arc_data = arc_data_dict
         else:
             db_obj = UserArcData(user_id=user_id, arc_data=arc_data_dict)
-        db.add(db_obj)
+            db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
-        # Update task status to completed
         db_task.status = TaskStatusEnum.completed
         db_task.extracted_data_summary = {"workExperienceCount": len(new_arc_data.work_experience or []), "skillsFound": len(new_arc_data.skills or [])}
         db.commit()
@@ -415,6 +420,12 @@ def deduplicate_job_roles(job_roles):
         else:
             unique_roles[key] = role
     return list(unique_roles.values())
+
+def split_description_to_details(description):
+    if not description:
+        return []
+    # Split on newlines and strip whitespace
+    return [line.strip() for line in description.splitlines() if line.strip()]
 
 # --- Endpoint: Chunk ---
 @router.post("/chunk")
