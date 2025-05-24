@@ -132,7 +132,7 @@ def split_cv_by_sections(text):
         sections.append((header, section_text))
     return sections
 
-def nlp_chunk_text(text, max_tokens=12000, model="gpt-4-turbo"):
+def nlp_chunk_text(text, max_tokens=40000, model="gpt-4-turbo"):
     nlp = spacy.load("en_core_web_sm")
     enc = tiktoken.encoding_for_model(model)
     doc = nlp(text)
@@ -173,6 +173,28 @@ def filter_non_empty_entries(entries, key_fields=None, section_name=None):
             logger.info(f"[FILTER] {section_name}: Filtered out empty/whitespace entry: {entry}")
     logger.info(f"[FILTER] {section_name}: {len(filtered)} of {len(entries)} entries kept after filtering.")
     return filtered
+
+def flatten_work_experience(ai_work_experience):
+    flat = []
+    for entry in ai_work_experience:
+        company = entry.get("company")
+        date_range = entry.get("date_range")
+        # Split date_range into start_date and end_date if possible
+        start_date, end_date = None, None
+        if date_range and "–" in date_range:
+            parts = [p.strip() for p in date_range.split("–")]
+            if len(parts) == 2:
+                start_date, end_date = parts
+        roles = entry.get("roles", [])
+        for role in roles:
+            flat.append({
+                "company": company,
+                "title": role.get("title"),
+                "start_date": start_date,
+                "end_date": end_date,
+                "description": "\n".join(role.get("description", [])) if isinstance(role.get("description"), list) else role.get("description", "")
+            })
+    return flat
 
 def parse_cv_with_ai_chunk(text):
     openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -257,6 +279,10 @@ def parse_cv_with_ai_chunk(text):
                     else:
                         new_list.append(entry)
                 data[key] = new_list
+        # Flatten work_experience if needed
+        if "work_experience" in data and isinstance(data["work_experience"], list):
+            if data["work_experience"] and isinstance(data["work_experience"][0], dict) and "roles" in data["work_experience"][0]:
+                data["work_experience"] = flatten_work_experience(data["work_experience"])
         try:
             arc_data = ArcData(**data)
         except Exception as e:
