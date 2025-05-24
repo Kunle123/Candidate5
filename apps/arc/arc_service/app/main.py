@@ -375,10 +375,15 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                         combined[key].extend(value)
                     else:
                         combined[key].append(value)
+        # --- Preserve order for all lists as in the input JSON ---
+        def deduplicate_preserve_order(seq):
+            seen = set()
+            return [x for x in seq if not (x in seen or seen.add(x))]
         filtered = {}
         filtered["work_experience"] = deduplicate_job_roles(filter_non_empty_entries(combined["work_experience"], ["company", "title", "description", "start_date", "end_date"], section_name="work_experience"))
         filtered["education"] = filter_non_empty_entries(combined["education"], ["institution", "degree", "field", "start_date", "end_date"], section_name="education")
-        filtered["skills"] = [s for s in combined["skills"] if s]
+        # Deduplicate skills while preserving order
+        filtered["skills"] = deduplicate_preserve_order([s for s in combined["skills"] if s])
         filtered["projects"] = filter_non_empty_entries(combined["projects"], ["name", "description"], section_name="projects")
         filtered["certifications"] = filter_non_empty_entries(combined["certifications"], ["name", "issuer", "year"], section_name="certifications")
         # --- Split description into details for work_experience and education ---
@@ -397,6 +402,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             if not filtered[key]:
                 filtered[key] = None
         logger.info(f"[CV UPLOAD] Filtered data: {filtered}")
+        # The order of all lists is now guaranteed to match the input JSON (except for deduplication, which preserves first occurrence order)
         new_arc_data = ArcData(**filtered)
         db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
         arc_data_dict = new_arc_data.dict()
