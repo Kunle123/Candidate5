@@ -19,6 +19,7 @@ import re
 import spacy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional, List, Dict, Any
+from .career_ark_router import router as career_ark_router
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 router = APIRouter(prefix="/api/arc")
@@ -42,6 +43,8 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"]
 )
+
+app.include_router(career_ark_router, prefix="/api/career-ark", tags=["Career Ark"])
 
 tasks = {}
 
