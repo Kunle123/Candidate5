@@ -12,4 +12,13 @@ engine = create_engine(DATABASE_URL.replace('+asyncpg', ''), echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Async database instance for use with FastAPI
-async_db = Database(DATABASE_URL) 
+async_db = Database(DATABASE_URL)
+
+# Dependency for FastAPI to get a DB session
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close() 
