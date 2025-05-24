@@ -12,7 +12,7 @@ import logging
 import jwt
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from .models import UserArcData, CVTask, TaskStatusEnum
+from .models import UserArcData, CVTask, TaskStatusEnum, CVProfile, WorkExperience, Education, Skill, Project, Certification
 from .db import SessionLocal, Base, engine
 import tiktoken
 import re
@@ -437,6 +437,74 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db_task.status = TaskStatusEnum.completed
         db_task.extracted_data_summary = {"workExperienceCount": len(new_arc_data.work_experience or []), "skillsFound": len(new_arc_data.skills or [])}
         db.commit()
+
+        # --- Insert into normalized tables ---
+        import uuid
+        # Create a new CVProfile
+        profile = CVProfile(
+            id=uuid.uuid4(),
+            user_id=user_id,
+            name=filtered.get("personal_info", {}).get("name", "Unnamed"),
+            email=filtered.get("personal_info", {}).get("email")
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+
+        # Insert Work Experience
+        for idx, exp in enumerate(filtered.get("work_experience", []) or []):
+            db.add(WorkExperience(
+                id=uuid.uuid4(),
+                cv_profile_id=profile.id,
+                company=exp.get("company"),
+                title=exp.get("title"),
+                start_date=exp.get("start_date"),
+                end_date=exp.get("end_date"),
+                description=exp.get("description"),
+                order_index=idx
+            ))
+        # Insert Education
+        for idx, edu in enumerate(filtered.get("education", []) or []):
+            db.add(Education(
+                id=uuid.uuid4(),
+                cv_profile_id=profile.id,
+                institution=edu.get("institution"),
+                degree=edu.get("degree"),
+                field=edu.get("field"),
+                start_date=edu.get("start_date"),
+                end_date=edu.get("end_date"),
+                description=edu.get("description"),
+                order_index=idx
+            ))
+        # Insert Skills
+        for skill in filtered.get("skills", []) or []:
+            db.add(Skill(
+                id=uuid.uuid4(),
+                cv_profile_id=profile.id,
+                skill=skill
+            ))
+        # Insert Projects
+        for idx, proj in enumerate(filtered.get("projects", []) or []):
+            db.add(Project(
+                id=uuid.uuid4(),
+                cv_profile_id=profile.id,
+                name=proj.get("name"),
+                description=proj.get("description"),
+                order_index=idx
+            ))
+        # Insert Certifications
+        for idx, cert in enumerate(filtered.get("certifications", []) or []):
+            db.add(Certification(
+                id=uuid.uuid4(),
+                cv_profile_id=profile.id,
+                name=cert.get("name"),
+                issuer=cert.get("issuer"),
+                year=cert.get("year"),
+                order_index=idx
+            ))
+        db.commit()
+        # --- End normalized table insert ---
+
     except Exception as e:
         logger.error(f"Error in /cv upload endpoint: {e}")
         db_task.status = TaskStatusEnum.failed
