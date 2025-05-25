@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from .auth import get_current_user
+import logging
 
 router = APIRouter()
 
@@ -155,8 +156,10 @@ def delete_profile(user_id: str, db: Session = Depends(get_db)):
 
 @router.get("/profiles/me", response_model=ProfileOut)
 def get_my_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    logging.getLogger("arc").info(f"/profiles/me endpoint hit for user_id={user_id}")
     entry = db.query(CVProfile).filter_by(user_id=user_id).first()
     if not entry:
+        logging.getLogger("arc").warning(f"No profile found for user_id={user_id}")
         raise HTTPException(status_code=404, detail="Profile not found for current user")
     return entry
 
