@@ -11,6 +11,7 @@ from .models import UserProfile as UserProfileORM
 from .db import get_db
 from fastapi.security import OAuth2PasswordBearer
 import jwt
+import requests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -113,6 +114,7 @@ feedbacks = []
 
 ADMIN_USER_ID = "50a5cb6e-6129-4f19-84cc-7afd6eab4363"  # Replace with your actual admin user ID
 
+ARC_SERVICE_URL = os.getenv("ARC_SERVICE_URL", "http://arc_service:8080/api/career-ark")
 INTER_SERVICE_SECRET = os.getenv("INTER_SERVICE_SECRET", "")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -130,6 +132,23 @@ def get_admin_user(user_id: str = Depends(get_current_user)):
     if user_id != ADMIN_USER_ID:
         raise HTTPException(status_code=403, detail="Admin privileges required.")
     return user_id
+
+def create_cv_profile_in_arc(user_id, name, email):
+    url = f"{ARC_SERVICE_URL}/profiles"
+    headers = {
+        "Authorization": f"Bearer {INTER_SERVICE_SECRET}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "user_id": user_id,
+        "name": name,
+        "email": email
+    }
+    try:
+        response = requests.post(url, json=data, headers=headers, timeout=5)
+        response.raise_for_status()
+    except Exception as e:
+        logger.error(f"Failed to create CV profile in arc service: {e}")
 
 # --- Profile Endpoints ---
 @router.get("/user/list", response_model=List[UserProfileResponse])
@@ -248,6 +267,9 @@ def create_user_profile(
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
+        
+        # Inter-service call to create CV profile in arc service
+        create_cv_profile_in_arc(new_user.id, new_user.name, new_user.email)
         
         logger.info(f"Successfully created profile for user_id: {req.id}")
         return new_user
