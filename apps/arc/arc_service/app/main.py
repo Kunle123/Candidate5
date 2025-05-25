@@ -416,24 +416,35 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db_task.extracted_data_summary = {"workExperienceCount": len(new_arc_data.work_experience or []), "skillsFound": len(new_arc_data.skills or [])}
         db.commit()
 
-        # --- Insert into normalized tables ---
+        # --- Insert into normalized tables (merge/deduplicate) ---
         try:
             import uuid
-            logger.info("[CV UPLOAD] Inserting into normalized tables...")
-            # Create a new CVProfile
-            profile = CVProfile(
-                id=uuid.uuid4(),
-                user_id=user_id,
-                name=filtered.get("personal_info", {}).get("name", "Unnamed"),
-                email=filtered.get("personal_info", {}).get("email")
-            )
-            db.add(profile)
-            db.commit()
-            db.refresh(profile)
-            logger.info(f"[CV UPLOAD] Created CVProfile with id={profile.id}")
+            logger.info("[CV UPLOAD] Merging into normalized tables...")
+            # Find or create the user's single profile
+            profile = db.query(CVProfile).filter(CVProfile.user_id == user_id).first()
+            if not profile:
+                profile = CVProfile(
+                    id=uuid.uuid4(),
+                    user_id=user_id,
+                    name=filtered.get("personal_info", {}).get("name", "Unnamed"),
+                    email=filtered.get("personal_info", {}).get("email")
+                )
+                db.add(profile)
+                db.commit()
+                db.refresh(profile)
+                logger.info(f"[CV UPLOAD] Created new CVProfile with id={profile.id}")
+            else:
+                logger.info(f"[CV UPLOAD] Using existing CVProfile with id={profile.id}")
 
-            # Insert Work Experience
-            for idx, exp in enumerate(filtered.get("work_experience") or []):
+            # --- Work Experience ---
+            existing_wx = db.query(WorkExperience).filter(WorkExperience.cv_profile_id == profile.id).all()
+            existing_wx_keys = set((x.company, x.title, x.start_date, x.end_date) for x in existing_wx)
+            wx_to_add = []
+            for exp in filtered.get("work_experience") or []:
+                key = (exp.get("company"), exp.get("title"), exp.get("start_date"), exp.get("end_date"))
+                if key not in existing_wx_keys:
+                    wx_to_add.append(exp)
+            for idx, exp in enumerate(wx_to_add, start=len(existing_wx)):
                 db.add(WorkExperience(
                     id=uuid.uuid4(),
                     cv_profile_id=profile.id,
@@ -444,10 +455,17 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                     description=exp.get("description"),
                     order_index=idx
                 ))
-            logger.info(f"[CV UPLOAD] Inserted {len(filtered.get('work_experience') or [])} work experience entries.")
+            logger.info(f"[CV UPLOAD] Added {len(wx_to_add)} new work experience entries.")
 
-            # Insert Education
-            for idx, edu in enumerate(filtered.get("education") or []):
+            # --- Education ---
+            existing_edu = db.query(Education).filter(Education.cv_profile_id == profile.id).all()
+            existing_edu_keys = set((x.institution, x.degree, x.field, x.start_date, x.end_date) for x in existing_edu)
+            edu_to_add = []
+            for edu in filtered.get("education") or []:
+                key = (edu.get("institution"), edu.get("degree"), edu.get("field"), edu.get("start_date"), edu.get("end_date"))
+                if key not in existing_edu_keys:
+                    edu_to_add.append(edu)
+            for idx, edu in enumerate(edu_to_add, start=len(existing_edu)):
                 db.add(Education(
                     id=uuid.uuid4(),
                     cv_profile_id=profile.id,
@@ -459,19 +477,28 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                     description=edu.get("description"),
                     order_index=idx
                 ))
-            logger.info(f"[CV UPLOAD] Inserted {len(filtered.get('education') or [])} education entries.")
+            logger.info(f"[CV UPLOAD] Added {len(edu_to_add)} new education entries.")
 
-            # Insert Skills
-            for skill in filtered.get("skills") or []:
+            # --- Skills ---
+            existing_skills = set(x.skill for x in db.query(Skill).filter(Skill.cv_profile_id == profile.id).all())
+            skills_to_add = [s for s in (filtered.get("skills") or []) if s not in existing_skills]
+            for skill in skills_to_add:
                 db.add(Skill(
                     id=uuid.uuid4(),
                     cv_profile_id=profile.id,
                     skill=skill
                 ))
-            logger.info(f"[CV UPLOAD] Inserted {len(filtered.get('skills') or [])} skills entries.")
+            logger.info(f"[CV UPLOAD] Added {len(skills_to_add)} new skills entries.")
 
-            # Insert Projects
-            for idx, proj in enumerate(filtered.get("projects") or []):
+            # --- Projects ---
+            existing_projects = db.query(Project).filter(Project.cv_profile_id == profile.id).all()
+            existing_proj_keys = set((x.name, x.description) for x in existing_projects)
+            projects_to_add = []
+            for proj in filtered.get("projects") or []:
+                key = (proj.get("name"), proj.get("description"))
+                if key not in existing_proj_keys:
+                    projects_to_add.append(proj)
+            for idx, proj in enumerate(projects_to_add, start=len(existing_projects)):
                 db.add(Project(
                     id=uuid.uuid4(),
                     cv_profile_id=profile.id,
@@ -479,10 +506,17 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                     description=proj.get("description"),
                     order_index=idx
                 ))
-            logger.info(f"[CV UPLOAD] Inserted {len(filtered.get('projects') or [])} project entries.")
+            logger.info(f"[CV UPLOAD] Added {len(projects_to_add)} new project entries.")
 
-            # Insert Certifications
-            for idx, cert in enumerate(filtered.get("certifications") or []):
+            # --- Certifications ---
+            existing_certs = db.query(Certification).filter(Certification.cv_profile_id == profile.id).all()
+            existing_cert_keys = set((x.name, x.issuer, x.year) for x in existing_certs)
+            certs_to_add = []
+            for cert in filtered.get("certifications") or []:
+                key = (cert.get("name"), cert.get("issuer"), cert.get("year"))
+                if key not in existing_cert_keys:
+                    certs_to_add.append(cert)
+            for idx, cert in enumerate(certs_to_add, start=len(existing_certs)):
                 db.add(Certification(
                     id=uuid.uuid4(),
                     cv_profile_id=profile.id,
@@ -491,15 +525,15 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                     year=cert.get("year"),
                     order_index=idx
                 ))
-            logger.info(f"[CV UPLOAD] Inserted {len(filtered.get('certifications') or [])} certification entries.")
+            logger.info(f"[CV UPLOAD] Added {len(certs_to_add)} new certification entries.")
 
             db.commit()
-            logger.info("[CV UPLOAD] All normalized table inserts committed.")
+            logger.info("[CV UPLOAD] All normalized table merges committed.")
         except Exception as e:
-            logger.error(f"[CV UPLOAD] Error inserting into normalized tables: {e}", exc_info=True)
+            logger.error(f"[CV UPLOAD] Error merging into normalized tables: {e}", exc_info=True)
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"Error inserting into normalized tables: {e}")
-        # --- End normalized table insert ---
+            raise HTTPException(status_code=500, detail=f"Error merging into normalized tables: {e}")
+        # --- End normalized table merge ---
 
     except Exception as e:
         logger.error(f"Error in /cv upload endpoint: {e}")
