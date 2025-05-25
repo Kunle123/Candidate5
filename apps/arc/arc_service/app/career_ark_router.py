@@ -7,6 +7,7 @@ from typing import Optional, List
 from datetime import datetime
 from .auth import get_current_user
 import logging
+from uuid import UUID
 
 router = APIRouter()
 
@@ -19,7 +20,7 @@ class ProfileUpdate(BaseModel):
     name: Optional[str]
     email: Optional[str]
 class ProfileOut(BaseModel):
-    id: int
+    id: UUID
     user_id: str
     name: str
     email: Optional[str]
@@ -40,7 +41,7 @@ class WorkExperienceUpdate(BaseModel):
     end_date: Optional[str]
     description: Optional[str]
 class WorkExperienceOut(BaseModel):
-    id: int
+    id: UUID
     company: str
     title: str
     start_date: str
@@ -66,7 +67,7 @@ class EducationUpdate(BaseModel):
     end_date: Optional[str]
     description: Optional[str]
 class EducationOut(BaseModel):
-    id: int
+    id: UUID
     institution: str
     degree: str
     field: Optional[str]
@@ -80,7 +81,7 @@ class EducationOut(BaseModel):
 class SkillCreate(BaseModel):
     skill: str
 class SkillOut(BaseModel):
-    id: int
+    id: UUID
     skill: str
     class Config:
         from_attributes = True
@@ -93,7 +94,7 @@ class ProjectUpdate(BaseModel):
     name: Optional[str]
     description: Optional[str]
 class ProjectOut(BaseModel):
-    id: int
+    id: UUID
     name: str
     description: Optional[str]
     order_index: int
@@ -110,7 +111,7 @@ class CertificationUpdate(BaseModel):
     issuer: Optional[str]
     year: Optional[str]
 class CertificationOut(BaseModel):
-    id: int
+    id: UUID
     name: str
     issuer: Optional[str]
     year: Optional[str]
