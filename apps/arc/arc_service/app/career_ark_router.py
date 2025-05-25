@@ -24,7 +24,7 @@ class ProfileOut(BaseModel):
     name: str
     email: Optional[str]
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class WorkExperienceCreate(BaseModel):
     company: str
@@ -48,7 +48,7 @@ class WorkExperienceOut(BaseModel):
     description: Optional[str]
     order_index: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class EducationCreate(BaseModel):
     institution: str
@@ -75,7 +75,7 @@ class EducationOut(BaseModel):
     description: Optional[str]
     order_index: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class SkillCreate(BaseModel):
     skill: str
@@ -83,7 +83,7 @@ class SkillOut(BaseModel):
     id: int
     skill: str
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ProjectCreate(BaseModel):
     name: str
@@ -98,7 +98,7 @@ class ProjectOut(BaseModel):
     description: Optional[str]
     order_index: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class CertificationCreate(BaseModel):
     name: str
@@ -116,7 +116,7 @@ class CertificationOut(BaseModel):
     year: Optional[str]
     order_index: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class TrainingCreate(BaseModel):
     name: str
