@@ -20,6 +20,7 @@ import spacy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional, List, Dict, Any
 from .career_ark_router import router as career_ark_router
+from .auth import get_current_user, oauth2_scheme
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 
@@ -38,7 +39,6 @@ def startup_event():
 # --- End Database Table Creation ---
 
 router = APIRouter(prefix="/api/arc")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 # Update logging configuration to enable verbose logging for the Ark service
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -62,19 +62,6 @@ app.add_middleware(
 app.include_router(career_ark_router, prefix="/api/career-ark", tags=["Career Ark"])
 
 tasks = {}
-
-# --- Helper: Auth ---
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        user_id = payload.get("user_id") or payload.get("id")
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token: no user_id")
-        return user_id
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
 
 # --- Models ---
 class Role(BaseModel):
