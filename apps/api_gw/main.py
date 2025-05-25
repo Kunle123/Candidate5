@@ -161,6 +161,11 @@ async def proxy_arc(request: StarletteRequest, full_path: str):
     path = f"/api/arc{full_path}"
     return await proxy(request, arc_service_url, path)
 
+@app.api_route("/api/career-ark{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_career_ark(request: StarletteRequest, full_path: str):
+    path = f"/api/career-ark{full_path}"
+    return await proxy(request, arc_service_url, path)
+
 @app.get("/")
 def read_root():
     return {"message": "Hello from FastAPI"}
