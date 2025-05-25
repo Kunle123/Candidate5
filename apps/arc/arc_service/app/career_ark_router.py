@@ -269,6 +269,17 @@ def reorder_work_experience(id: int, new_order_index: int = Body(...), db: Sessi
     db.refresh(entry)
     return entry
 
+@router.patch("/work_experience/{id}")
+def partial_update_work_experience(id: int, update: WorkExperienceUpdate, db: Session = Depends(get_db)):
+    entry = db.query(WorkExperience).get(id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    for field, value in update.dict(exclude_unset=True).items():
+        setattr(entry, field, value)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
 # --- Education Endpoints ---
 @router.post("/profiles/{profile_id}/education", response_model=EducationOut)
 def add_education(profile_id: int, data: EducationCreate, db: Session = Depends(get_db)):
@@ -362,6 +373,17 @@ def reorder_education(id: int, new_order_index: int = Body(...), db: Session = D
     db.refresh(entry)
     return entry
 
+@router.patch("/education/{id}")
+def partial_update_education(id: int, update: EducationUpdate, db: Session = Depends(get_db)):
+    entry = db.query(Education).get(id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    for field, value in update.dict(exclude_unset=True).items():
+        setattr(entry, field, value)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
 # --- Skills Endpoints ---
 @router.post("/profiles/{profile_id}/skills", response_model=SkillOut)
 def add_skill(profile_id: int, data: SkillCreate, db: Session = Depends(get_db)):
@@ -394,6 +416,17 @@ def update_skill(id: int, data: SkillCreate, db: Session = Depends(get_db)):
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
     entry.skill = data.skill
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+@router.patch("/skills/{id}")
+def partial_update_skill(id: int, update: SkillCreate, db: Session = Depends(get_db)):
+    entry = db.query(Skill).get(id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    for field, value in update.dict(exclude_unset=True).items():
+        setattr(entry, field, value)
     db.commit()
     db.refresh(entry)
     return entry
@@ -487,6 +520,17 @@ def reorder_project(id: int, new_order_index: int = Body(...), db: Session = Dep
     db.refresh(entry)
     return entry
 
+@router.patch("/projects/{id}")
+def partial_update_project(id: int, update: ProjectUpdate, db: Session = Depends(get_db)):
+    entry = db.query(Project).get(id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    for field, value in update.dict(exclude_unset=True).items():
+        setattr(entry, field, value)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
 # --- Certifications Endpoints ---
 @router.post("/profiles/{profile_id}/certifications", response_model=CertificationOut)
 def add_certification(profile_id: int, data: CertificationCreate, db: Session = Depends(get_db)):
@@ -573,6 +617,17 @@ def reorder_certification(id: int, new_order_index: int = Body(...), db: Session
         for e in affected:
             e.order_index += 1
     entry.order_index = new_order_index
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+@router.patch("/certifications/{id}")
+def partial_update_certification(id: int, update: CertificationUpdate, db: Session = Depends(get_db)):
+    entry = db.query(Certification).get(id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    for field, value in update.dict(exclude_unset=True).items():
+        setattr(entry, field, value)
     db.commit()
     db.refresh(entry)
     return entry
@@ -694,6 +749,17 @@ def delete_training(id: int, db: Session = Depends(get_db)):
     db.delete(entry)
     db.commit()
     return {"success": True}
+
+@router.patch("/training/{id}")
+def partial_update_training(id: int, update: TrainingUpdate, db: Session = Depends(get_db)):
+    entry = db.query(Training).get(id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    for field, value in update.dict(exclude_unset=True).items():
+        setattr(entry, field, value)
+    db.commit()
+    db.refresh(entry)
+    return entry
 
 # --- Per-Profile CV Upload Endpoint ---
 @router.post("/profiles/{profile_id}/cv")
