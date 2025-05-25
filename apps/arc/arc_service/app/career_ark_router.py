@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Path, Body, Depends
+from fastapi import APIRouter, HTTPException, Path, Body, Depends, UploadFile, File
 from sqlalchemy.orm import Session
-from .models import CVProfile, WorkExperience, Education, Skill, Project, Certification
+from .models import CVProfile, WorkExperience, Education, Skill, Project, Certification, Training
 from .db import get_db
 from pydantic import BaseModel
 from typing import Optional, List
@@ -117,6 +117,20 @@ class CertificationOut(BaseModel):
     order_index: int
     class Config:
         orm_mode = True
+
+class TrainingCreate(BaseModel):
+    name: str
+    institution: str
+    start_date: str
+    end_date: str
+    description: Optional[str] = None
+    order_index: Optional[int] = None
+class TrainingUpdate(BaseModel):
+    name: Optional[str]
+    institution: Optional[str]
+    start_date: Optional[str]
+    end_date: Optional[str]
+    description: Optional[str]
 
 # --- Profile Endpoints ---
 @router.post("/profiles", response_model=ProfileOut)
@@ -374,6 +388,16 @@ def delete_skill(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"success": True}
 
+@router.put("/skills/{id}")
+def update_skill(id: int, data: SkillCreate, db: Session = Depends(get_db)):
+    entry = db.query(Skill).get(id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    entry.skill = data.skill
+    db.commit()
+    db.refresh(entry)
+    return entry
+
 # --- Projects Endpoints ---
 @router.post("/profiles/{profile_id}/projects", response_model=ProjectOut)
 def add_project(profile_id: int, data: ProjectCreate, db: Session = Depends(get_db)):
@@ -625,4 +649,67 @@ def get_all_sections(profile_id: str, db: Session = Depends(get_db)):
                 "order_index": x.order_index
             } for x in certifications
         ]
+    }
+
+# --- Training Endpoints ---
+@router.get("/profiles/{profile_id}/training")
+def list_training(profile_id: int, db: Session = Depends(get_db)):
+    return db.query(Training).filter_by(cv_profile_id=profile_id).all()
+
+@router.post("/profiles/{profile_id}/training")
+def add_training(profile_id: int, data: TrainingCreate, db: Session = Depends(get_db)):
+    max_index = db.query(Training).filter_by(cv_profile_id=profile_id).order_by(Training.order_index.desc()).first()
+    next_index = (max_index.order_index + 1) if max_index else 0
+    order_index = data.order_index if data.order_index is not None else next_index
+    entry = Training(
+        cv_profile_id=profile_id,
+        name=data.name,
+        institution=data.institution,
+        start_date=data.start_date,
+        end_date=data.end_date,
+        description=data.description,
+        order_index=order_index
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+@router.put("/training/{id}")
+def update_training(id: int, data: TrainingUpdate, db: Session = Depends(get_db)):
+    entry = db.query(Training).get(id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    for field, value in data.dict(exclude_unset=True).items():
+        setattr(entry, field, value)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+@router.delete("/training/{id}")
+def delete_training(id: int, db: Session = Depends(get_db)):
+    entry = db.query(Training).get(id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    db.delete(entry)
+    db.commit()
+    return {"success": True}
+
+# --- Per-Profile CV Upload Endpoint ---
+@router.post("/profiles/{profile_id}/cv")
+def upload_cv_for_profile(profile_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    # Placeholder: implement actual CV upload logic as needed
+    return {"message": f"Received CV for profile {profile_id}", "filename": file.filename}
+
+# --- Application Material Generation Endpoint ---
+class GenerateRequest(BaseModel):
+    jobAdvert: str
+    arcData: dict
+
+@router.post("/generate")
+def generate_application_materials(data: GenerateRequest):
+    # Placeholder: implement actual generation logic
+    return {
+        "cv": "Generated CV content here...",
+        "cover_letter": "Generated cover letter content here..."
     } 
