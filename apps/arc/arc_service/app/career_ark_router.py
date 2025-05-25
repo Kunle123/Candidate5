@@ -4,6 +4,8 @@ from .models import CVProfile, WorkExperience, Education, Skill, Project, Certif
 from .db import get_db
 from pydantic import BaseModel
 from typing import Optional, List
+from dateutil import parser
+from .main import get_current_user
 
 router = APIRouter()
 
@@ -150,6 +152,13 @@ def delete_profile(user_id: str, db: Session = Depends(get_db)):
     db.delete(entry)
     db.commit()
     return {"success": True}
+
+@router.get("/profiles/me", response_model=ProfileOut)
+def get_my_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    entry = db.query(CVProfile).filter_by(user_id=user_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Profile not found for current user")
+    return entry
 
 # --- Work Experience Endpoints ---
 @router.post("/profiles/{profile_id}/work_experience", response_model=WorkExperienceOut)
@@ -539,4 +548,77 @@ def reorder_certification(id: int, new_order_index: int = Body(...), db: Session
     entry.order_index = new_order_index
     db.commit()
     db.refresh(entry)
-    return entry 
+    return entry
+
+@router.get("/profiles/{profile_id}/all_sections")
+def get_all_sections(profile_id: str, db: Session = Depends(get_db)):
+    # Fetch all sections for the given profile_id
+    def parse_date(date_str):
+        if not date_str:
+            return 0
+        if date_str.strip().lower() == "present":
+            return float('inf')
+        try:
+            # Try parsing as 'MMM YYYY' or 'YYYY'
+            return parser.parse(date_str, default=None).timestamp()
+        except Exception:
+            return 0
+    work_experience = db.query(WorkExperience).filter_by(cv_profile_id=profile_id).all()
+    # Sort work_experience by end_date descending ("Present" most recent)
+    work_experience_sorted = sorted(
+        work_experience,
+        key=lambda x: parse_date(x.end_date),
+        reverse=True
+    )
+    education = db.query(Education).filter_by(cv_profile_id=profile_id).order_by(Education.order_index).all()
+    skills = db.query(Skill).filter_by(cv_profile_id=profile_id).order_by(Skill.id).all()
+    projects = db.query(Project).filter_by(cv_profile_id=profile_id).order_by(Project.order_index).all()
+    certifications = db.query(Certification).filter_by(cv_profile_id=profile_id).order_by(Certification.order_index).all()
+    return {
+        "work_experience": [
+            {
+                "id": str(x.id),
+                "company": x.company,
+                "title": x.title,
+                "start_date": x.start_date,
+                "end_date": x.end_date,
+                "description": x.description,
+                "order_index": x.order_index
+            } for x in work_experience_sorted
+        ],
+        "education": [
+            {
+                "id": str(x.id),
+                "institution": x.institution,
+                "degree": x.degree,
+                "field": x.field,
+                "start_date": x.start_date,
+                "end_date": x.end_date,
+                "description": x.description,
+                "order_index": x.order_index
+            } for x in education
+        ],
+        "skills": [
+            {
+                "id": str(x.id),
+                "skill": x.skill
+            } for x in skills
+        ],
+        "projects": [
+            {
+                "id": str(x.id),
+                "name": x.name,
+                "description": x.description,
+                "order_index": x.order_index
+            } for x in projects
+        ],
+        "certifications": [
+            {
+                "id": str(x.id),
+                "name": x.name,
+                "issuer": x.issuer,
+                "year": x.year,
+                "order_index": x.order_index
+            } for x in certifications
+        ]
+    } 
