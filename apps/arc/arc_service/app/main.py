@@ -1039,8 +1039,4 @@ async def get_logs(user_id: str = Depends(get_current_user)):
         logger.error(f"Unexpected error in get_logs: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-app.include_router(router)
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"} 
+# app.include_router(router) 
