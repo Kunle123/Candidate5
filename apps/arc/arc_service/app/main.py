@@ -439,70 +439,88 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db.commit()
 
         # --- Insert into normalized tables ---
-        import uuid
-        # Create a new CVProfile
-        profile = CVProfile(
-            id=uuid.uuid4(),
-            user_id=user_id,
-            name=filtered.get("personal_info", {}).get("name", "Unnamed"),
-            email=filtered.get("personal_info", {}).get("email")
-        )
-        db.add(profile)
-        db.commit()
-        db.refresh(profile)
+        try:
+            import uuid
+            logger.info("[CV UPLOAD] Inserting into normalized tables...")
+            # Create a new CVProfile
+            profile = CVProfile(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                name=filtered.get("personal_info", {}).get("name", "Unnamed"),
+                email=filtered.get("personal_info", {}).get("email")
+            )
+            db.add(profile)
+            db.commit()
+            db.refresh(profile)
+            logger.info(f"[CV UPLOAD] Created CVProfile with id={profile.id}")
 
-        # Insert Work Experience
-        for idx, exp in enumerate(filtered.get("work_experience", []) or []):
-            db.add(WorkExperience(
-                id=uuid.uuid4(),
-                cv_profile_id=profile.id,
-                company=exp.get("company"),
-                title=exp.get("title"),
-                start_date=exp.get("start_date"),
-                end_date=exp.get("end_date"),
-                description=exp.get("description"),
-                order_index=idx
-            ))
-        # Insert Education
-        for idx, edu in enumerate(filtered.get("education", []) or []):
-            db.add(Education(
-                id=uuid.uuid4(),
-                cv_profile_id=profile.id,
-                institution=edu.get("institution"),
-                degree=edu.get("degree"),
-                field=edu.get("field"),
-                start_date=edu.get("start_date"),
-                end_date=edu.get("end_date"),
-                description=edu.get("description"),
-                order_index=idx
-            ))
-        # Insert Skills
-        for skill in filtered.get("skills", []) or []:
-            db.add(Skill(
-                id=uuid.uuid4(),
-                cv_profile_id=profile.id,
-                skill=skill
-            ))
-        # Insert Projects
-        for idx, proj in enumerate(filtered.get("projects", []) or []):
-            db.add(Project(
-                id=uuid.uuid4(),
-                cv_profile_id=profile.id,
-                name=proj.get("name"),
-                description=proj.get("description"),
-                order_index=idx
-            ))
-        # Insert Certifications
-        for idx, cert in enumerate(filtered.get("certifications", []) or []):
-            db.add(Certification(
-                id=uuid.uuid4(),
-                cv_profile_id=profile.id,
-                name=cert.get("name"),
-                issuer=cert.get("issuer"),
-                year=cert.get("year"),
-                order_index=idx
-            ))
-        db.commit()
+            # Insert Work Experience
+            for idx, exp in enumerate(filtered.get("work_experience") or []):
+                db.add(WorkExperience(
+                    id=uuid.uuid4(),
+                    cv_profile_id=profile.id,
+                    company=exp.get("company"),
+                    title=exp.get("title"),
+                    start_date=exp.get("start_date") or "",
+                    end_date=exp.get("end_date") or "",
+                    description=exp.get("description"),
+                    order_index=idx
+                ))
+            logger.info(f"[CV UPLOAD] Inserted {len(filtered.get('work_experience') or [])} work experience entries.")
+
+            # Insert Education
+            for idx, edu in enumerate(filtered.get("education") or []):
+                db.add(Education(
+                    id=uuid.uuid4(),
+                    cv_profile_id=profile.id,
+                    institution=edu.get("institution", ""),
+                    degree=edu.get("degree", ""),
+                    field=edu.get("field"),
+                    start_date=edu.get("start_date"),
+                    end_date=edu.get("end_date"),
+                    description=edu.get("description"),
+                    order_index=idx
+                ))
+            logger.info(f"[CV UPLOAD] Inserted {len(filtered.get('education') or [])} education entries.")
+
+            # Insert Skills
+            for skill in filtered.get("skills") or []:
+                db.add(Skill(
+                    id=uuid.uuid4(),
+                    cv_profile_id=profile.id,
+                    skill=skill
+                ))
+            logger.info(f"[CV UPLOAD] Inserted {len(filtered.get('skills') or [])} skills entries.")
+
+            # Insert Projects
+            for idx, proj in enumerate(filtered.get("projects") or []):
+                db.add(Project(
+                    id=uuid.uuid4(),
+                    cv_profile_id=profile.id,
+                    name=proj.get("name"),
+                    description=proj.get("description"),
+                    order_index=idx
+                ))
+            logger.info(f"[CV UPLOAD] Inserted {len(filtered.get('projects') or [])} project entries.")
+
+            # Insert Certifications
+            for idx, cert in enumerate(filtered.get("certifications") or []):
+                db.add(Certification(
+                    id=uuid.uuid4(),
+                    cv_profile_id=profile.id,
+                    name=cert.get("name"),
+                    issuer=cert.get("issuer"),
+                    year=cert.get("year"),
+                    order_index=idx
+                ))
+            logger.info(f"[CV UPLOAD] Inserted {len(filtered.get('certifications') or [])} certification entries.")
+
+            db.commit()
+            logger.info("[CV UPLOAD] All normalized table inserts committed.")
+        except Exception as e:
+            logger.error(f"[CV UPLOAD] Error inserting into normalized tables: {e}", exc_info=True)
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Error inserting into normalized tables: {e}")
         # --- End normalized table insert ---
 
     except Exception as e:
