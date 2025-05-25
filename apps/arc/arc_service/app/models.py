@@ -91,4 +91,17 @@ class Certification(Base):
     year = Column(String, nullable=True)
     order_index = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class Training(Base):
+    __tablename__ = "training"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    cv_profile_id = Column(UUID(as_uuid=True), ForeignKey("cv_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    institution = Column(String, nullable=True)
+    start_date = Column(String, nullable=True)
+    end_date = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    order_index = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now()) 
