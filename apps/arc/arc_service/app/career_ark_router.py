@@ -4,7 +4,7 @@ from .models import CVProfile, WorkExperience, Education, Skill, Project, Certif
 from .db import get_db
 from pydantic import BaseModel
 from typing import Optional, List
-from dateutil import parser
+from datetime import datetime
 from .main import get_current_user
 
 router = APIRouter()
@@ -558,11 +558,12 @@ def get_all_sections(profile_id: str, db: Session = Depends(get_db)):
             return 0
         if date_str.strip().lower() == "present":
             return float('inf')
-        try:
-            # Try parsing as 'MMM YYYY' or 'YYYY'
-            return parser.parse(date_str, default=None).timestamp()
-        except Exception:
-            return 0
+        for fmt in ("%b %Y", "%Y"):
+            try:
+                return datetime.strptime(date_str, fmt).timestamp()
+            except Exception:
+                continue
+        return 0
     work_experience = db.query(WorkExperience).filter_by(cv_profile_id=profile_id).all()
     # Sort work_experience by end_date descending ("Present" most recent)
     work_experience_sorted = sorted(
