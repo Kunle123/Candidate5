@@ -143,12 +143,20 @@ def create_profile(data: ProfileCreate, db: Session = Depends(get_db)):
 
 @router.get("/profiles/me", response_model=ProfileOut)
 def get_my_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    logging.getLogger("arc").info(f"/profiles/me endpoint hit for user_id={user_id}")
-    entry = db.query(CVProfile).filter_by(user_id=user_id).first()
-    if not entry:
-        logging.getLogger("arc").warning(f"No profile found for user_id={user_id}")
-        raise HTTPException(status_code=404, detail="Profile not found for current user")
-    return entry
+    logger = logging.getLogger("arc")
+    logger.setLevel(logging.DEBUG)
+    logger.info(f"[DEBUG] /profiles/me endpoint hit for user_id={user_id}")
+    try:
+        entry = db.query(CVProfile).filter_by(user_id=user_id).first()
+        logger.debug(f"[DEBUG] DB query result for user_id={user_id}: {entry}")
+        if not entry:
+            logger.warning(f"[DEBUG] No profile found for user_id={user_id}")
+            raise HTTPException(status_code=404, detail="Profile not found for current user")
+        logger.info(f"[DEBUG] Returning profile for user_id={user_id}: {entry}")
+        return entry
+    except Exception as e:
+        logger.error(f"[DEBUG] Exception in /profiles/me for user_id={user_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error in /profiles/me")
 
 @router.get("/profiles/{user_id}", response_model=ProfileOut)
 def get_profile(user_id: str, db: Session = Depends(get_db)):
