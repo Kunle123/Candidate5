@@ -141,11 +141,20 @@ def create_profile(data: ProfileCreate, db: Session = Depends(get_db)):
     db.refresh(entry)
     return entry
 
+@router.get("/profiles/me", response_model=ProfileOut)
+def get_my_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    logging.getLogger("arc").info(f"/profiles/me endpoint hit for user_id={user_id}")
+    entry = db.query(CVProfile).filter_by(user_id=user_id).first()
+    if not entry:
+        logging.getLogger("arc").warning(f"No profile found for user_id={user_id}")
+        raise HTTPException(status_code=404, detail="Profile not found for current user")
+    return entry
+
 @router.get("/profiles/{user_id}", response_model=ProfileOut)
 def get_profile(user_id: str, db: Session = Depends(get_db)):
     entry = db.query(CVProfile).filter_by(user_id=user_id).first()
     if not entry:
-        raise HTTPException(status_code=404, detail="Not found")
+        raise HTTPException(status_code=404, detail="Profile not found")
     return entry
 
 @router.put("/profiles/{user_id}", response_model=ProfileOut)
@@ -167,15 +176,6 @@ def delete_profile(user_id: str, db: Session = Depends(get_db)):
     db.delete(entry)
     db.commit()
     return {"success": True}
-
-@router.get("/profiles/me", response_model=ProfileOut)
-def get_my_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    logging.getLogger("arc").info(f"/profiles/me endpoint hit for user_id={user_id}")
-    entry = db.query(CVProfile).filter_by(user_id=user_id).first()
-    if not entry:
-        logging.getLogger("arc").warning(f"No profile found for user_id={user_id}")
-        raise HTTPException(status_code=404, detail="Profile not found for current user")
-    return entry
 
 # --- Work Experience Endpoints ---
 @router.post("/profiles/{profile_id}/work_experience", response_model=WorkExperienceOut)
