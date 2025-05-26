@@ -12,6 +12,7 @@ from uuid import UUID, uuid4
 import os
 from fastapi.responses import FileResponse
 import io
+from .main import ArcData
 
 router = APIRouter()
 
@@ -792,6 +793,64 @@ def upload_cv_for_profile(profile_id: UUID, file: UploadFile = File(...), db: Se
     db.add(new_task)
     db.commit()
     db.refresh(new_task)
+    filename = file.filename.lower()
+    try:
+        # 1. Extract text from file
+        if filename.endswith(".pdf"):
+            text = extract_text_from_pdf(file)
+        elif filename.endswith(".docx"):
+            text = extract_text_from_docx(file)
+        else:
+            new_task.status = "failed"
+            new_task.error = f"Unsupported file type: {filename}"
+            db.commit()
+            raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
+        # 2. Split into sections
+        sections = split_cv_by_sections(text)
+        chunk_outputs = []
+        ai_raw_chunks = []
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        total_chunks = 0
+        with ThreadPoolExecutor() as executor:
+            futures = []
+            for section_idx, (header, section_text) in enumerate(sections):
+                nlp_chunks = nlp_chunk_text(section_text, max_tokens=800)
+                for chunk in nlp_chunks:
+                    futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
+                total_chunks += len(nlp_chunks)
+            for future in as_completed(futures):
+                arc_data = future.result()
+                arc_data_dict = arc_data.dict()
+                arc_data_dict.pop("raw_ai_output", None)
+                chunk_outputs.append(arc_data_dict)
+                if hasattr(arc_data, 'raw_ai_output'):
+                    ai_raw_chunks.append(getattr(arc_data, 'raw_ai_output'))
+        # 3. Combine outputs
+        combined = {"work_experience": [], "education": [], "skills": [], "projects": [], "certifications": []}
+        for chunk in chunk_outputs:
+            for key in combined.keys():
+                value = chunk.get(key)
+                if value:
+                    if isinstance(value, list):
+                        combined[key].extend(value)
+                    else:
+                        combined[key].append(value)
+        # 4. Save results to user_arc_data
+        new_arc_data = ArcData(**combined)
+        arc_data_dict = new_arc_data.dict()
+        arc_data_dict["raw_text"] = text
+        arc_data_dict["ai_raw_chunks"] = ai_raw_chunks
+        user_arc.arc_data = arc_data_dict
+        db.commit()
+        # 5. Update task status
+        new_task.status = "completed"
+        new_task.extracted_data_summary = {"workExperienceCount": len(new_arc_data.work_experience or []), "skillsFound": len(new_arc_data.skills or [])}
+        db.commit()
+    except Exception as e:
+        new_task.status = "failed"
+        new_task.error = str(e)
+        db.commit()
+        raise
     return {"taskId": task_id}
 
 # --- Application Material Generation Endpoint ---
