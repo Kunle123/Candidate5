@@ -289,3 +289,15 @@ async def proxy_api_cv(request: StarletteRequest, full_path: str):
     path = re.sub(r'/+', '/', path)
     print(f"Proxying to CV service path: {path}")
     return await proxy(request, cv_service_url, path)
+
+@app.get("/docs", include_in_schema=False)
+async def proxy_docs(request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"{arc_service_url}/docs")
+        return Response(content=resp.content, status_code=resp.status_code, media_type=resp.headers.get("content-type"))
+
+@app.get("/openapi.json", include_in_schema=False)
+async def proxy_openapi(request: Request):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"{arc_service_url}/openapi.json")
+        return Response(content=resp.content, status_code=resp.status_code, media_type=resp.headers.get("content-type"))
