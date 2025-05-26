@@ -207,17 +207,17 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db.add(profile)
         db.commit()
         db.refresh(profile)
-    # 4. Insert metadata into normalized tables
+    # 4. Insert metadata into normalized tables (normalized, not user_arc_data)
     # Work Experience
-    for idx, wx in enumerate(metadata.get("work_experiences", [])):
+    for idx, wx in enumerate(metadata.get("work_experience", [])):
         db.add(WorkExperience(
             id=uuid.uuid4(),
             cv_profile_id=profile.id,
             company=wx.get("company", ""),
-            title=wx.get("job_title", ""),
+            title=wx.get("title", ""),
             start_date=wx.get("start_date", ""),
             end_date=wx.get("end_date", ""),
-            description=None,
+            description=wx.get("description", None),
             order_index=idx
         ))
     # Education
@@ -227,10 +227,10 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             cv_profile_id=profile.id,
             institution=edu.get("institution", ""),
             degree=edu.get("degree", ""),
-            field=edu.get("field"),
-            start_date=edu.get("start_date"),
-            end_date=edu.get("end_date"),
-            description=None,
+            field=edu.get("field", None),
+            start_date=edu.get("start_date", None),
+            end_date=edu.get("end_date", None),
+            description=edu.get("description", None),
             order_index=idx
         ))
     # Skills
@@ -246,7 +246,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             id=uuid.uuid4(),
             cv_profile_id=profile.id,
             name=proj.get("name", ""),
-            description=None,
+            description=proj.get("description", None),
             order_index=idx
         ))
     # Certifications
@@ -255,8 +255,8 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             id=uuid.uuid4(),
             cv_profile_id=profile.id,
             name=cert.get("name", ""),
-            issuer=cert.get("issuer"),
-            year=cert.get("year"),
+            issuer=cert.get("issuer", None),
+            year=cert.get("year", None),
             order_index=idx
         ))
     db.commit()
