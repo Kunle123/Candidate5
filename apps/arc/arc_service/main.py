@@ -350,8 +350,11 @@ async def download_processed_cv(taskId: UUID = Path(...), user_id: str = Depends
 
 @router.get("/cv/status/{taskId}", response_model=CVStatusResponse)
 async def poll_cv_status(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    logger.info(f"[DEBUG] /cv/status called with taskId={taskId}, user_id={user_id}")
     db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+    logger.info(f"[DEBUG] DB query result for taskId={taskId}, user_id={user_id}: {db_task}")
     if not db_task:
+        logger.warning(f"[DEBUG] Task not found for taskId={taskId}, user_id={user_id}")
         raise HTTPException(status_code=404, detail="Task not found")
     return {
         "status": db_task.status,
