@@ -183,115 +183,89 @@ class CVUploadResponse(BaseModel):
 @router.post("/cv", response_model=CVUploadResponse)
 async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     import uuid
-    task_id = str(uuid.uuid4())
-    logger.info(f"[CV UPLOAD] Received file: filename={file.filename}, content_type={file.content_type}")
-    db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
-    if not db_obj:
-        db_obj = UserArcData(user_id=user_id, arc_data={})
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
-    db_task = CVTask(id=task_id, user_id=user_id, status=TaskStatusEnum.pending)
-    db.add(db_task)
-    db.commit()
-    db.refresh(db_task)
-    filename = file.filename.lower()
+    logger = logging.getLogger("arc")
+    # 1. Extract text from file
+    contents = await file.read()
+    if file.filename.endswith(".pdf"):
+        from .cv_utils import extract_text_from_pdf
+        cv_text = extract_text_from_pdf(contents)
+    elif file.filename.endswith(".docx"):
+        from .cv_utils import extract_text_from_docx
+        cv_text = extract_text_from_docx(contents)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported file type")
+    # 2. First pass: extract metadata only
     try:
-        logger.info(f"[CV UPLOAD] Processing file: {filename}")
-        if filename.endswith(".pdf"):
-            logger.info("[CV UPLOAD] File is PDF, extracting text...")
-            text = extract_text_from_pdf(file)
-        elif filename.endswith(".docx"):
-            logger.info("[CV UPLOAD] File is DOCX, extracting text...")
-            text = extract_text_from_docx(file)
-        else:
-            logger.error(f"[CV UPLOAD] Unsupported file type: {filename}")
-            db_task.status = TaskStatusEnum.failed
-            db_task.error = f"Unsupported file type uploaded: {filename}"
-            db.commit()
-            raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
-        logger.info(f"[CV UPLOAD] Extracted text from file (first 500 chars):\n{text[:500]}")
-
-        # --- First Pass: Extract Metadata ---
-        metadata = extract_cv_metadata_with_ai(text)
-        logger.info(f"[CV UPLOAD] Metadata extracted: {metadata}")
-
-        # --- Insert metadata into DB (empty descriptions for work experience) ---
-        profile = db.query(CVProfile).filter(CVProfile.user_id == user_id).first()
-        if not profile:
-            profile = CVProfile(
-                id=uuid.uuid4(),
-                user_id=user_id,
-                name="Unnamed",
-                email=None
-            )
-            db.add(profile)
-            db.commit()
-            db.refresh(profile)
-        # Work Experience
-        wx_entries = []
-        for idx, wx in enumerate(metadata.get("work_experiences", [])):
-            wx_obj = WorkExperience(
-                id=uuid.uuid4(),
-                cv_profile_id=profile.id,
-                company=wx.get("company", ""),
-                title=wx.get("job_title", ""),
-                start_date=wx.get("start_date", ""),
-                end_date=wx.get("end_date", ""),
-                description=None,
-                order_index=idx
-            )
-            db.add(wx_obj)
-            wx_entries.append(wx_obj)
-        # Education
-        for idx, edu in enumerate(metadata.get("education", [])):
-            db.add(Education(
-                id=uuid.uuid4(),
-                cv_profile_id=profile.id,
-                institution=edu.get("institution", ""),
-                degree=edu.get("degree", ""),
-                field=edu.get("field"),
-                start_date=edu.get("start_date"),
-                end_date=edu.get("end_date"),
-                description=None,
-                order_index=idx
-            ))
-        # Certifications
-        for idx, cert in enumerate(metadata.get("certifications", [])):
-            db.add(Certification(
-                id=uuid.uuid4(),
-                cv_profile_id=profile.id,
-                name=cert.get("name", ""),
-                issuer=cert.get("issuer"),
-                year=cert.get("date"),
-                order_index=idx
-            ))
+        metadata = extract_cv_metadata_with_ai(cv_text)
+    except Exception as e:
+        logger.error(f"[CV UPLOAD] Metadata extraction failed: {e}")
+        raise HTTPException(status_code=500, detail="Metadata extraction failed")
+    # 3. Create or get CVProfile
+    profile = db.query(CVProfile).filter_by(user_id=user_id).first()
+    if not profile:
+        profile = CVProfile(id=uuid.uuid4(), user_id=user_id, name="Unnamed", email=None)
+        db.add(profile)
         db.commit()
         db.refresh(profile)
-        db_task.status = TaskStatusEnum.pending
-        db.commit()
-
-        # --- Second Pass: Extract Descriptions for Work Experience ---
-        for wx in wx_entries:
-            wx_metadata = {
-                "company": wx.company,
-                "job_title": wx.title,
-                "start_date": wx.start_date,
-                "end_date": wx.end_date,
-                "location": None  # Add location if available in metadata
-            }
-            description = extract_work_experience_description_with_ai(text, wx_metadata)
-            wx.description = description
-            db.commit()
-        db_task.status = TaskStatusEnum.completed
-        db.commit()
-        return CVUploadResponse(taskId=task_id)
-    except Exception as e:
-        logger.error(f"[CV UPLOAD] Exception: {e}", exc_info=True)
-        db_task.status = TaskStatusEnum.failed
-        db_task.error = str(e)
-        db.commit()
-        raise HTTPException(status_code=500, detail=f"CV upload failed: {e}")
+    # 4. Insert metadata into normalized tables
+    # Work Experience
+    for idx, wx in enumerate(metadata.get("work_experiences", [])):
+        db.add(WorkExperience(
+            id=uuid.uuid4(),
+            cv_profile_id=profile.id,
+            company=wx.get("company", ""),
+            title=wx.get("job_title", ""),
+            start_date=wx.get("start_date", ""),
+            end_date=wx.get("end_date", ""),
+            description=None,
+            order_index=idx
+        ))
+    # Education
+    for idx, edu in enumerate(metadata.get("education", [])):
+        db.add(Education(
+            id=uuid.uuid4(),
+            cv_profile_id=profile.id,
+            institution=edu.get("institution", ""),
+            degree=edu.get("degree", ""),
+            field=edu.get("field"),
+            start_date=edu.get("start_date"),
+            end_date=edu.get("end_date"),
+            description=None,
+            order_index=idx
+        ))
+    # Skills
+    for skill in metadata.get("skills", []):
+        db.add(Skill(
+            id=uuid.uuid4(),
+            cv_profile_id=profile.id,
+            skill=skill
+        ))
+    # Projects
+    for idx, proj in enumerate(metadata.get("projects", [])):
+        db.add(Project(
+            id=uuid.uuid4(),
+            cv_profile_id=profile.id,
+            name=proj.get("name", ""),
+            description=None,
+            order_index=idx
+        ))
+    # Certifications
+    for idx, cert in enumerate(metadata.get("certifications", [])):
+        db.add(Certification(
+            id=uuid.uuid4(),
+            cv_profile_id=profile.id,
+            name=cert.get("name", ""),
+            issuer=cert.get("issuer"),
+            year=cert.get("year"),
+            order_index=idx
+        ))
+    db.commit()
+    db.refresh(profile)
+    # 5. Mark task as metadata_extracted
+    db_task = CVTask(id=uuid.uuid4(), user_id=user_id, status="metadata_extracted", error=None)
+    db.add(db_task)
+    db.commit()
+    return CVUploadResponse(taskId=str(db_task.id), status=db_task.status)
 
 def deduplicate_job_roles(job_roles):
     import re
