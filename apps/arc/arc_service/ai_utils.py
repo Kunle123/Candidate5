@@ -115,7 +115,7 @@ def parse_cv_with_ai_chunk(text):
         response = client.chat.completions.create(
             model="gpt-4o-2024-08-06",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1800,
+            max_tokens=3500,
             temperature=0.2,
             response_format={
                 "type": "json_schema",
