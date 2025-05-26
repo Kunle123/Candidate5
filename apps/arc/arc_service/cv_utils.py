@@ -57,7 +57,7 @@ def extract_text_from_docx(file: UploadFile):
         file.file.seek(0)
         return ""
 
-def nlp_chunk_text(text, max_tokens=40000, model="gpt-4-turbo"):
+def nlp_chunk_text(text, max_tokens=8000, model="gpt-4-turbo"):
     nlp = spacy.load("en_core_web_sm")
     enc = tiktoken.encoding_for_model(model)
     doc = nlp(text)
