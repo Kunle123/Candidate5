@@ -362,20 +362,6 @@ async def poll_cv_status(taskId: UUID = Path(...), user_id: str = Depends(get_cu
         "error": db_task.error
     }
 
-@router.get("/cv/arcdata/{taskId}", response_model=CVStatusResponse)
-async def poll_cv_status_arcdata(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    logger.info(f"[DEBUG] /cv/arcdata called with taskId={taskId}, user_id={user_id}")
-    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
-    logger.info(f"[DEBUG] DB query result for taskId={taskId}, user_id={user_id}: {db_task}")
-    if not db_task:
-        logger.warning(f"[DEBUG] Task not found for taskId={taskId}, user_id={user_id}")
-        raise HTTPException(status_code=404, detail="Task not found")
-    return {
-        "status": db_task.status,
-        "extractedDataSummary": db_task.extracted_data_summary,
-        "error": db_task.error
-    }
-
 @router.get("/cv/text/{taskId}")
 async def get_raw_text(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
@@ -474,31 +460,6 @@ async def get_ai_filtered(taskId: str = Path(...), user_id: str = Depends(get_cu
         raise
     except Exception as e:
         logger.error(f"Unexpected error in get_ai_filtered: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-@router.get("/cv/arcdata/{taskId}")
-async def get_arcdata(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    try:
-        db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
-        if not db_task:
-            logger.error(f"Task {taskId} not found for user {user_id}")
-            raise HTTPException(status_code=404, detail="Task not found")
-        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
-        if not db_user_arc or not db_user_arc.arc_data:
-            logger.error(f"UserArcData not found for user {user_id}")
-            raise HTTPException(status_code=404, detail="No extracted data found for user")
-        arc_data = db_user_arc.arc_data
-        if not isinstance(arc_data, dict):
-            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
-            raise HTTPException(status_code=400, detail="arc_data is malformed")
-        if "arcdata" not in arc_data:
-            logger.warning(f"arcdata not persisted for user {user_id}, task {taskId}")
-            raise HTTPException(status_code=501, detail="arcdata is not stored persistently. Please advise how you want to handle this.")
-        return {"arcdata": arc_data["arcdata"]}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error in get_arcdata: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/data")
