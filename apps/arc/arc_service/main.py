@@ -336,8 +336,8 @@ async def delete_cv_task(taskId: str, user_id: str = Depends(get_current_user), 
     return {"success": True}
 
 # --- Endpoint: Download Processed CV ---
-@router.get("/cv/download/{taskId}")
-async def download_processed_cv(taskId: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+@router.get("/cv/download/{taskId}", response_model=CVStatusResponse)
+async def download_processed_cv(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
