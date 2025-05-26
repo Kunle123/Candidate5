@@ -22,7 +22,7 @@ from typing import Optional, List, Dict, Any
 from .career_ark_router import router as career_ark_router
 from .auth import get_current_user, oauth2_scheme
 from .arc_schemas import ArcData, Role
-from .cv_utils import extract_text_from_pdf, extract_text_from_docx, split_cv_by_sections
+from .cv_utils import extract_text_from_pdf, extract_text_from_docx, split_cv_by_sections, nlp_chunk_text
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 
@@ -70,30 +70,6 @@ class CVStatusResponse(BaseModel):
     status: str
     extractedDataSummary: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
-
-def nlp_chunk_text(text, max_tokens=40000, model="gpt-4-turbo"):
-    nlp = spacy.load("en_core_web_sm")
-    enc = tiktoken.encoding_for_model(model)
-    doc = nlp(text)
-    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
-    chunks = []
-    current_chunk = []
-    current_tokens = 0
-    for sent in sentences:
-        sent_tokens = len(enc.encode(sent))
-        if current_tokens + sent_tokens > max_tokens and current_chunk:
-            chunks.append(" ".join(current_chunk))
-            current_chunk = [sent]
-            current_tokens = sent_tokens
-        else:
-            current_chunk.append(sent)
-            current_tokens += sent_tokens
-    if current_chunk:
-        chunks.append(" ".join(current_chunk))
-    logger.info(f"[NLP CHUNKING] Created {len(chunks)} chunks (max {max_tokens} tokens each)")
-    for i, chunk in enumerate(chunks):
-        logger.info(f"[NLP CHUNKING] Chunk {i+1} token count: {len(enc.encode(chunk))}")
-    return chunks
 
 def filter_non_empty_entries(entries, key_fields=None, section_name=None):
     if not entries:

@@ -3,6 +3,9 @@ from fastapi import UploadFile
 import pdfplumber
 from docx import Document
 import re
+import spacy
+import tiktoken
+from .logger import logger  # adjust if logger is defined elsewhere
 
 SECTION_HEADERS = [
     r"work experience", r"professional experience", r"employment history",
@@ -52,4 +55,28 @@ def extract_text_from_docx(file: UploadFile):
     except Exception as e:
         logging.error(f"[DOCX EXTRACT] Exception during DOCX extraction: {e}")
         file.file.seek(0)
-        return "" 
+        return ""
+
+def nlp_chunk_text(text, max_tokens=40000, model="gpt-4-turbo"):
+    nlp = spacy.load("en_core_web_sm")
+    enc = tiktoken.encoding_for_model(model)
+    doc = nlp(text)
+    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
+    chunks = []
+    current_chunk = []
+    current_tokens = 0
+    for sent in sentences:
+        sent_tokens = len(enc.encode(sent))
+        if current_tokens + sent_tokens > max_tokens and current_chunk:
+            chunks.append(" ".join(current_chunk))
+            current_chunk = [sent]
+            current_tokens = sent_tokens
+        else:
+            current_chunk.append(sent)
+            current_tokens += sent_tokens
+    if current_chunk:
+        chunks.append(" ".join(current_chunk))
+    logger.info(f"[NLP CHUNKING] Created {len(chunks)} chunks (max {max_tokens} tokens each)")
+    for i, chunk in enumerate(chunks):
+        logger.info(f"[NLP CHUNKING] Chunk {i+1} token count: {len(enc.encode(chunk))}")
+    return chunks 
