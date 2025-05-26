@@ -13,8 +13,8 @@ import os
 from fastapi.responses import FileResponse
 import io
 from .arc_schemas import ArcData
-from app.cv_utils import extract_text_from_docx, extract_text_from_pdf, split_cv_by_sections, nlp_chunk_text
-from app.ai_utils import parse_cv_with_ai_chunk
+from .cv_utils import extract_text_from_docx, extract_text_from_pdf, split_cv_by_sections, nlp_chunk_text
+from .ai_utils import parse_cv_with_ai_chunk
 from .schemas import ProfileCreate, ProfileUpdate, ProfileOut, WorkExperienceCreate, WorkExperienceUpdate, WorkExperienceOut, EducationCreate, EducationUpdate, EducationOut, SkillCreate, SkillOut, ProjectCreate, ProjectUpdate, ProjectOut, CertificationCreate, CertificationUpdate, CertificationOut, TrainingCreate, TrainingUpdate, Role
 
 router = APIRouter()
