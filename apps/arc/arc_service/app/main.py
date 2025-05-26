@@ -21,6 +21,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional, List, Dict, Any
 from .career_ark_router import router as career_ark_router
 from .auth import get_current_user, oauth2_scheme
+from .arc_schemas import ArcData, Role
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 
@@ -64,24 +65,6 @@ app.include_router(career_ark_router, prefix="/api/career-ark", tags=["Career Ar
 tasks = {}
 
 # --- Models ---
-class Role(BaseModel):
-    company: str
-    title: str
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    description: Optional[str] = None
-    successes: Optional[List[str]] = None
-    skills: Optional[List[str]] = None
-    training: Optional[List[str]] = None
-
-class ArcData(BaseModel):
-    work_experience: Optional[List[Role]] = None
-    education: Optional[List[Dict[str, Any]]] = None
-    skills: Optional[List[str]] = None
-    projects: Optional[List[Dict[str, Any]]] = None
-    certifications: Optional[List[Dict[str, Any]]] = None
-    # Add more fields as needed
-
 class CVStatusResponse(BaseModel):
     status: str
     extractedDataSummary: Optional[Dict[str, Any]] = None

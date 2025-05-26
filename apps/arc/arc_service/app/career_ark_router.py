@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 import os
 from fastapi.responses import FileResponse
 import io
-from .main import ArcData
+from .arc_schemas import ArcData
 
 router = APIRouter()
 
