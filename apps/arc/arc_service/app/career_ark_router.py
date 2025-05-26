@@ -13,6 +13,7 @@ import os
 from fastapi.responses import FileResponse
 import io
 from .arc_schemas import ArcData
+from .main import extract_text_from_docx, extract_text_from_pdf
 
 router = APIRouter()
 
