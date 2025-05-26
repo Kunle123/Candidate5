@@ -1,7 +1,7 @@
 # Dummy change to trigger CI/CD redeployment
 from fastapi import APIRouter, HTTPException, Path, Body, Depends, UploadFile, File
 from sqlalchemy.orm import Session
-from .models import CVProfile, WorkExperience, Education, Skill, Project, Certification, Training
+from .models import CVProfile, WorkExperience, Education, Skill, Project, Certification, Training, UserArcData, CVTask
 from .db import get_db
 from pydantic import BaseModel
 from typing import Optional, List
@@ -10,6 +10,8 @@ from .auth import get_current_user
 import logging
 from uuid import UUID, uuid4
 import os
+from fastapi.responses import FileResponse
+import io
 
 router = APIRouter()
 
@@ -793,4 +795,166 @@ def generate_application_materials(data: GenerateRequest):
     return {
         "cv": "Generated CV content here...",
         "cover_letter": "Generated cover letter content here..."
-    } 
+    }
+
+@router.get("/cv/tasks")
+async def list_cv_tasks(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_tasks = db.query(CVTask).filter(CVTask.user_id == user_id).all()
+    return {"tasks": [
+        {
+            "taskId": str(task.id),
+            "status": task.status,
+            "extractedDataSummary": task.extracted_data_summary,
+            "error": task.error,
+            "created_at": task.created_at,
+            "updated_at": task.updated_at
+        } for task in db_tasks
+    ]}
+
+@router.get("/cv/download/{taskId}")
+async def download_processed_cv(taskId: UUID, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+    if not db_user_arc or not db_user_arc.arc_data:
+        raise HTTPException(status_code=404, detail="No extracted data found for user")
+    import json
+    data_bytes = json.dumps(db_user_arc.arc_data, indent=2).encode()
+    return FileResponse(io.BytesIO(data_bytes), media_type="application/json", filename=f"extracted_cv_{taskId}.json")
+
+@router.get("/cv/status/{taskId}")
+async def poll_cv_status(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {
+        "status": db_task.status,
+        "extractedDataSummary": db_task.extracted_data_summary,
+        "error": db_task.error
+    }
+
+@router.get("/cv/text/{taskId}")
+async def get_raw_text(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+        if not db_task:
+            logger.error(f"Task {taskId} not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="Task not found")
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc or not db_user_arc.arc_data:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        arc_data = db_user_arc.arc_data
+        if not isinstance(arc_data, dict):
+            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
+            raise HTTPException(status_code=400, detail="arc_data is malformed")
+        if "raw_text" not in arc_data:
+            logger.warning(f"raw_text not persisted for user {user_id}, task {taskId}")
+            raise HTTPException(status_code=501, detail="raw_text is not stored persistently. Please advise how you want to handle this.")
+        return {"raw_text": arc_data["raw_text"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in get_raw_text: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.get("/cv/ai-raw/{taskId}")
+async def get_ai_raw(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+        if not db_task:
+            logger.error(f"Task {taskId} not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="Task not found")
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc or not db_user_arc.arc_data:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        arc_data = db_user_arc.arc_data
+        if not isinstance(arc_data, dict):
+            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
+            raise HTTPException(status_code=400, detail="arc_data is malformed")
+        if "ai_raw_chunks" not in arc_data:
+            logger.warning(f"ai_raw_chunks not persisted for user {user_id}, task {taskId}")
+            raise HTTPException(status_code=501, detail="ai_raw_chunks is not stored persistently. Please advise how you want to handle this.")
+        return {"ai_raw_chunks": arc_data["ai_raw_chunks"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in get_ai_raw: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.get("/cv/ai-combined/{taskId}")
+async def get_ai_combined(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+        if not db_task:
+            logger.error(f"Task {taskId} not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="Task not found")
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc or not db_user_arc.arc_data:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        arc_data = db_user_arc.arc_data
+        if not isinstance(arc_data, dict):
+            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
+            raise HTTPException(status_code=400, detail="arc_data is malformed")
+        if "ai_combined" not in arc_data:
+            logger.warning(f"ai_combined not persisted for user {user_id}, task {taskId}")
+            raise HTTPException(status_code=501, detail="ai_combined is not stored persistently. Please advise how you want to handle this.")
+        return {"ai_combined": arc_data["ai_combined"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in get_ai_combined: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.get("/cv/ai-filtered/{taskId}")
+async def get_ai_filtered(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+        if not db_task:
+            logger.error(f"Task {taskId} not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="Task not found")
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc or not db_user_arc.arc_data:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        arc_data = db_user_arc.arc_data
+        if not isinstance(arc_data, dict):
+            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
+            raise HTTPException(status_code=400, detail="arc_data is malformed")
+        if "ai_filtered" not in arc_data:
+            logger.warning(f"ai_filtered not persisted for user {user_id}, task {taskId}")
+            raise HTTPException(status_code=501, detail="ai_filtered is not stored persistently. Please advise how you want to handle this.")
+        return {"ai_filtered": arc_data["ai_filtered"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in get_ai_filtered: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.get("/cv/arcdata/{taskId}")
+async def get_arcdata(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
+        if not db_task:
+            logger.error(f"Task {taskId} not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="Task not found")
+        db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
+        if not db_user_arc or not db_user_arc.arc_data:
+            logger.error(f"UserArcData not found for user {user_id}")
+            raise HTTPException(status_code=404, detail="No extracted data found for user")
+        arc_data = db_user_arc.arc_data
+        if not isinstance(arc_data, dict):
+            logger.error(f"arc_data for user {user_id} is malformed: {arc_data}")
+            raise HTTPException(status_code=400, detail="arc_data is malformed")
+        if "arcdata" not in arc_data:
+            logger.warning(f"arcdata not persisted for user {user_id}, task {taskId}")
+            raise HTTPException(status_code=501, detail="arcdata is not stored persistently. Please advise how you want to handle this.")
+        return {"arcdata": arc_data["arcdata"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in get_arcdata: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error") 
