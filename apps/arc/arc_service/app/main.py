@@ -22,8 +22,8 @@ from typing import Optional, List, Dict, Any
 from .career_ark_router import router as career_ark_router
 from .auth import get_current_user, oauth2_scheme
 from .arc_schemas import ArcData, Role
-from .cv_utils import extract_text_from_pdf, extract_text_from_docx, split_cv_by_sections, nlp_chunk_text
-from .ai_utils import parse_cv_with_ai_chunk, flatten_work_experience
+from app.cv_utils import extract_text_from_pdf, extract_text_from_docx, split_cv_by_sections, nlp_chunk_text
+from app.ai_utils import parse_cv_with_ai_chunk, flatten_work_experience
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 

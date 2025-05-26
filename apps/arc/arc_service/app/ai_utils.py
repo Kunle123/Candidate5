@@ -3,7 +3,7 @@ import re
 import logging
 from fastapi import HTTPException
 import openai
-from .schemas import ArcData
+from app.schemas import ArcData
 
 def flatten_work_experience(ai_work_experience):
     flat = []
