@@ -75,7 +75,7 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
                 logger.debug("Body: [unreadable text data]")
         else:
             logger.debug("Body: [binary or multipart data not logged]")
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=180.0) as client:
         try:
             resp = await client.request(
                 method,
@@ -83,7 +83,7 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
                 headers=headers,
                 content=data,
                 params=request.query_params,
-                timeout=60.0
+                timeout=180.0
             )
             logger.debug(f"Response status: {resp.status_code}")
             logger.debug(f"Response headers: {dict(resp.headers)}")
