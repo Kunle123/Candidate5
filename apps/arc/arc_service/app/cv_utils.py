@@ -1,11 +1,11 @@
 import logging
+logger = logging.getLogger('arc')
 from fastapi import UploadFile
 import pdfplumber
 from docx import Document
 import re
 import spacy
 import tiktoken
-from .logger import logger  # adjust if logger is defined elsewhere
 
 SECTION_HEADERS = [
     r"work experience", r"professional experience", r"employment history",
