@@ -780,13 +780,18 @@ def upload_cv_for_profile(profile_id: UUID, file: UploadFile = File(...), db: Se
     profile = db.query(CVProfile).filter(CVProfile.id == profile_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
+    # Ensure user_arc_data row exists for this user
+    user_arc = db.query(UserArcData).filter(UserArcData.user_id == profile.user_id).first()
+    if not user_arc:
+        user_arc = UserArcData(user_id=profile.user_id, arc_data={})
+        db.add(user_arc)
+        db.commit()
+        db.refresh(user_arc)
     task_id = str(uuid4())
-    # Persist the new task in the CVTask table
     new_task = CVTask(id=task_id, user_id=profile.user_id, status="pending")
     db.add(new_task)
     db.commit()
     db.refresh(new_task)
-    # (Insert parsing and persistence logic here if needed)
     return {"taskId": task_id}
 
 # --- Application Material Generation Endpoint ---
