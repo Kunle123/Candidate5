@@ -23,6 +23,7 @@ from .career_ark_router import router as career_ark_router
 from .auth import get_current_user, oauth2_scheme
 from .arc_schemas import ArcData, Role
 from .cv_utils import extract_text_from_pdf, extract_text_from_docx, split_cv_by_sections, nlp_chunk_text
+from .ai_utils import parse_cv_with_ai_chunk, flatten_work_experience
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 
@@ -88,28 +89,6 @@ def filter_non_empty_entries(entries, key_fields=None, section_name=None):
             logger.info(f"[FILTER] {section_name}: Filtered out empty/whitespace entry: {entry}")
     logger.info(f"[FILTER] {section_name}: {len(filtered)} of {len(entries)} entries kept after filtering.")
     return filtered
-
-def flatten_work_experience(ai_work_experience):
-    flat = []
-    for entry in ai_work_experience:
-        company = entry.get("company")
-        date_range = entry.get("date_range")
-        # Split date_range into start_date and end_date if possible
-        start_date, end_date = None, None
-        if date_range and "–" in date_range:
-            parts = [p.strip() for p in date_range.split("–")]
-            if len(parts) == 2:
-                start_date, end_date = parts
-        roles = entry.get("roles", [])
-        for role in roles:
-            flat.append({
-                "company": company,
-                "title": role.get("title"),
-                "start_date": start_date,
-                "end_date": end_date,
-                "description": "\n".join(role.get("description", [])) if isinstance(role.get("description"), list) else role.get("description", "")
-            })
-    return flat
 
 def parse_cv_with_ai_chunk(text):
     openai_api_key = os.getenv("OPENAI_API_KEY")
