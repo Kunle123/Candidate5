@@ -134,4 +134,80 @@ def parse_cv_with_ai_chunk(text):
         return arc_data
     except Exception as e:
         logger.error(f"AI parsing failed: {e}")
-        raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}") 
+        raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
+
+# --- Two-Pass Extraction: First Pass (Metadata Only) ---
+def extract_cv_metadata_with_ai(cv_text):
+    """
+    Extracts only metadata (no descriptions) for work experience, education, and certifications from a CV using OpenAI.
+    Returns a dict with lists of work_experiences, education, and certifications.
+    """
+    logger = logging.getLogger("arc")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = openai.OpenAI(api_key=openai_api_key)
+    prompt = (
+        """
+        Given the following CV, extract ONLY the metadata for each work experience, education, and training/certification entry.\n
+        For work experience, return a list of objects with:\n
+        - job_title\n        - company\n        - start_date\n        - end_date\n        - location (if available)\n        Do NOT include any job descriptions, bullet points, or responsibilities.\n
+        For education and training/certifications, return similar metadata (degree, institution, dates, etc.).\n
+        Output valid JSON in this schema:\n        {\n          \"work_experiences\": [\n            {\n              \"job_title\": \"...\",\n              \"company\": \"...\",\n              \"start_date\": \"...\",\n              \"end_date\": \"...\",\n              \"location\": \"...\"\n            }\n          ],\n          \"education\": [\n            {\n              \"degree\": \"...\",\n              \"institution\": \"...\",\n              \"start_date\": \"...\",\n              \"end_date\": \"...\"\n            }\n          ],\n          \"certifications\": [\n            {\n              \"name\": \"...\",\n              \"issuer\": \"...\",\n              \"date\": \"...\"\n            }\n          ]\n        }\n
+        Here is the CV:\n\n"""
+    ) + cv_text
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=2000,
+            temperature=0.2,
+            response_format={"type": "json_object"}
+        )
+        raw_response = response.choices[0].message.content
+        logger.info(f"[AI METADATA] Raw AI output for metadata extraction: {raw_response}")
+        import json
+        data = json.loads(raw_response)
+        return data
+    except Exception as e:
+        logger.error(f"AI metadata extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"AI metadata extraction failed: {e}")
+
+# --- Two-Pass Extraction: Second Pass (Description for Single Work Experience) ---
+def extract_work_experience_description_with_ai(cv_text, work_exp_metadata):
+    """
+    Extracts the full description for a single work experience entry from the CV using OpenAI.
+    work_exp_metadata should be a dict with keys: job_title, company, start_date, end_date, location (optional).
+    Returns the description as a string.
+    """
+    logger = logging.getLogger("arc")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = openai.OpenAI(api_key=openai_api_key)
+    # Build the prompt step by step
+    prompt = "Given the following CV, extract the full description (responsibilities, achievements, bullet points, etc.) for the work experience at:\n\n"
+    prompt += f"Company: {work_exp_metadata.get('company', '')}\n"
+    prompt += f"Job Title: {work_exp_metadata.get('job_title', '')}\n"
+    prompt += f"Start Date: {work_exp_metadata.get('start_date', '')}\n"
+    prompt += f"End Date: {work_exp_metadata.get('end_date', '')}\n"
+    if work_exp_metadata.get('location'):
+        prompt += f"Location: {work_exp_metadata.get('location', '')}\n"
+    prompt += "Return ONLY the description for this job, as plain text.\n\nHere is the CV:\n\n"
+    prompt += cv_text
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=800,
+            temperature=0.2,
+            response_format={"type": "text"}
+        )
+        description = response.choices[0].message.content.strip()
+        logger.info(f"[AI DESCRIPTION] Extracted description for {work_exp_metadata.get('company', '')} - {work_exp_metadata.get('job_title', '')}: {description[:200]}...")
+        return description
+    except Exception as e:
+        logger.error(f"AI description extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"AI description extraction failed: {e}") 

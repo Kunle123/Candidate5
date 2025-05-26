@@ -23,8 +23,7 @@ from .career_ark_router import router as career_ark_router
 from .auth import get_current_user, oauth2_scheme
 from .arc_schemas import ArcData, Role
 from .cv_utils import extract_text_from_pdf, extract_text_from_docx, split_cv_by_sections, nlp_chunk_text
-from .ai_utils import parse_cv_with_ai_chunk  # Now uses strict JSON schema enforcement
-from .ai_utils import flatten_work_experience
+from .ai_utils import parse_cv_with_ai_chunk, flatten_work_experience, extract_cv_metadata_with_ai, extract_work_experience_description_with_ai
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 
@@ -212,213 +211,87 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             db.commit()
             raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF and DOCX are supported.")
         logger.info(f"[CV UPLOAD] Extracted text from file (first 500 chars):\n{text[:500]}")
-        sections = split_cv_by_sections(text)
-        logger.info(f"[CV UPLOAD] Found {len(sections)} section(s) in CV.")
-        chunk_outputs = []
-        ai_raw_chunks = []
-        total_chunks = 0
-        with ThreadPoolExecutor() as executor:
-            futures = []
-            for section_idx, (header, section_text) in enumerate(sections):
-                nlp_chunks = nlp_chunk_text(section_text, max_tokens=8000)
-                logger.info(f"[CV UPLOAD] Section {section_idx+1} ('{header}') split into {len(nlp_chunks)} chunk(s).")
-                for chunk_idx, chunk in enumerate(nlp_chunks):
-                    logger.info(f"[CV UPLOAD] Section {section_idx+1} Chunk {chunk_idx+1} content (first 200 chars): {chunk[:200]}")
-                    futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
-                total_chunks += len(nlp_chunks)
-            logger.info(f"[CV UPLOAD] Total NLP chunks to process: {total_chunks}")
-            for future in as_completed(futures):
-                arc_data = future.result()
-                logger.info(f"[CV UPLOAD] AI chunk output: {arc_data}")
-                arc_data_dict = arc_data.dict()
-                arc_data_dict.pop("raw_ai_output", None)
-                if not any(arc_data_dict.values()):
-                    logger.warning(f"[CV UPLOAD] WARNING: Empty or skipped chunk output: {arc_data_dict}")
-                chunk_outputs.append(arc_data_dict)
-                if hasattr(arc_data, 'raw_ai_output'):
-                    ai_raw_chunks.append(getattr(arc_data, 'raw_ai_output'))
-        logger.info(f"[CV UPLOAD] Number of AI chunk outputs: {len(chunk_outputs)}")
-        logger.info(f"[CV UPLOAD] All AI chunk outputs: {chunk_outputs}")
-        combined = {"work_experience": [], "education": [], "skills": [], "projects": [], "certifications": []}
-        for chunk in chunk_outputs:
-            for key in combined.keys():
-                value = chunk.get(key)
-                if value:
-                    if isinstance(value, list):
-                        combined[key].extend(value)
-                    else:
-                        combined[key].append(value)
-        # --- Preserve order for all lists as in the input JSON ---
-        def deduplicate_preserve_order(seq):
-            seen = set()
-            return [x for x in seq if not (x in seen or seen.add(x))]
-        filtered = {}
-        filtered["work_experience"] = deduplicate_job_roles(filter_non_empty_entries(combined["work_experience"], ["company", "title", "description", "start_date", "end_date"], section_name="work_experience"))
-        filtered["education"] = filter_non_empty_entries(combined["education"], ["institution", "degree", "field", "start_date", "end_date"], section_name="education")
-        # Deduplicate skills while preserving order
-        filtered["skills"] = deduplicate_preserve_order([s for s in combined["skills"] if s])
-        filtered["projects"] = filter_non_empty_entries(combined["projects"], ["name", "description"], section_name="projects")
-        filtered["certifications"] = filter_non_empty_entries(combined["certifications"], ["name", "issuer", "year"], section_name="certifications")
-        # --- Split description into details for work_experience and education ---
-        for entry in filtered.get("work_experience", []):
-            entry["details"] = split_description_to_details(entry.get("description", ""))
-        for entry in filtered.get("education", []):
-            entry["details"] = split_description_to_details(entry.get("description", ""))
-        # --- Optionally map projects.name to title and certifications.year to date ---
-        for entry in filtered.get("projects", []):
-            if "name" in entry:
-                entry["title"] = entry["name"]
-        for entry in filtered.get("certifications", []):
-            if "year" in entry:
-                entry["date"] = entry["year"]
-        for key in list(filtered.keys()):
-            if not filtered[key]:
-                filtered[key] = None
-        logger.info(f"[CV UPLOAD] Filtered data: {filtered}")
-        # The order of all lists is now guaranteed to match the input JSON (except for deduplication, which preserves first occurrence order)
-        new_arc_data = ArcData(**filtered)
-        db_obj = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
-        arc_data_dict = new_arc_data.dict()
-        arc_data_dict["raw_text"] = text
-        arc_data_dict["ai_raw_chunks"] = ai_raw_chunks
-        logger.info(f"[CV UPLOAD] Final arc_data_dict to be saved: {arc_data_dict}")
-        if db_obj:
-            db_obj.arc_data = arc_data_dict
-        else:
-            db_obj = UserArcData(user_id=user_id, arc_data=arc_data_dict)
-            db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
-        db_task.status = TaskStatusEnum.completed
-        db_task.extracted_data_summary = {"workExperienceCount": len(new_arc_data.work_experience or []), "skillsFound": len(new_arc_data.skills or [])}
-        db.commit()
 
-        # --- Insert into normalized tables (merge/deduplicate) ---
-        try:
-            import uuid
-            logger.info("[CV UPLOAD] Merging into normalized tables...")
-            # Find or create the user's single profile
-            profile = db.query(CVProfile).filter(CVProfile.user_id == user_id).first()
-            if not profile:
-                profile = CVProfile(
-                    id=uuid.uuid4(),
-                    user_id=user_id,
-                    name=filtered.get("personal_info", {}).get("name", "Unnamed"),
-                    email=filtered.get("personal_info", {}).get("email")
-                )
-                db.add(profile)
-                db.commit()
-                db.refresh(profile)
-                logger.info(f"[CV UPLOAD] Created new CVProfile with id={profile.id}")
-            else:
-                logger.info(f"[CV UPLOAD] Using existing CVProfile with id={profile.id}")
+        # --- First Pass: Extract Metadata ---
+        metadata = extract_cv_metadata_with_ai(text)
+        logger.info(f"[CV UPLOAD] Metadata extracted: {metadata}")
 
-            # --- Work Experience ---
-            existing_wx = db.query(WorkExperience).filter(WorkExperience.cv_profile_id == profile.id).all()
-            existing_wx_keys = set((x.company, x.title, x.start_date, x.end_date) for x in existing_wx)
-            wx_to_add = []
-            for exp in filtered.get("work_experience") or []:
-                key = (exp.get("company"), exp.get("title"), exp.get("start_date"), exp.get("end_date"))
-                if key not in existing_wx_keys:
-                    wx_to_add.append(exp)
-            for idx, exp in enumerate(wx_to_add, start=len(existing_wx)):
-                db.add(WorkExperience(
-                    id=uuid.uuid4(),
-                    cv_profile_id=profile.id,
-                    company=exp.get("company"),
-                    title=exp.get("title"),
-                    start_date=exp.get("start_date") or "",
-                    end_date=exp.get("end_date") or "",
-                    description=exp.get("description"),
-                    order_index=idx
-                ))
-            logger.info(f"[CV UPLOAD] Added {len(wx_to_add)} new work experience entries.")
-
-            # --- Education ---
-            existing_edu = db.query(Education).filter(Education.cv_profile_id == profile.id).all()
-            existing_edu_keys = set((x.institution, x.degree, x.field, x.start_date, x.end_date) for x in existing_edu)
-            edu_to_add = []
-            for edu in filtered.get("education") or []:
-                key = (edu.get("institution"), edu.get("degree"), edu.get("field"), edu.get("start_date"), edu.get("end_date"))
-                if key not in existing_edu_keys:
-                    edu_to_add.append(edu)
-            for idx, edu in enumerate(edu_to_add, start=len(existing_edu)):
-                db.add(Education(
-                    id=uuid.uuid4(),
-                    cv_profile_id=profile.id,
-                    institution=edu.get("institution", ""),
-                    degree=edu.get("degree", ""),
-                    field=edu.get("field"),
-                    start_date=edu.get("start_date"),
-                    end_date=edu.get("end_date"),
-                    description=edu.get("description"),
-                    order_index=idx
-                ))
-            logger.info(f"[CV UPLOAD] Added {len(edu_to_add)} new education entries.")
-
-            # --- Skills ---
-            existing_skills = set(x.skill for x in db.query(Skill).filter(Skill.cv_profile_id == profile.id).all())
-            skills_to_add = [s for s in (filtered.get("skills") or []) if s not in existing_skills]
-            for skill in skills_to_add:
-                db.add(Skill(
-                    id=uuid.uuid4(),
-                    cv_profile_id=profile.id,
-                    skill=skill
-                ))
-            logger.info(f"[CV UPLOAD] Added {len(skills_to_add)} new skills entries.")
-
-            # --- Projects ---
-            existing_projects = db.query(Project).filter(Project.cv_profile_id == profile.id).all()
-            existing_proj_keys = set((x.name, x.description) for x in existing_projects)
-            projects_to_add = []
-            for proj in filtered.get("projects") or []:
-                key = (proj.get("name"), proj.get("description"))
-                if key not in existing_proj_keys:
-                    projects_to_add.append(proj)
-            for idx, proj in enumerate(projects_to_add, start=len(existing_projects)):
-                db.add(Project(
-                    id=uuid.uuid4(),
-                    cv_profile_id=profile.id,
-                    name=proj.get("name"),
-                    description=proj.get("description"),
-                    order_index=idx
-                ))
-            logger.info(f"[CV UPLOAD] Added {len(projects_to_add)} new project entries.")
-
-            # --- Certifications ---
-            existing_certs = db.query(Certification).filter(Certification.cv_profile_id == profile.id).all()
-            existing_cert_keys = set((x.name, x.issuer, x.year) for x in existing_certs)
-            certs_to_add = []
-            for cert in filtered.get("certifications") or []:
-                key = (cert.get("name"), cert.get("issuer"), cert.get("year"))
-                if key not in existing_cert_keys:
-                    certs_to_add.append(cert)
-            for idx, cert in enumerate(certs_to_add, start=len(existing_certs)):
-                db.add(Certification(
-                    id=uuid.uuid4(),
-                    cv_profile_id=profile.id,
-                    name=cert.get("name"),
-                    issuer=cert.get("issuer"),
-                    year=cert.get("year"),
-                    order_index=idx
-                ))
-            logger.info(f"[CV UPLOAD] Added {len(certs_to_add)} new certification entries.")
-
+        # --- Insert metadata into DB (empty descriptions for work experience) ---
+        profile = db.query(CVProfile).filter(CVProfile.user_id == user_id).first()
+        if not profile:
+            profile = CVProfile(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                name="Unnamed",
+                email=None
+            )
+            db.add(profile)
             db.commit()
-            logger.info("[CV UPLOAD] All normalized table merges committed.")
-        except Exception as e:
-            logger.error(f"[CV UPLOAD] Error merging into normalized tables: {e}", exc_info=True)
-            db.rollback()
-            raise HTTPException(status_code=500, detail=f"Error merging into normalized tables: {e}")
-        # --- End normalized table merge ---
+            db.refresh(profile)
+        # Work Experience
+        wx_entries = []
+        for idx, wx in enumerate(metadata.get("work_experiences", [])):
+            wx_obj = WorkExperience(
+                id=uuid.uuid4(),
+                cv_profile_id=profile.id,
+                company=wx.get("company", ""),
+                title=wx.get("job_title", ""),
+                start_date=wx.get("start_date", ""),
+                end_date=wx.get("end_date", ""),
+                description=None,
+                order_index=idx
+            )
+            db.add(wx_obj)
+            wx_entries.append(wx_obj)
+        # Education
+        for idx, edu in enumerate(metadata.get("education", [])):
+            db.add(Education(
+                id=uuid.uuid4(),
+                cv_profile_id=profile.id,
+                institution=edu.get("institution", ""),
+                degree=edu.get("degree", ""),
+                field=edu.get("field"),
+                start_date=edu.get("start_date"),
+                end_date=edu.get("end_date"),
+                description=None,
+                order_index=idx
+            ))
+        # Certifications
+        for idx, cert in enumerate(metadata.get("certifications", [])):
+            db.add(Certification(
+                id=uuid.uuid4(),
+                cv_profile_id=profile.id,
+                name=cert.get("name", ""),
+                issuer=cert.get("issuer"),
+                year=cert.get("date"),
+                order_index=idx
+            ))
+        db.commit()
+        db.refresh(profile)
+        db_task.status = TaskStatusEnum.pending
+        db.commit()
 
+        # --- Second Pass: Extract Descriptions for Work Experience ---
+        for wx in wx_entries:
+            wx_metadata = {
+                "company": wx.company,
+                "job_title": wx.title,
+                "start_date": wx.start_date,
+                "end_date": wx.end_date,
+                "location": None  # Add location if available in metadata
+            }
+            description = extract_work_experience_description_with_ai(text, wx_metadata)
+            wx.description = description
+            db.commit()
+        db_task.status = TaskStatusEnum.completed
+        db.commit()
+        return CVUploadResponse(taskId=task_id)
     except Exception as e:
-        logger.error(f"Error in /cv upload endpoint: {e}")
+        logger.error(f"[CV UPLOAD] Exception: {e}", exc_info=True)
         db_task.status = TaskStatusEnum.failed
         db_task.error = str(e)
         db.commit()
-        raise
-    return {"taskId": task_id}
+        raise HTTPException(status_code=500, detail=f"CV upload failed: {e}")
 
 def deduplicate_job_roles(job_roles):
     import re
