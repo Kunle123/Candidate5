@@ -13,8 +13,7 @@ import os
 from fastapi.responses import FileResponse
 import io
 from .arc_schemas import ArcData
-from .cv_utils import extract_text_from_docx, extract_text_from_pdf
-from .main import split_cv_by_sections
+from .cv_utils import extract_text_from_docx, extract_text_from_pdf, split_cv_by_sections
 
 router = APIRouter()
 

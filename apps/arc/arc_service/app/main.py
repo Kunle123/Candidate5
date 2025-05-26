@@ -22,7 +22,7 @@ from typing import Optional, List, Dict, Any
 from .career_ark_router import router as career_ark_router
 from .auth import get_current_user, oauth2_scheme
 from .arc_schemas import ArcData, Role
-from .cv_utils import extract_text_from_pdf, extract_text_from_docx
+from .cv_utils import extract_text_from_pdf, extract_text_from_docx, split_cv_by_sections
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 
@@ -70,21 +70,6 @@ class CVStatusResponse(BaseModel):
     status: str
     extractedDataSummary: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
-
-def split_cv_by_sections(text):
-    matches = list(section_header_regex.finditer(text))
-    if not matches:
-        logger.info("[SECTION SPLIT] No section headers found. Treating entire CV as one section.")
-        return [("full", text)]
-    sections = []
-    for i, match in enumerate(matches):
-        start = match.start()
-        header = match.group(1).strip().lower()
-        end = matches[i+1].start() if i+1 < len(matches) else len(text)
-        section_text = text[start:end].strip()
-        logger.info(f"[SECTION SPLIT] Found section header: '{header}' (chars {start}-{end})")
-        sections.append((header, section_text))
-    return sections
 
 def nlp_chunk_text(text, max_tokens=40000, model="gpt-4-turbo"):
     nlp = spacy.load("en_core_web_sm")
