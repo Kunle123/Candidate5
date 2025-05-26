@@ -43,6 +43,8 @@ def startup_event():
 
 router = APIRouter(prefix="/api/arc")
 
+app.include_router(router)
+
 # Update logging configuration to enable verbose logging for the Ark service
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("arc")
@@ -757,6 +759,4 @@ async def get_task_status(taskId: UUID = Path(...), user_id: str = Depends(get_c
         "status": db_task.status,
         "extractedDataSummary": db_task.extracted_data_summary,
         "error": db_task.error
-    }
-
-app.include_router(router) 
+    } 
