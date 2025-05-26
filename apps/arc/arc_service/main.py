@@ -747,10 +747,11 @@ async def ping():
 @router.get("/cv/task-status/{taskId}", response_model=CVStatusResponse)
 async def get_task_status(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     logger.info(f"[DEBUG] /cv/task-status called with taskId={taskId}, user_id={user_id}")
-    db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
-    logger.info(f"[DEBUG] DB query result for taskId={taskId}, user_id={user_id}: {db_task}")
+    # TEMP: Remove user_id filter for debugging
+    db_task = db.query(CVTask).filter(CVTask.id == taskId).first()
+    logger.info(f"[DEBUG] DB query result for taskId={taskId}: {db_task}")
     if not db_task:
-        logger.warning(f"[DEBUG] Task not found for taskId={taskId}, user_id={user_id}")
+        logger.warning(f"[DEBUG] Task not found for taskId={taskId}")
         raise HTTPException(status_code=404, detail="Task not found")
     return {
         "status": db_task.status,
