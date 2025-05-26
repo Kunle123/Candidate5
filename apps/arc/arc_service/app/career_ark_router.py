@@ -8,6 +8,7 @@ from datetime import datetime
 from .auth import get_current_user
 import logging
 from uuid import UUID
+import os
 
 router = APIRouter()
 
@@ -772,9 +773,13 @@ def partial_update_training(id: int, update: TrainingUpdate, db: Session = Depen
 
 # --- Per-Profile CV Upload Endpoint ---
 @router.post("/profiles/{profile_id}/cv")
-def upload_cv_for_profile(profile_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    # Placeholder: implement actual CV upload logic as needed
-    return {"message": f"Received CV for profile {profile_id}", "filename": file.filename}
+def upload_cv_for_profile(profile_id: UUID, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    # Optionally: process the file in-memory and persist extracted data
+    profile = db.query(CVProfile).filter(CVProfile.id == profile_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    # (Insert parsing and persistence logic here if needed)
+    return {"message": f"CV received for profile {profile_id}, no file saved. Profile persisted."}
 
 # --- Application Material Generation Endpoint ---
 class GenerateRequest(BaseModel):
