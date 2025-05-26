@@ -781,6 +781,11 @@ def upload_cv_for_profile(profile_id: UUID, file: UploadFile = File(...), db: Se
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     task_id = str(uuid4())
+    # Persist the new task in the CVTask table
+    new_task = CVTask(id=task_id, user_id=profile.user_id, status="pending")
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
     # (Insert parsing and persistence logic here if needed)
     return {"taskId": task_id}
 
