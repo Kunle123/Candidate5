@@ -22,6 +22,7 @@ from typing import Optional, List, Dict, Any
 from .career_ark_router import router as career_ark_router
 from .auth import get_current_user, oauth2_scheme
 from .arc_schemas import ArcData, Role
+from .cv_utils import extract_text_from_pdf, extract_text_from_docx
 
 app = FastAPI(title="Career Ark (Arc) Service", description="API for Career Ark data extraction, deduplication, and application material generation.")
 
@@ -69,41 +70,6 @@ class CVStatusResponse(BaseModel):
     status: str
     extractedDataSummary: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
-
-def extract_text_from_pdf(file: UploadFile):
-    try:
-        with pdfplumber.open(file.file) as pdf:
-            text = "\n".join(page.extract_text() or "" for page in pdf.pages)
-        file.file.seek(0)
-        if not text.strip():
-            logger.error("[PDF EXTRACT] No text extracted from PDF file.")
-        return text
-    except Exception as e:
-        logger.error(f"[PDF EXTRACT] Exception during PDF extraction: {e}")
-        file.file.seek(0)
-        return ""
-
-def extract_text_from_docx(file: UploadFile):
-    try:
-        doc = Document(file.file)
-        text = "\n".join([para.text for para in doc.paragraphs])
-        file.file.seek(0)
-        if not text.strip():
-            logger.error("[DOCX EXTRACT] No text extracted from DOCX file.")
-        return text
-    except Exception as e:
-        logger.error(f"[DOCX EXTRACT] Exception during DOCX extraction: {e}")
-        file.file.seek(0)
-        return ""
-
-SECTION_HEADERS = [
-    r"work experience", r"professional experience", r"employment history",
-    r"education", r"academic background",
-    r"skills", r"technical skills",
-    r"projects", r"certifications", r"training"
-]
-
-section_header_regex = re.compile(rf"^({'|'.join(SECTION_HEADERS)})[:\s]*$", re.IGNORECASE | re.MULTILINE)
 
 def split_cv_by_sections(text):
     matches = list(section_header_regex.finditer(text))
