@@ -759,4 +759,8 @@ async def get_task_status(taskId: UUID = Path(...), user_id: str = Depends(get_c
         "status": db_task.status,
         "extractedDataSummary": db_task.extracted_data_summary,
         "error": db_task.error
-    } 
+    }
+
+@app.get("/health", include_in_schema=False)
+async def health():
+    return {"status": "ok"} 
