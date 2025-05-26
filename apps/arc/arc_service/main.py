@@ -1,7 +1,7 @@
 from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException, Request, Path, Body
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
-from uuid import uuid4
+from uuid import uuid4, UUID
 from fastapi.responses import FileResponse
 import io
 import os
@@ -349,7 +349,7 @@ async def download_processed_cv(taskId: str, user_id: str = Depends(get_current_
     return FileResponse(io.BytesIO(data_bytes), media_type="application/json", filename=f"extracted_cv_{taskId}.json")
 
 @router.get("/cv/status/{taskId}", response_model=CVStatusResponse)
-async def poll_cv_status(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+async def poll_cv_status(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
