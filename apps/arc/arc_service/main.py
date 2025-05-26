@@ -219,7 +219,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         with ThreadPoolExecutor() as executor:
             futures = []
             for section_idx, (header, section_text) in enumerate(sections):
-                nlp_chunks = nlp_chunk_text(section_text, max_tokens=800)
+                nlp_chunks = nlp_chunk_text(section_text, max_tokens=40000)
                 logger.info(f"[CV UPLOAD] Section {section_idx+1} ('{header}') split into {len(nlp_chunks)} chunk(s).")
                 for chunk_idx, chunk in enumerate(nlp_chunks):
                     logger.info(f"[CV UPLOAD] Section {section_idx+1} Chunk {chunk_idx+1} content (first 200 chars): {chunk[:200]}")

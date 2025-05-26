@@ -695,7 +695,7 @@ def upload_cv_for_profile(profile_id: UUID, file: UploadFile = File(...), db: Se
         with ThreadPoolExecutor() as executor:
             futures = []
             for section_idx, (header, section_text) in enumerate(sections):
-                nlp_chunks = nlp_chunk_text(section_text, max_tokens=800)
+                nlp_chunks = nlp_chunk_text(section_text, max_tokens=40000)
                 for chunk in nlp_chunks:
                     futures.append(executor.submit(parse_cv_with_ai_chunk, chunk))
                 total_chunks += len(nlp_chunks)
