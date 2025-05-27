@@ -196,6 +196,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
     # 2. First pass: extract metadata only
     try:
         metadata = extract_cv_metadata_with_ai(cv_text)
+        logger.info(f"[CV UPLOAD] Extracted metadata: {metadata}")
     except Exception as e:
         logger.error(f"[CV UPLOAD] Metadata extraction failed: {e}")
         raise HTTPException(status_code=500, detail="Metadata extraction failed")
@@ -215,14 +216,14 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db.refresh(user_arc_data)
     # 4. Insert metadata into normalized tables (normalized, not user_arc_data)
     work_exp_ids = []
-    for idx, wx in enumerate(metadata.get("work_experience", [])):
+    for idx, wx in enumerate(metadata.get("work_experiences", [])):
         wx_id = uuid.uuid4()
         work_exp_ids.append(wx_id)
         db.add(WorkExperience(
             id=wx_id,
             cv_profile_id=profile.id,
             company=wx.get("company", ""),
-            title=wx.get("title", ""),
+            title=wx.get("job_title", wx.get("title", "")),
             start_date=wx.get("start_date", ""),
             end_date=wx.get("end_date", ""),
             description=None,  # To be filled in Pass 2
@@ -260,7 +261,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             cv_profile_id=profile.id,
             name=cert.get("name", ""),
             issuer=cert.get("issuer", None),
-            year=cert.get("year", None),
+            year=cert.get("year", cert.get("date", None)),
             order_index=idx
         ))
     db.commit()
