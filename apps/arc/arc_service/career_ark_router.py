@@ -74,7 +74,7 @@ def delete_profile(user_id: str, db: Session = Depends(get_db)):
 
 # --- Work Experience Endpoints ---
 @router.post("/profiles/{profile_id}/work_experience", response_model=WorkExperienceOut)
-def add_work_experience(profile_id: int, data: WorkExperienceCreate, db: Session = Depends(get_db)):
+def add_work_experience(profile_id: UUID, data: WorkExperienceCreate, db: Session = Depends(get_db)):
     max_index = db.query(WorkExperience).filter_by(cv_profile_id=profile_id).order_by(WorkExperience.order_index.desc()).first()
     next_index = (max_index.order_index + 1) if max_index else 0
     order_index = data.order_index if data.order_index is not None else next_index
@@ -93,7 +93,7 @@ def add_work_experience(profile_id: int, data: WorkExperienceCreate, db: Session
     return entry
 
 @router.get("/profiles/{profile_id}/work_experience", response_model=List[WorkExperienceOut])
-def list_work_experience(profile_id: int, db: Session = Depends(get_db)):
+def list_work_experience(profile_id: UUID, db: Session = Depends(get_db)):
     return db.query(WorkExperience).filter_by(cv_profile_id=profile_id).order_by(WorkExperience.order_index).all()
 
 @router.get("/work_experience/{id}", response_model=WorkExperienceOut)
@@ -177,7 +177,7 @@ def partial_update_work_experience(id: int, update: WorkExperienceUpdate, db: Se
 
 # --- Education Endpoints ---
 @router.post("/profiles/{profile_id}/education", response_model=EducationOut)
-def add_education(profile_id: int, data: EducationCreate, db: Session = Depends(get_db)):
+def add_education(profile_id: UUID, data: EducationCreate, db: Session = Depends(get_db)):
     max_index = db.query(Education).filter_by(cv_profile_id=profile_id).order_by(Education.order_index.desc()).first()
     next_index = (max_index.order_index + 1) if max_index else 0
     order_index = data.order_index if data.order_index is not None else next_index
@@ -197,7 +197,7 @@ def add_education(profile_id: int, data: EducationCreate, db: Session = Depends(
     return entry
 
 @router.get("/profiles/{profile_id}/education", response_model=List[EducationOut])
-def list_education(profile_id: int, db: Session = Depends(get_db)):
+def list_education(profile_id: UUID, db: Session = Depends(get_db)):
     return db.query(Education).filter_by(cv_profile_id=profile_id).order_by(Education.order_index).all()
 
 @router.get("/education/{id}", response_model=EducationOut)
@@ -281,7 +281,7 @@ def partial_update_education(id: int, update: EducationUpdate, db: Session = Dep
 
 # --- Skills Endpoints ---
 @router.post("/profiles/{profile_id}/skills", response_model=SkillOut)
-def add_skill(profile_id: int, data: SkillCreate, db: Session = Depends(get_db)):
+def add_skill(profile_id: UUID, data: SkillCreate, db: Session = Depends(get_db)):
     entry = Skill(cv_profile_id=profile_id, skill=data.skill)
     db.add(entry)
     try:
@@ -293,7 +293,7 @@ def add_skill(profile_id: int, data: SkillCreate, db: Session = Depends(get_db))
     return entry
 
 @router.get("/profiles/{profile_id}/skills", response_model=List[SkillOut])
-def list_skills(profile_id: int, db: Session = Depends(get_db)):
+def list_skills(profile_id: UUID, db: Session = Depends(get_db)):
     return db.query(Skill).filter_by(cv_profile_id=profile_id).all()
 
 @router.delete("/skills/{id}")
@@ -328,7 +328,7 @@ def partial_update_skill(id: int, update: SkillCreate, db: Session = Depends(get
 
 # --- Projects Endpoints ---
 @router.post("/profiles/{profile_id}/projects", response_model=ProjectOut)
-def add_project(profile_id: int, data: ProjectCreate, db: Session = Depends(get_db)):
+def add_project(profile_id: UUID, data: ProjectCreate, db: Session = Depends(get_db)):
     max_index = db.query(Project).filter_by(cv_profile_id=profile_id).order_by(Project.order_index.desc()).first()
     next_index = (max_index.order_index + 1) if max_index else 0
     order_index = data.order_index if data.order_index is not None else next_index
@@ -344,7 +344,7 @@ def add_project(profile_id: int, data: ProjectCreate, db: Session = Depends(get_
     return entry
 
 @router.get("/profiles/{profile_id}/projects", response_model=List[ProjectOut])
-def list_projects(profile_id: int, db: Session = Depends(get_db)):
+def list_projects(profile_id: UUID, db: Session = Depends(get_db)):
     return db.query(Project).filter_by(cv_profile_id=profile_id).order_by(Project.order_index).all()
 
 @router.get("/projects/{id}", response_model=ProjectOut)
@@ -428,7 +428,7 @@ def partial_update_project(id: int, update: ProjectUpdate, db: Session = Depends
 
 # --- Certifications Endpoints ---
 @router.post("/profiles/{profile_id}/certifications", response_model=CertificationOut)
-def add_certification(profile_id: int, data: CertificationCreate, db: Session = Depends(get_db)):
+def add_certification(profile_id: UUID, data: CertificationCreate, db: Session = Depends(get_db)):
     max_index = db.query(Certification).filter_by(cv_profile_id=profile_id).order_by(Certification.order_index.desc()).first()
     next_index = (max_index.order_index + 1) if max_index else 0
     order_index = data.order_index if data.order_index is not None else next_index
@@ -445,7 +445,7 @@ def add_certification(profile_id: int, data: CertificationCreate, db: Session = 
     return entry
 
 @router.get("/profiles/{profile_id}/certifications", response_model=List[CertificationOut])
-def list_certifications(profile_id: int, db: Session = Depends(get_db)):
+def list_certifications(profile_id: UUID, db: Session = Depends(get_db)):
     return db.query(Certification).filter_by(cv_profile_id=profile_id).order_by(Certification.order_index).all()
 
 @router.get("/certifications/{id}", response_model=CertificationOut)
@@ -528,7 +528,7 @@ def partial_update_certification(id: int, update: CertificationUpdate, db: Sessi
     return entry
 
 @router.get("/profiles/{profile_id}/all_sections")
-def get_all_sections(profile_id: str, db: Session = Depends(get_db)):
+def get_all_sections(profile_id: UUID, db: Session = Depends(get_db)):
     # Fetch all sections for the given profile_id
     def parse_date(date_str):
         if not date_str:
@@ -603,11 +603,11 @@ def get_all_sections(profile_id: str, db: Session = Depends(get_db)):
 
 # --- Training Endpoints ---
 @router.get("/profiles/{profile_id}/training")
-def list_training(profile_id: int, db: Session = Depends(get_db)):
+def list_training(profile_id: UUID, db: Session = Depends(get_db)):
     return db.query(Training).filter_by(cv_profile_id=profile_id).all()
 
 @router.post("/profiles/{profile_id}/training")
-def add_training(profile_id: int, data: TrainingCreate, db: Session = Depends(get_db)):
+def add_training(profile_id: UUID, data: TrainingCreate, db: Session = Depends(get_db)):
     max_index = db.query(Training).filter_by(cv_profile_id=profile_id).order_by(Training.order_index.desc()).first()
     next_index = (max_index.order_index + 1) if max_index else 0
     order_index = data.order_index if data.order_index is not None else next_index
