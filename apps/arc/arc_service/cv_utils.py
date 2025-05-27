@@ -31,30 +31,32 @@ def split_cv_by_sections(text):
         sections.append((header, section_text))
     return sections
 
-def extract_text_from_pdf(file: UploadFile):
+def extract_text_from_pdf(file_like):
     try:
-        with pdfplumber.open(file.file) as pdf:
+        file_like.seek(0)
+        with pdfplumber.open(file_like) as pdf:
             text = "\n".join(page.extract_text() or "" for page in pdf.pages)
-        file.file.seek(0)
+        file_like.seek(0)
         if not text.strip():
             logging.error("[PDF EXTRACT] No text extracted from PDF file.")
         return text
     except Exception as e:
         logging.error(f"[PDF EXTRACT] Exception during PDF extraction: {e}")
-        file.file.seek(0)
+        file_like.seek(0)
         return ""
 
-def extract_text_from_docx(file: UploadFile):
+def extract_text_from_docx(file_like):
     try:
-        doc = Document(file.file)
+        file_like.seek(0)
+        doc = Document(file_like)
         text = "\n".join([para.text for para in doc.paragraphs])
-        file.file.seek(0)
+        file_like.seek(0)
         if not text.strip():
             logging.error("[DOCX EXTRACT] No text extracted from DOCX file.")
         return text
     except Exception as e:
         logging.error(f"[DOCX EXTRACT] Exception during DOCX extraction: {e}")
-        file.file.seek(0)
+        file_like.seek(0)
         return ""
 
 def nlp_chunk_text(text, max_tokens=8000, model="gpt-4-turbo"):
