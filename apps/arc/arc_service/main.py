@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException, Request, Path, Body
+from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException, Request, Path, Body, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from uuid import uuid4, UUID
@@ -179,7 +179,7 @@ class CVUploadResponse(BaseModel):
     taskId: str
 
 @app.post("/api/arc/cv", response_model=CVUploadResponse)
-async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db), background_tasks: BackgroundTasks = None):
     import uuid
     logger = logging.getLogger("arc")
     # 1. Extract text from file
@@ -206,19 +206,20 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db.commit()
         db.refresh(profile)
     # 4. Insert metadata into normalized tables (normalized, not user_arc_data)
-    # Work Experience
+    work_exp_ids = []
     for idx, wx in enumerate(metadata.get("work_experience", [])):
+        wx_id = uuid.uuid4()
+        work_exp_ids.append(wx_id)
         db.add(WorkExperience(
-            id=uuid.uuid4(),
+            id=wx_id,
             cv_profile_id=profile.id,
             company=wx.get("company", ""),
             title=wx.get("title", ""),
             start_date=wx.get("start_date", ""),
             end_date=wx.get("end_date", ""),
-            description=wx.get("description", None),
+            description=None,  # To be filled in Pass 2
             order_index=idx
         ))
-    # Education
     for idx, edu in enumerate(metadata.get("education", [])):
         db.add(Education(
             id=uuid.uuid4(),
@@ -231,14 +232,12 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             description=edu.get("description", None),
             order_index=idx
         ))
-    # Skills
     for skill in metadata.get("skills", []):
         db.add(Skill(
             id=uuid.uuid4(),
             cv_profile_id=profile.id,
             skill=skill
         ))
-    # Projects
     for idx, proj in enumerate(metadata.get("projects", [])):
         db.add(Project(
             id=uuid.uuid4(),
@@ -247,7 +246,6 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             description=proj.get("description", None),
             order_index=idx
         ))
-    # Certifications
     for idx, cert in enumerate(metadata.get("certifications", [])):
         db.add(Certification(
             id=uuid.uuid4(),
@@ -263,7 +261,64 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
     db_task = CVTask(id=uuid.uuid4(), user_id=user_id, status="metadata_extracted", error=None)
     db.add(db_task)
     db.commit()
-    return CVUploadResponse(taskId=str(db_task.id), status=db_task.status)
+    # 6. Trigger Pass 2 in background
+    def run_pass2_and_update_descriptions(cv_text, work_exp_ids, user_id, profile_id, task_id):
+        from .ai_utils import extract_work_experience_description_with_ai
+        from .models import AIExtractionLog, WorkExperience, CVTask, TaskStatusEnum
+        from .db import SessionLocal
+        import traceback
+        session = SessionLocal()
+        errors = []
+        try:
+            for wx_id in work_exp_ids:
+                wx = session.query(WorkExperience).filter_by(id=wx_id, cv_profile_id=profile_id).first()
+                if not wx:
+                    continue
+                wx_metadata = {
+                    "job_title": wx.title,
+                    "company": wx.company,
+                    "start_date": wx.start_date,
+                    "end_date": wx.end_date,
+                    "location": None
+                }
+                try:
+                    prompt = f"Extract description for: {wx_metadata}"
+                    description = extract_work_experience_description_with_ai(cv_text, wx_metadata)
+                    wx.description = description
+                    session.add(AIExtractionLog(
+                        task_id=task_id,
+                        entry_type="work_experience",
+                        entry_id=wx_id,
+                        prompt=str(wx_metadata),
+                        response=description,
+                        status="success",
+                        error_message=None
+                    ))
+                except Exception as e:
+                    session.add(AIExtractionLog(
+                        task_id=task_id,
+                        entry_type="work_experience",
+                        entry_id=wx_id,
+                        prompt=str(wx_metadata),
+                        response=None,
+                        status="failed",
+                        error_message=str(e) + "\n" + traceback.format_exc()
+                    ))
+                    errors.append(f"WorkExperience {wx_id}: {e}")
+            # Update task status
+            db_task = session.query(CVTask).filter_by(id=task_id).first()
+            if errors:
+                db_task.status = "completed_with_errors"
+                db_task.error = " | ".join(errors)
+            else:
+                db_task.status = "completed"
+                db_task.error = None
+            session.commit()
+        finally:
+            session.close()
+    if background_tasks is not None:
+        background_tasks.add_task(run_pass2_and_update_descriptions, cv_text, work_exp_ids, user_id, profile.id, db_task.id)
+    return CVUploadResponse(taskId=str(db_task.id))
 
 def deduplicate_job_roles(job_roles):
     import re
