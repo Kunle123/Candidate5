@@ -7,7 +7,9 @@ import enum
 
 class TaskStatusEnum(str, enum.Enum):
     pending = "pending"
+    metadata_extracted = "metadata_extracted"
     completed = "completed"
+    completed_with_errors = "completed_with_errors"
     failed = "failed"
 
 class UserArcData(Base):
@@ -104,4 +106,16 @@ class Training(Base):
     description = Column(Text, nullable=True)
     order_index = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now()) 
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class AIExtractionLog(Base):
+    __tablename__ = "ai_extraction_logs"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    task_id = Column(UUID(as_uuid=True), ForeignKey("cv_tasks.id"), nullable=False)
+    entry_type = Column(String, nullable=False)  # e.g., 'work_experience', 'education', etc.
+    entry_id = Column(UUID(as_uuid=True), nullable=True)  # FK to normalized table row, nullable until detail is written
+    prompt = Column(Text, nullable=False)
+    response = Column(Text, nullable=True)
+    status = Column(String, nullable=False, default="pending")  # 'success', 'error', 'pending'
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now()) 
