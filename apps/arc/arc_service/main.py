@@ -184,12 +184,13 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
     logger = logging.getLogger("arc")
     # 1. Extract text from file
     contents = await file.read()
+    import io
     if file.filename.endswith(".pdf"):
         from .cv_utils import extract_text_from_pdf
-        cv_text = extract_text_from_pdf(contents)
+        cv_text = extract_text_from_pdf(io.BytesIO(contents))
     elif file.filename.endswith(".docx"):
         from .cv_utils import extract_text_from_docx
-        cv_text = extract_text_from_docx(contents)
+        cv_text = extract_text_from_docx(io.BytesIO(contents))
     else:
         raise HTTPException(status_code=400, detail="Unsupported file type")
     # 2. First pass: extract metadata only
