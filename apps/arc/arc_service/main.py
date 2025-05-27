@@ -41,10 +41,6 @@ def startup_event():
         # Depending on the error, you might want to prevent startup
 # --- End Database Table Creation ---
 
-router = APIRouter(prefix="/api/arc")
-
-app.include_router(router)
-
 # Update logging configuration to enable verbose logging for the Ark service
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("arc")
@@ -182,7 +178,7 @@ def get_db():
 class CVUploadResponse(BaseModel):
     taskId: str
 
-@router.post("/cv", response_model=CVUploadResponse)
+@app.post("/api/arc/cv", response_model=CVUploadResponse)
 async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     import uuid
     logger = logging.getLogger("arc")
@@ -302,7 +298,7 @@ def split_description_to_details(description):
     return [line.strip() for line in description.splitlines() if line.strip()]
 
 # --- Endpoint: Chunk ---
-@router.post("/chunk")
+@app.post("/api/arc/chunk")
 async def test_parse_cv_with_ai_chunk_new(request: Request, user_id: str = Depends(get_current_user)):
     body = await request.json()
     text = body.get("text")
@@ -312,7 +308,7 @@ async def test_parse_cv_with_ai_chunk_new(request: Request, user_id: str = Depen
     return {"parsed": {"text": text}, "raw": text}
 
 # --- Endpoint: List User's Uploaded CVs/Tasks ---
-@router.get("/cv/tasks")
+@app.get("/api/arc/cv/tasks")
 async def list_cv_tasks(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     db_tasks = db.query(CVTask).filter(CVTask.user_id == user_id).all()
     return {"tasks": [
@@ -327,7 +323,7 @@ async def list_cv_tasks(user_id: str = Depends(get_current_user), db: Session = 
     ]}
 
 # --- Endpoint: Delete a CV or Task ---
-@router.delete("/cv/{taskId}")
+@app.delete("/api/arc/cv/{taskId}")
 async def delete_cv_task(taskId: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
     if not db_task:
@@ -338,7 +334,7 @@ async def delete_cv_task(taskId: str, user_id: str = Depends(get_current_user), 
     return {"success": True}
 
 # --- Endpoint: Download Processed CV ---
-@router.get("/cv/download/{taskId}", response_model=CVStatusResponse)
+@app.get("/api/arc/cv/download/{taskId}", response_model=CVStatusResponse)
 async def download_processed_cv(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
     if not db_task:
@@ -350,7 +346,7 @@ async def download_processed_cv(taskId: UUID = Path(...), user_id: str = Depends
     data_bytes = json.dumps(db_user_arc.arc_data, indent=2).encode()
     return FileResponse(io.BytesIO(data_bytes), media_type="application/json", filename=f"extracted_cv_{taskId}.json")
 
-@router.get("/cv/text/{taskId}")
+@app.get("/api/arc/cv/text/{taskId}")
 async def get_raw_text(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
@@ -375,7 +371,7 @@ async def get_raw_text(taskId: str = Path(...), user_id: str = Depends(get_curre
         logger.error(f"Unexpected error in get_raw_text: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.get("/cv/ai-raw/{taskId}")
+@app.get("/api/arc/cv/ai-raw/{taskId}")
 async def get_ai_raw(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
@@ -400,7 +396,7 @@ async def get_ai_raw(taskId: str = Path(...), user_id: str = Depends(get_current
         logger.error(f"Unexpected error in get_ai_raw: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.get("/cv/ai-combined/{taskId}")
+@app.get("/api/arc/cv/ai-combined/{taskId}")
 async def get_ai_combined(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
@@ -425,7 +421,7 @@ async def get_ai_combined(taskId: str = Path(...), user_id: str = Depends(get_cu
         logger.error(f"Unexpected error in get_ai_combined: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.get("/cv/ai-filtered/{taskId}")
+@app.get("/api/arc/cv/ai-filtered/{taskId}")
 async def get_ai_filtered(taskId: str = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_task = db.query(CVTask).filter(CVTask.id == taskId, CVTask.user_id == user_id).first()
@@ -450,7 +446,7 @@ async def get_ai_filtered(taskId: str = Path(...), user_id: str = Depends(get_cu
         logger.error(f"Unexpected error in get_ai_filtered: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.get("/data")
+@app.get("/api/arc/data")
 async def get_arc_data(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
@@ -481,7 +477,7 @@ async def get_arc_data(user_id: str = Depends(get_current_user), db: Session = D
         logger.error(f"Unexpected error in get_arc_data: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.put("/data")
+@app.put("/api/arc/data")
 async def update_arc_data(data: dict = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
@@ -501,7 +497,7 @@ async def update_arc_data(data: dict = Body(...), user_id: str = Depends(get_cur
         logger.error(f"Unexpected error in update_arc_data: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.post("/work_experience")
+@app.post("/api/arc/work_experience")
 async def add_work_experience(entry: dict = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
@@ -532,7 +528,7 @@ async def add_work_experience(entry: dict = Body(...), user_id: str = Depends(ge
         logger.error(f"Unexpected error in add_work_experience: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.patch("/work_experience/{id}")
+@app.patch("/api/arc/work_experience/{id}")
 async def update_work_experience(id: str, update: dict = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
@@ -567,7 +563,7 @@ async def update_work_experience(id: str, update: dict = Body(...), user_id: str
         logger.error(f"Unexpected error in update_work_experience: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.post("/education")
+@app.post("/api/arc/education")
 async def add_education(entry: dict = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
@@ -598,7 +594,7 @@ async def add_education(entry: dict = Body(...), user_id: str = Depends(get_curr
         logger.error(f"Unexpected error in add_education: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.patch("/education/{id}")
+@app.patch("/api/arc/education/{id}")
 async def update_education(id: str, update: dict = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
@@ -633,7 +629,7 @@ async def update_education(id: str, update: dict = Body(...), user_id: str = Dep
         logger.error(f"Unexpected error in update_education: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.post("/training")
+@app.post("/api/arc/training")
 async def add_training(entry: dict = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
@@ -662,7 +658,7 @@ async def add_training(entry: dict = Body(...), user_id: str = Depends(get_curre
         logger.error(f"Unexpected error in add_training: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.patch("/training/{id}")
+@app.patch("/api/arc/training/{id}")
 async def update_training(id: str, update: dict = Body(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
@@ -697,7 +693,7 @@ async def update_training(id: str, update: dict = Body(...), user_id: str = Depe
         logger.error(f"Unexpected error in update_training: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.delete("/work_experience/{id}")
+@app.delete("/api/arc/work_experience/{id}")
 async def delete_work_experience(id: str, user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         db_user_arc = db.query(UserArcData).filter(UserArcData.user_id == user_id).first()
@@ -732,7 +728,7 @@ async def delete_work_experience(id: str, user_id: str = Depends(get_current_use
         logger.error(f"Unexpected error in delete_work_experience: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.get("/logs")
+@app.get("/api/arc/logs")
 async def get_logs(user_id: str = Depends(get_current_user)):
     try:
         # In a real implementation, you would fetch logs from a logging service or file
@@ -742,11 +738,11 @@ async def get_logs(user_id: str = Depends(get_current_user)):
         logger.error(f"Unexpected error in get_logs: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.get("/ping")
+@app.get("/api/arc/ping")
 async def ping():
     return {"message": "pong"}
 
-@router.get("/cv/task-status/{taskId}", response_model=CVStatusResponse)
+@app.get("/api/arc/cv/task-status/{taskId}", response_model=CVStatusResponse)
 async def get_task_status(taskId: UUID = Path(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     logger.info(f"[DEBUG] /cv/task-status called with taskId={taskId}, user_id={user_id}")
     # TEMP: Remove user_id filter for debugging
