@@ -206,6 +206,13 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db.add(profile)
         db.commit()
         db.refresh(profile)
+    # Ensure user_arc_data exists for this user (legacy support)
+    user_arc_data = db.query(UserArcData).filter_by(user_id=user_id).first()
+    if not user_arc_data:
+        user_arc_data = UserArcData(user_id=user_id, arc_data={})
+        db.add(user_arc_data)
+        db.commit()
+        db.refresh(user_arc_data)
     # 4. Insert metadata into normalized tables (normalized, not user_arc_data)
     work_exp_ids = []
     for idx, wx in enumerate(metadata.get("work_experience", [])):
