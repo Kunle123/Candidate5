@@ -329,6 +329,11 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         background_tasks.add_task(run_pass2_and_update_descriptions, cv_text, work_exp_ids, user_id, profile.id, db_task.id)
     return CVUploadResponse(taskId=str(db_task.id))
 
+@app.post("/api/career-ark/cv", response_model=CVUploadResponse)
+async def upload_cv_career_ark(file: UploadFile = File(...), user_id: str = Depends(get_current_user), db: Session = Depends(get_db), background_tasks: BackgroundTasks = None):
+    # Reuse the logic from /api/arc/cv
+    return await upload_cv(file, user_id, db, background_tasks)
+
 def deduplicate_job_roles(job_roles):
     import re
     unique_roles = {}
