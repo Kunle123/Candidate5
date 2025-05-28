@@ -215,17 +215,26 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db.commit()
         db.refresh(user_arc_data)
     # 4. Insert metadata into normalized tables (normalized, not user_arc_data)
-    # --- Deduplication and merging logic ---
-    # Work Experience
+    # --- Improved Deduplication and Merging Logic ---
+    def norm(s):
+        return (s or "").strip().lower()
+    # Build normalized key for existing DB entries
+    existing_work_exps = {
+        (
+            norm(wx.company),
+            norm(wx.title),
+            norm(wx.start_date),
+            norm(wx.end_date)
+        ): wx for wx in db.query(WorkExperience).filter_by(cv_profile_id=profile.id).all()
+    }
     work_exp_ids = []
-    existing_work_exps = {(wx.company, wx.title, wx.start_date, wx.end_date): wx for wx in db.query(WorkExperience).filter_by(cv_profile_id=profile.id).all()}
     for idx, wx in enumerate(metadata.get("work_experiences", [])):
-        key = (
-            wx.get("company", ""),
-            wx.get("job_title", wx.get("title", "")),
-            wx.get("start_date", ""),
-            wx.get("end_date", "")
-        )
+        # Always use 'title' (fallback to 'job_title')
+        company = norm(wx.get("company", ""))
+        title = norm(wx.get("title", wx.get("job_title", "")))
+        start_date = norm(wx.get("start_date", ""))
+        end_date = norm(wx.get("end_date", ""))
+        key = (company, title, start_date, end_date)
         existing = existing_work_exps.get(key)
         if existing:
             new_desc = wx.get("description", "")
@@ -241,7 +250,11 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                 if merged_desc != old_desc:
                     existing.description = merged_desc
                     db.add(existing)
-            # If new_desc is empty, do NOT overwrite or clear the old description
+                    logger.info(f"[DEDUP] Merged new description into existing work experience: {company}, {title}, {start_date}-{end_date}")
+                else:
+                    logger.info(f"[DEDUP] Duplicate work experience found (no new description): {company}, {title}, {start_date}-{end_date}")
+            else:
+                logger.info(f"[DEDUP] Duplicate work experience found (empty new description): {company}, {title}, {start_date}-{end_date}")
             work_exp_ids.append(existing.id)
         else:
             wx_id = uuid.uuid4()
@@ -256,6 +269,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                 description=None,  # To be filled in Pass 2
                 order_index=idx
             ))
+            logger.info(f"[DEDUP] New work experience added: {company}, {title}, {start_date}-{end_date}")
     # Education
     existing_educations = {(e.institution, e.degree, e.start_date, e.end_date): e for e in db.query(Education).filter_by(cv_profile_id=profile.id).all()}
     for idx, edu in enumerate(metadata.get("education", [])):
