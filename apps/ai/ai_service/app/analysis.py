@@ -311,15 +311,34 @@ No additional text, explanations, or formatting outside the JSON array.
 {request.text}
 """
             response = client.chat.completions.create(
-                model="gpt-4-turbo",
-                response_format={"type": "json_array"},
+                model="gpt-4o-2024-08-06",
                 messages=[
                     {"role": "system", "content": "You are an expert at extracting keywords from text. Respond with only a JSON array of keywords."},
                     {"role": "user", "content": prompt}
                 ],
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "keyword_extraction",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "keywords": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "minItems": 20,
+                                    "maxItems": 20
+                                }
+                            },
+                            "required": ["keywords"],
+                            "additionalProperties": False
+                        },
+                        "strict": True
+                    }
+                },
                 temperature=0.2,
             )
-            keywords = json.loads(response.choices[0].message.content)
+            keywords = response.choices[0].message.content["keywords"]
             return KeywordsResponse(keywords=keywords)
         except Exception as e:
             logger.error(f"OpenAI keyword extraction failed: {str(e)}. Falling back to rule-based extraction.")
