@@ -250,13 +250,66 @@ async def extract_keywords(request: KeywordsRequest):
     """
     if client:
         try:
+            N = 20
             prompt = f"""
-            Extract up to 20 of the most important and job-specific keywords and phrases that a recruiter or Applicant Tracking System (ATS) would look for in the following job description. 
-            Focus on the keywords that are most critical for the role, such as required skills, technologies, certifications, job titles, and industry-specific terms. 
-            Prioritize keywords that are essential for the role, appear multiple times, or are listed as required or preferred. 
-            Return ONLY a JSON array of strings, no other text.
-            TEXT: {request.text}
-            """
+You are an expert ATS (Applicant Tracking System) keyword extraction specialist. Your task is to analyze the following job description and extract EXACTLY {N} of the most critical keywords and phrases that recruiters and ATS systems prioritize when filtering and ranking resumes.
+
+**CRITICAL REQUIREMENT: You MUST return exactly {N} keywords - no more, no less.**
+
+**EXTRACTION CRITERIA:**
+Select the top {N} keywords prioritizing them in this order:
+
+1. **HARD SKILLS & TECHNICAL REQUIREMENTS** (Highest Priority)
+   - Programming languages, software, tools, platforms
+   - Technical certifications and credentials  
+   - Industry-specific technologies and methodologies
+   - Measurable technical competencies
+
+2. **QUALIFICATIONS & EXPERIENCE REQUIREMENTS** (High Priority)
+   - Education requirements (degree types, fields of study)
+   - Years of experience (specific numbers: \"3+ years\", \"5-7 years\")
+   - Professional certifications and licenses
+   - Industry experience requirements
+
+3. **JOB TITLES & ROLE-SPECIFIC TERMS** (Medium-High Priority)
+   - Exact job titles mentioned
+   - Related role titles and seniority levels
+   - Department or function names
+   - Industry-specific role terminology
+
+4. **SOFT SKILLS & COMPETENCIES** (Medium Priority - only if space allows)
+   - Communication, leadership, teamwork abilities
+   - Problem-solving and analytical thinking
+   - Project management and organizational skills
+   - Only include if explicitly mentioned as requirements
+
+**PRIORITIZATION RULES:**
+- Prioritize keywords that appear multiple times in the job description
+- Give higher weight to terms in \"Requirements\" or \"Qualifications\" sections
+- Include both exact phrases and individual component words when relevant
+- Focus on \"must-have\" requirements over \"nice-to-have\" preferences
+- If multiple similar terms exist, choose the most commonly used industry standard
+
+**KEYWORD FORMAT GUIDELINES:**
+- Include both acronyms and full terms when both appear (e.g., \"SQL\", \"Structured Query Language\")
+- Preserve exact capitalization and formatting as written
+- Include compound phrases as single keywords when they represent unified concepts
+- Maintain industry-standard terminology and spelling
+
+**COUNT ENFORCEMENT:**
+- Count your keywords before finalizing
+- If you have more than {N}, remove the least critical ones
+- If you have fewer than {N}, add the next most important keywords from the job description
+- Double-check that your final array contains exactly {N} elements
+
+**OUTPUT FORMAT:**
+Return ONLY a JSON array containing exactly {N} strings, ordered by priority (most critical first). 
+Example format for {N} keywords: [\"keyword1\", \"keyword2\", \"keyword3\", \"keyword4\"]
+No additional text, explanations, or formatting outside the JSON array.
+
+**JOB DESCRIPTION:**
+{request.text}
+"""
             response = client.chat.completions.create(
                 model="gpt-4-turbo",
                 response_format={"type": "json_array"},
