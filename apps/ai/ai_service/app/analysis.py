@@ -338,7 +338,11 @@ No additional text, explanations, or formatting outside the JSON array.
                 temperature=0.2,
             )
             logger.info(f"[DEBUG] OpenAI response: {response}")
-            keywords = response.choices[0].message.content["keywords"]
+            content = response.choices[0].message.content
+            if isinstance(content, str):
+                import json
+                content = json.loads(content)
+            keywords = content["keywords"]
             logger.info(f"[DEBUG] Returning {len(keywords)} keywords from OpenAI")
             return KeywordsResponse(keywords=keywords)
         except Exception as e:
