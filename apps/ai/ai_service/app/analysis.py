@@ -245,12 +245,11 @@ async def analyze_cv(
 
 @router.post("/keywords", response_model=KeywordsResponse)
 async def extract_keywords(request: KeywordsRequest):
-    """
-    API spec-compliant endpoint for extracting keywords from text using OpenAI if available.
-    """
+    logger.info("[DEBUG] /api/ai/keywords endpoint hit")
     if client:
         try:
             N = 20
+            logger.info("[DEBUG] Using OpenAI for keyword extraction")
             prompt = f"""
 You are an expert ATS (Applicant Tracking System) keyword extraction specialist. Your task is to analyze the following job description and extract EXACTLY {N} of the most critical keywords and phrases that recruiters and ATS systems prioritize when filtering and ranking resumes.
 
@@ -338,12 +337,15 @@ No additional text, explanations, or formatting outside the JSON array.
                 },
                 temperature=0.2,
             )
+            logger.info(f"[DEBUG] OpenAI response: {response}")
             keywords = response.choices[0].message.content["keywords"]
+            logger.info(f"[DEBUG] Returning {len(keywords)} keywords from OpenAI")
             return KeywordsResponse(keywords=keywords)
         except Exception as e:
-            logger.error(f"OpenAI keyword extraction failed: {str(e)}. Falling back to rule-based extraction.")
+            logger.error(f"[ERROR] OpenAI keyword extraction failed: {str(e)}. Falling back to rule-based extraction.")
             # Fallback to rule-based extraction below
-    # Rule-based fallback
+    logger.info("[DEBUG] Using fallback rule-based keyword extraction")
     words = set(word.strip('.,!?()[]{}:;"\'').lower() for word in request.text.split())
     keywords = [w for w in words if len(w) > 3]
+    logger.info(f"[DEBUG] Returning {len(keywords)} keywords from fallback")
     return KeywordsResponse(keywords=keywords) 
