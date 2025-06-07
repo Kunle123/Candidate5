@@ -97,14 +97,14 @@ def list_work_experience(profile_id: UUID, db: Session = Depends(get_db)):
     return db.query(WorkExperience).filter_by(cv_profile_id=profile_id).order_by(WorkExperience.order_index).all()
 
 @router.get("/work_experience/{id}", response_model=WorkExperienceOut)
-def get_work_experience(id: int, db: Session = Depends(get_db)):
+def get_work_experience(id: UUID, db: Session = Depends(get_db)):
     entry = db.query(WorkExperience).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
     return entry
 
 @router.put("/work_experience/{id}", response_model=WorkExperienceOut)
-def update_work_experience(id: int, data: WorkExperienceUpdate, db: Session = Depends(get_db)):
+def update_work_experience(id: UUID, data: WorkExperienceUpdate, db: Session = Depends(get_db)):
     entry = db.query(WorkExperience).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
@@ -115,7 +115,7 @@ def update_work_experience(id: int, data: WorkExperienceUpdate, db: Session = De
     return entry
 
 @router.delete("/work_experience/{id}")
-def delete_work_experience(id: int, db: Session = Depends(get_db)):
+def delete_work_experience(id: UUID, db: Session = Depends(get_db)):
     entry = db.query(WorkExperience).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
@@ -134,7 +134,7 @@ def delete_work_experience(id: int, db: Session = Depends(get_db)):
     return {"success": True}
 
 @router.patch("/work_experience/{id}/reorder", response_model=WorkExperienceOut)
-def reorder_work_experience(id: int, new_order_index: int = Body(...), db: Session = Depends(get_db)):
+def reorder_work_experience(id: UUID, new_order_index: int = Body(...), db: Session = Depends(get_db)):
     entry = db.query(WorkExperience).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
@@ -165,7 +165,7 @@ def reorder_work_experience(id: int, new_order_index: int = Body(...), db: Sessi
     return entry
 
 @router.patch("/work_experience/{id}")
-def partial_update_work_experience(id: int, update: WorkExperienceUpdate, db: Session = Depends(get_db)):
+def partial_update_work_experience(id: UUID, update: WorkExperienceUpdate, db: Session = Depends(get_db)):
     entry = db.query(WorkExperience).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
