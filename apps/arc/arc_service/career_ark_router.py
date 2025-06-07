@@ -766,10 +766,10 @@ JOB ADVERT:
 
 ---
 RESPONSE FORMAT:
-{
+{{
   "cv": "...",
   "cover_letter": "..."
-}
+}}
 """
     try:
         response = client.chat.completions.create(
