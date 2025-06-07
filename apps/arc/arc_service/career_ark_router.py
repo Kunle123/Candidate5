@@ -16,6 +16,7 @@ from .arc_schemas import ArcData
 from .cv_utils import extract_text_from_docx, extract_text_from_pdf, split_cv_by_sections, nlp_chunk_text
 from .ai_utils import parse_cv_with_ai_chunk
 from .schemas import ProfileCreate, ProfileUpdate, ProfileOut, WorkExperienceCreate, WorkExperienceUpdate, WorkExperienceOut, EducationCreate, EducationUpdate, EducationOut, SkillCreate, SkillOut, ProjectCreate, ProjectUpdate, ProjectOut, CertificationCreate, CertificationUpdate, CertificationOut, TrainingCreate, TrainingUpdate, Role
+from openai import OpenAI
 
 router = APIRouter()
 
@@ -741,15 +742,51 @@ class GenerateRequest(BaseModel):
 
 @router.post("/generate")
 def generate_application_materials(data: GenerateRequest):
-    import logging
     logger = logging.getLogger("arc")
-    logger.info(f"[DEBUG] /generate endpoint hit. jobAdvert: {data.jobAdvert[:100]}... arcData keys: {list(data.arcData.keys()) if isinstance(data.arcData, dict) else type(data.arcData)}")
-    logger.debug(f"[DEBUG] Full arcData: {data.arcData}")
-    # Placeholder: implement actual generation logic
-    return {
-        "cv": "Generated CV content here...",
-        "cover_letter": "Generated cover letter content here..."
-    }
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = OpenAI(api_key=openai_api_key)
+    # Build the prompt
+    prompt = f"""
+You are an expert career assistant. Using the following user's normalized CV data and the provided job advert, generate:
+1. A tailored CV (resume) that best matches the job advert, using the user's real experience, education, skills, and certifications.
+2. A personalized cover letter for the job advert, highlighting the user's most relevant experience and skills.
+
+Return a JSON object with two fields: 'cv' and 'cover_letter'.
+
+---
+USER CV DATA (JSON):
+{data.arcData}
+
+---
+JOB ADVERT:
+{data.jobAdvert}
+
+---
+RESPONSE FORMAT:
+{
+  "cv": "...",
+  "cover_letter": "..."
+}
+"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=3000,
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        import json
+        content = response.choices[0].message.content
+        logger.info(f"[DEBUG] OpenAI response for /generate: {content[:500]}...")
+        result = json.loads(content)
+        return result
+    except Exception as e:
+        logger.error(f"[ERROR] OpenAI generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"OpenAI generation failed: {e}")
 
 @router.get("/cv/tasks")
 async def list_cv_tasks(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
