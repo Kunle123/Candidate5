@@ -741,6 +741,10 @@ class GenerateRequest(BaseModel):
 
 @router.post("/generate")
 def generate_application_materials(data: GenerateRequest):
+    import logging
+    logger = logging.getLogger("arc")
+    logger.info(f"[DEBUG] /generate endpoint hit. jobAdvert: {data.jobAdvert[:100]}... arcData keys: {list(data.arcData.keys()) if isinstance(data.arcData, dict) else type(data.arcData)}")
+    logger.debug(f"[DEBUG] Full arcData: {data.arcData}")
     # Placeholder: implement actual generation logic
     return {
         "cv": "Generated CV content here...",
