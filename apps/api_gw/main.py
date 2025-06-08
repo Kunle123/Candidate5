@@ -48,6 +48,7 @@ cv_service_url = os.environ.get("CV_SERVICE_URL")
 ai_service_url = os.environ.get("AI_SERVICE_URL")
 payment_service_url = os.environ.get("PAYMENT_SERVICE_URL")
 arc_service_url = os.environ.get("ARC_SERVICE_URL")
+job_agent_service_url = os.environ.get("JOB_AGENT_SERVICE_URL")
 
 # Register the user service for proxying /api/user/* endpoints
 USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL")
@@ -302,3 +303,7 @@ async def proxy_api_cv(request: StarletteRequest, full_path: str):
     path = re.sub(r'/+', '/', path)
     print(f"Proxying to CV service path: {path}")
     return await proxy(request, cv_service_url, path)
+
+@app.api_route("/search_jobs", methods=["POST"])
+async def proxy_search_jobs(request: StarletteRequest):
+    return await proxy(request, job_agent_service_url, "/search_jobs")
