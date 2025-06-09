@@ -89,7 +89,14 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
             logger.debug(f"Response status: {resp.status_code}")
             logger.debug(f"Response headers: {dict(resp.headers)}")
             body = resp.content
-            logger.debug(f"Response body: {body.decode()}")
+            content_type = resp.headers.get("content-type", "")
+            if "application/json" in content_type or "text" in content_type:
+                try:
+                    logger.debug(f"Response body: {body.decode('utf-8')}")
+                except UnicodeDecodeError:
+                    logger.debug("Body: [unreadable text data]")
+            else:
+                logger.debug("Body: [binary or multipart data not logged]")
             response = Response(
                 content=body,
                 status_code=resp.status_code,
