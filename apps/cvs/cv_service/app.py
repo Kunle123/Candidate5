@@ -7,7 +7,7 @@ import jwt
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from fastapi.security import OAuth2PasswordBearer
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 # Create FastAPI app
 app = FastAPI(title="CandidateV CV Service")
@@ -42,6 +42,9 @@ class CVMetadata(BaseModel):
     is_default: bool = False
     version: int = 1
     last_modified: datetime = Field(default_factory=datetime.utcnow)
+    num_pages: int = 2  # New: Number of pages (2, 3, or 4)
+    include_keywords: bool = True  # New: Include keyword section
+    include_relevant_experience: bool = True  # New: Include relevant experience section
 
 class CVTemplate(BaseModel):
     id: str
@@ -139,7 +142,10 @@ class CVCreate(BaseModel):
     description: Optional[str] = None
     is_default: bool = False
     template_id: str = "default"
-    base_cv_id: Optional[str] = None  # If copying from existing CV
+    base_cv_id: Optional[str] = None
+    num_pages: int = 2  # New: Number of pages (2, 3, or 4)
+    include_keywords: bool = True  # New: Include keyword section
+    include_relevant_experience: bool = True  # New: Include relevant experience section
 
 class CVUpdateMetadata(BaseModel):
     name: Optional[str] = None
@@ -252,7 +258,10 @@ def create_empty_cv(user_id: str, name: str, description: Optional[str] = None, 
             description=description,
             is_default=False,
             version=1,
-            last_modified=now
+            last_modified=now,
+            num_pages=2,
+            include_keywords=True,
+            include_relevant_experience=True
         ),
         content=CVContent(
             template_id=template_id,
@@ -357,58 +366,49 @@ async def get_cvs(
 
 @app.post("/api/cv", response_model=CV, status_code=status.HTTP_201_CREATED)
 async def create_cv(cv_data: CVCreate, auth: dict = Depends(verify_token)):
-    """Create a new CV."""
+    """Create a new CV with user options."""
     user_id = auth["user_id"]
-    
     # Check if template exists
     if cv_data.template_id not in MOCK_TEMPLATES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Template not found"
         )
-    
     # If copying from existing CV
     if cv_data.base_cv_id:
-        # Check if base CV exists
         if user_id not in MOCK_CVS or cv_data.base_cv_id not in MOCK_CVS[user_id]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Base CV not found"
             )
-        
-        # Copy base CV
         base_cv = MOCK_CVS[user_id][cv_data.base_cv_id]
         cv = create_empty_cv(user_id, cv_data.name, cv_data.description, cv_data.template_id)
-        
-        # Copy content
         cv.content = base_cv.content.copy()
         cv.content.template_id = cv_data.template_id
-        
-        # Update metadata
         cv.metadata.name = cv_data.name
         cv.metadata.description = cv_data.description
         cv.metadata.is_default = cv_data.is_default
-        
-        # If this is the default CV, update other CVs
+        # Store user options in metadata
+        cv.metadata.num_pages = cv_data.num_pages
+        cv.metadata.include_keywords = cv_data.include_keywords
+        cv.metadata.include_relevant_experience = cv_data.include_relevant_experience
         if cv_data.is_default:
             for other_cv_id, other_cv in MOCK_CVS[user_id].items():
                 if other_cv_id != cv.id:
                     other_cv.metadata.is_default = False
-        
         MOCK_CVS[user_id][cv.id] = cv
         return cv
-    
     # Create new empty CV
     cv = create_empty_cv(user_id, cv_data.name, cv_data.description, cv_data.template_id)
-    
-    # If this is the default CV, update other CVs
+    # Store user options in metadata
+    cv.metadata.num_pages = cv_data.num_pages
+    cv.metadata.include_keywords = cv_data.include_keywords
+    cv.metadata.include_relevant_experience = cv_data.include_relevant_experience
     if cv_data.is_default:
         for other_cv_id, other_cv in MOCK_CVS.get(user_id, {}).items():
             if other_cv_id != cv.id:
                 other_cv.metadata.is_default = False
-        
         cv.metadata.is_default = True
-    
     return cv
 
 @app.get("/api/cv/{cv_id}", response_model=CV)
@@ -590,7 +590,10 @@ async def duplicate_cv(
             description=cv_data.description or f"Copy of {source_cv.metadata.name}",
             is_default=cv_data.is_default,
             version=1,
-            last_modified=now
+            last_modified=now,
+            num_pages=2,
+            include_keywords=True,
+            include_relevant_experience=True
         ),
         content=source_cv.content.copy(),
         created_at=now,
@@ -613,12 +616,26 @@ async def duplicate_cv(
     return new_cv
 
 @app.get("/api/cv/{cv_id}/download")
-async def download_cv(cv_id: str):
-    # Assume generated CVs are stored as RTF files in 'generated_cvs/{cv_id}.rtf'
-    file_path = os.path.join("generated_cvs", f"{cv_id}.rtf")
+async def download_cv(cv_id: str, format: str = "docx", auth: dict = Depends(verify_token)):
+    user_id = auth["user_id"]
+    # Check if CV exists and belongs to user
+    if user_id not in MOCK_CVS or cv_id not in MOCK_CVS[user_id]:
+        return JSONResponse(status_code=404, content={"error": "CV not found"})
+    if format != "docx":
+        return JSONResponse(status_code=400, content={"error": "Format not supported"})
+    file_path = os.path.join("generated_cvs", f"{cv_id}.docx")
     if not os.path.exists(file_path):
-        return {"detail": "CV file not found"}, 404
-    return FileResponse(file_path, filename=f"cv_{cv_id}.rtf", media_type="application/rtf")
+        return JSONResponse(status_code=404, content={"error": "DOCX file not found"})
+    filename = MOCK_CVS[user_id][cv_id].metadata.name or f"cv_{cv_id}"
+    filename = filename.replace(" ", "_") + ".docx"
+    return FileResponse(
+        file_path,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
 
 # For testing and development
 if __name__ == "__main__":
