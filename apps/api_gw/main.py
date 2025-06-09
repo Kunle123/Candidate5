@@ -296,6 +296,14 @@ async def proxy_user(request: StarletteRequest, full_path: str):
 async def proxy_search_jobs(request: StarletteRequest):
     return await proxy(request, job_agent_service_url, "/search_jobs")
 
+@app.api_route("/api/cvs{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_api_cvs(request: StarletteRequest, full_path: str):
+    # Forward /api/cvs to /api/cv in the backend
+    path = "/api/cv" + (full_path or "")
+    path = re.sub(r'/+', '/', path)
+    print(f"Proxying /api/cvs to CV service path: {path}")
+    return await proxy(request, cv_service_url, path)
+
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def catch_all(request: StarletteRequest, full_path: str):
     logger.info(f"[DEBUG] catch_all called with full_path: {full_path}")
