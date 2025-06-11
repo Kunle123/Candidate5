@@ -19,6 +19,15 @@ from fastapi.exception_handlers import http_exception_handler
 
 app = FastAPI()
 
+# Add CORSMiddleware globally for robust CORS handling
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://c5-frontend-pied.vercel.app"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/docs", include_in_schema=False)
 async def proxy_docs(request: Request):
     async with httpx.AsyncClient() as client:
@@ -30,17 +39,6 @@ async def proxy_openapi(request: Request):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"{arc_service_url}/openapi.json")
         return Response(content=resp.content, status_code=resp.status_code, media_type=resp.headers.get("content-type"))
-
-# CORS Configuration
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,https://c5-frontend-pied.vercel.app").split(",")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"]
-)
 
 auth_service_url = os.environ.get("AUTH_SERVICE_URL")
 security = HTTPBearer()
