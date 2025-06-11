@@ -102,12 +102,11 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
                 status_code=resp.status_code,
                 headers=dict(resp.headers)
             )
-            origin = request.headers.get("origin")
-            if origin in cors_origins:
-                response.headers["Access-Control-Allow-Origin"] = origin
-                response.headers["Access-Control-Allow-Credentials"] = "true"
-                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-                response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+            # Always add CORS headers
+            response.headers["Access-Control-Allow-Origin"] = "https://c5-frontend-pied.vercel.app"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
             return response
         except Exception as e:
             logger.error(f"Error proxying request: {str(e)}")
