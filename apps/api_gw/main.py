@@ -327,5 +327,18 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
     return response
 
+# Add a global exception handler for all unhandled exceptions
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    response = JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error": str(exc)}
+    )
+    response.headers["Access-Control-Allow-Origin"] = "https://c5-frontend-pied.vercel.app"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    return response
+
 # Update all CORS headers to use the correct allowed origin
 ALLOWED_ORIGIN = "https://c5-frontend-pied.vercel.app"
