@@ -10,11 +10,12 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import httpx
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request as StarletteRequest
-from starlette.responses import StreamingResponse
+from starlette.responses import StreamingResponse, JSONResponse
 from routers.cover_letters import router as cover_letters_router
 from routers.mega_cv import router as mega_cv_router
 from routers.applications import router as applications_router
 import re
+from fastapi.exception_handlers import http_exception_handler
 
 app = FastAPI()
 
@@ -276,16 +277,13 @@ async def change_password(request: Request):
         return resp.json()
 
 @app.options("/{full_path:path}")
-async def preflight_handler(request: Request, full_path: str):
-    origin = request.headers.get("origin")
-    headers = {
-        "Access-Control-Allow-Origin": origin if origin in cors_origins else cors_origins[0],
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-        "Access-Control-Max-Age": "600"
-    }
-    return Response(status_code=200, headers=headers)
+async def options_handler(full_path: str):
+    response = JSONResponse(content={})
+    response.headers["Access-Control-Allow-Origin"] = "https://c5-frontend-pied.vercel.app"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    return response
 
 @app.api_route("/api/webhooks{full_path:path}", methods=["POST", "OPTIONS"])
 async def proxy_webhooks(request: StarletteRequest, full_path: str):
@@ -321,3 +319,15 @@ async def proxy_api_cv(request: StarletteRequest, full_path: str):
 async def catch_all(request: StarletteRequest, full_path: str):
     logger.info(f"[DEBUG] catch_all called with full_path: {full_path}")
     return Response(content="Catch-all route hit", status_code=200)
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    response = await http_exception_handler(request, exc)
+    response.headers["Access-Control-Allow-Origin"] = "https://c5-frontend-pied.vercel.app"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    return response
+
+# Update all CORS headers to use the correct allowed origin
+ALLOWED_ORIGIN = "https://c5-frontend-pied.vercel.app"
