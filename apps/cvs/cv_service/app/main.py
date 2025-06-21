@@ -252,6 +252,7 @@ async def create_cv_from_file(
     # ... existing code ...
 
 @app.post("/api/cv", response_class=StreamingResponse)
+@app.post("/api/cv/", response_class=StreamingResponse)
 async def generate_docx_from_text(
     payload: dict = Body(...),
     auth: dict = Depends(verify_token)
