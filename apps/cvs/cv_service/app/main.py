@@ -16,6 +16,7 @@ import sys
 from docx import Document
 from tempfile import NamedTemporaryFile
 from io import BytesIO
+import time
 
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
@@ -251,42 +252,71 @@ async def create_cv_from_file(
     # (unchanged)
     # ... existing code ...
 
+@app.middleware("http")
+async def log_slow_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+    if duration > 2:  # seconds
+        logger.warning(f"Slow request: {request.method} {request.url} took {duration:.2f}s")
+    return response
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(
+        f"Unhandled Exception: {exc}\n"
+        f"Request: {request.method} {request.url}\n"
+        f"Client: {request.client.host if request.client else 'unknown'}",
+        exc_info=True
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error": str(exc)},
+    )
+
 @app.post("/api/cv", response_class=StreamingResponse)
 @app.post("/api/cv/", response_class=StreamingResponse)
 async def generate_docx_from_text(
     payload: dict = Body(...),
-    auth: dict = Depends(verify_token)
+    auth: dict = Depends(verify_token),
+    request: Request = None
 ):
-    """Generate a DOCX from plain text CV and/or cover letter."""
-    cv_text = payload.get("cv")
-    cover_letter = payload.get("cover_letter")
-    if not cv_text:
-        raise HTTPException(status_code=400, detail="'cv' field is required in the request body.")
-    doc = Document()
-    doc.add_heading("Curriculum Vitae", 0)
-    for line in cv_text.splitlines():
-        if line.strip() == "":
-            doc.add_paragraph()
-        else:
-            doc.add_paragraph(line)
-    if cover_letter:
-        doc.add_page_break()
-        doc.add_heading("Cover Letter", 0)
-        for line in cover_letter.splitlines():
+    try:
+        logger.info(f"Received {request.method} to {request.url} from {request.client.host if request.client else 'unknown'}")
+        cv_text = payload.get("cv")
+        cover_letter = payload.get("cover_letter")
+        if not cv_text:
+            logger.warning("Missing 'cv' field in request body")
+            raise HTTPException(status_code=400, detail="'cv' field is required in the request body.")
+        doc = Document()
+        doc.add_heading("Curriculum Vitae", 0)
+        for line in cv_text.splitlines():
             if line.strip() == "":
                 doc.add_paragraph()
             else:
                 doc.add_paragraph(line)
-    buf = BytesIO()
-    doc.save(buf)
-    buf.seek(0)
-    return StreamingResponse(
-        buf,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={
-            "Content-Disposition": "attachment; filename=cv.docx"
-        }
-    )
+        if cover_letter:
+            doc.add_page_break()
+            doc.add_heading("Cover Letter", 0)
+            for line in cover_letter.splitlines():
+                if line.strip() == "":
+                    doc.add_paragraph()
+                else:
+                    doc.add_paragraph(line)
+        buf = BytesIO()
+        doc.save(buf)
+        buf.seek(0)
+        logger.info("DOCX generated successfully for user_id=%s", auth.get("user_id"))
+        return StreamingResponse(
+            buf,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={
+                "Content-Disposition": "attachment; filename=cv.docx"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error generating DOCX: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate DOCX")
 
 @app.get("/api/cv/{cv_id}")
 async def get_cv(
@@ -461,15 +491,6 @@ async def delete_cv(
     db.commit()
     
     return {"message": "CV deleted successfully"}
-
-# Exception handler for database errors
-@app.exception_handler(Exception)
-async def database_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Database error: {str(exc)}")
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "An internal server error occurred"},
-    )
 
 # --- Database Table Creation --- 
 # Ensure tables are created on startup
