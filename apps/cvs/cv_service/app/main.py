@@ -279,7 +279,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def generate_docx_from_text(
     payload: dict = Body(...),
     auth: dict = Depends(verify_token),
-    request: Request = None
+    request: Request = None,
+    db: Session = Depends(get_db_session)
 ):
     try:
         logger.info(f"Received {request.method} to {request.url} from {request.client.host if request.client else 'unknown'}")
@@ -306,12 +307,30 @@ async def generate_docx_from_text(
         buf = BytesIO()
         doc.save(buf)
         buf.seek(0)
-        logger.info("DOCX generated successfully for user_id=%s", auth.get("user_id"))
+        docx_bytes = buf.getvalue()
+        # Persist to DB
+        from .models import CV
+        new_cv = CV(
+            id=uuid.uuid4(),
+            user_id=auth["user_id"],
+            name="Generated CV",
+            description="CV generated via API",
+            is_default=False,
+            version=1,
+            template_id="default",
+            summary=None,
+            docx_file=docx_bytes
+        )
+        db.add(new_cv)
+        db.commit()
+        db.refresh(new_cv)
+        logger.info(f"DOCX generated and persisted in DB for user_id={auth.get('user_id')}, cv_id={new_cv.id}")
+        buf.seek(0)  # Reset buffer for streaming
         return StreamingResponse(
             buf,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={
-                "Content-Disposition": "attachment; filename=cv.docx"
+                "Content-Disposition": f"attachment; filename=cv_{new_cv.id}.docx"
             }
         )
     except Exception as e:
@@ -545,3 +564,18 @@ async def download_cv(cv_id: str, auth: dict = Depends(verify_token), db: Sessio
     # For now, just return the JSON as a file
     file_content = json.dumps(serialize_cv(cv), indent=2)
     return StreamingResponse(io.BytesIO(file_content.encode()), media_type="application/json", headers={"Content-Disposition": f"attachment; filename=cv_{cv_id}.json"})
+
+@app.get("/api/cv/{cv_id}/download", response_class=StreamingResponse)
+async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    from .models import CV
+    user_id = auth["user_id"]
+    cv = db.query(CV).filter(CV.id == cv_id, CV.user_id == user_id).first()
+    if not cv or not cv.docx_file:
+        raise HTTPException(status_code=404, detail="CV or DOCX file not found")
+    return StreamingResponse(
+        BytesIO(cv.docx_file),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f"attachment; filename=cv_{cv_id}.docx"
+        }
+    )

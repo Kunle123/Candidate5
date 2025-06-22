@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Integer, Boolean, ForeignKey, DateTime, Table
+from sqlalchemy import Column, String, Text, Integer, Boolean, ForeignKey, DateTime, Table, LargeBinary
 from sqlalchemy.sql import func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -57,6 +57,7 @@ class CV(Base):
     last_modified = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    docx_file = Column(LargeBinary, nullable=True)
 
 # CV sections as separate tables for normalization and better querying
 class Experience(Base):
