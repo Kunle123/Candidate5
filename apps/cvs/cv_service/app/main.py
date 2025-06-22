@@ -17,6 +17,7 @@ from docx import Document
 from tempfile import NamedTemporaryFile
 from io import BytesIO
 import time
+import base64
 
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
@@ -274,14 +275,17 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal server error", "error": str(exc)},
     )
 
-@app.post("/api/cv", response_class=StreamingResponse)
-@app.post("/api/cv/", response_class=StreamingResponse)
+@app.post("/api/cv")
+@app.post("/api/cv/")
 async def generate_docx_from_text(
     payload: dict = Body(...),
     auth: dict = Depends(verify_token),
     request: Request = None,
     db: Session = Depends(get_db_session)
 ):
+    """
+    Generate a DOCX from provided text and return as base64-encoded string in JSON.
+    """
     try:
         logger.info(f"Received {request.method} to {request.url} from {request.client.host if request.client else 'unknown'}")
         cv_text = payload.get("cv")
@@ -325,14 +329,17 @@ async def generate_docx_from_text(
         db.commit()
         db.refresh(new_cv)
         logger.info(f"DOCX generated and persisted in DB for user_id={auth.get('user_id')}, cv_id={new_cv.id}")
-        buf.seek(0)  # Reset buffer for streaming
-        return StreamingResponse(
-            buf,
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers={
-                "Content-Disposition": f"attachment; filename=cv_{new_cv.id}.docx"
-            }
-        )
+        # Encode DOCX as base64 for JSON response
+        try:
+            docx_b64 = base64.b64encode(docx_bytes).decode('utf-8')
+        except Exception as e:
+            logger.error(f"Base64 encoding failed: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to encode DOCX as base64")
+        return {
+            "filename": f"cv_{new_cv.id}.docx",
+            "filedata": docx_b64,
+            "cv_id": str(new_cv.id)
+        }
     except Exception as e:
         logger.error(f"Error generating DOCX: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate DOCX")
