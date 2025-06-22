@@ -572,17 +572,24 @@ async def download_cv(cv_id: str, auth: dict = Depends(verify_token), db: Sessio
     file_content = json.dumps(serialize_cv(cv), indent=2)
     return StreamingResponse(io.BytesIO(file_content.encode()), media_type="application/json", headers={"Content-Disposition": f"attachment; filename=cv_{cv_id}.json"})
 
-@app.get("/api/cv/{cv_id}/download", response_class=StreamingResponse)
+@app.get("/api/cv/{cv_id}/download")
 async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    """
+    Return the persisted DOCX as a base64-encoded string in JSON (proxy-friendly).
+    """
+    import base64
     from .models import CV
     user_id = auth["user_id"]
     cv = db.query(CV).filter(CV.id == cv_id, CV.user_id == user_id).first()
     if not cv or not cv.docx_file:
         raise HTTPException(status_code=404, detail="CV or DOCX file not found")
-    return StreamingResponse(
-        BytesIO(cv.docx_file),
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={
-            "Content-Disposition": f"attachment; filename=cv_{cv_id}.docx"
-        }
-    )
+    try:
+        docx_b64 = base64.b64encode(cv.docx_file).decode('utf-8')
+    except Exception as e:
+        logger.error(f"Base64 encoding failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to encode DOCX as base64")
+    return {
+        "filename": f"cv_{cv_id}.docx",
+        "filedata": docx_b64,
+        "cv_id": str(cv_id)
+    }
