@@ -313,6 +313,11 @@ async def proxy_api_cv(request: StarletteRequest, full_path: str):
     print(f"Proxying to CV service path: {path}")
     return await proxy(request, cv_service_url, path)
 
+@app.api_route("/api/cover-letter{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_cover_letter(request: StarletteRequest, full_path: str):
+    path = f"/api/cover-letter{full_path}"
+    return await proxy(request, cv_service_url, path)
+
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def catch_all(request: StarletteRequest, full_path: str):
     logger.info(f"[DEBUG] catch_all called with full_path: {full_path}")
