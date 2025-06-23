@@ -277,19 +277,19 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.post("/api/cv")
 @app.post("/api/cv/")
-async def generate_docx_from_text(
+async def generate_cv_docx(
     payload: dict = Body(...),
     auth: dict = Depends(verify_token),
     request: Request = None,
     db: Session = Depends(get_db_session)
 ):
     """
-    Generate a DOCX from provided text and return as base64-encoded string in JSON.
+    Generate a CV DOCX from provided text and return as base64-encoded string in JSON.
     """
+    import base64
     try:
-        logger.info(f"Received {request.method} to {request.url} from {request.client.host if request.client else 'unknown'}")
+        logger.info(f"Received {request.method} to {request.url} from {request.client.host if request.client else 'unknown'} (CV only)")
         cv_text = payload.get("cv")
-        cover_letter = payload.get("cover_letter")
         if not cv_text:
             logger.warning("Missing 'cv' field in request body")
             raise HTTPException(status_code=400, detail="'cv' field is required in the request body.")
@@ -300,14 +300,6 @@ async def generate_docx_from_text(
                 doc.add_paragraph()
             else:
                 doc.add_paragraph(line)
-        if cover_letter:
-            doc.add_page_break()
-            doc.add_heading("Cover Letter", 0)
-            for line in cover_letter.splitlines():
-                if line.strip() == "":
-                    doc.add_paragraph()
-                else:
-                    doc.add_paragraph(line)
         buf = BytesIO()
         doc.save(buf)
         buf.seek(0)
@@ -328,8 +320,7 @@ async def generate_docx_from_text(
         db.add(new_cv)
         db.commit()
         db.refresh(new_cv)
-        logger.info(f"DOCX generated and persisted in DB for user_id={auth.get('user_id')}, cv_id={new_cv.id}")
-        # Encode DOCX as base64 for JSON response
+        logger.info(f"CV DOCX generated and persisted in DB for user_id={auth.get('user_id')}, cv_id={new_cv.id}")
         try:
             docx_b64 = base64.b64encode(docx_bytes).decode('utf-8')
         except Exception as e:
@@ -341,8 +332,68 @@ async def generate_docx_from_text(
             "cv_id": str(new_cv.id)
         }
     except Exception as e:
-        logger.error(f"Error generating DOCX: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to generate DOCX")
+        logger.error(f"Error generating CV DOCX: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate CV DOCX")
+
+@app.post("/api/cover-letter")
+@app.post("/api/cover-letter/")
+async def generate_cover_letter_docx(
+    payload: dict = Body(...),
+    auth: dict = Depends(verify_token),
+    request: Request = None,
+    db: Session = Depends(get_db_session)
+):
+    """
+    Generate a Cover Letter DOCX from provided text and return as base64-encoded string in JSON.
+    """
+    import base64
+    try:
+        logger.info(f"Received {request.method} to {request.url} from {request.client.host if request.client else 'unknown'} (Cover Letter only)")
+        cover_letter = payload.get("cover_letter")
+        if not cover_letter:
+            logger.warning("Missing 'cover_letter' field in request body")
+            raise HTTPException(status_code=400, detail="'cover_letter' field is required in the request body.")
+        doc = Document()
+        doc.add_heading("Cover Letter", 0)
+        for line in cover_letter.splitlines():
+            if line.strip() == "":
+                doc.add_paragraph()
+            else:
+                doc.add_paragraph(line)
+        buf = BytesIO()
+        doc.save(buf)
+        buf.seek(0)
+        docx_bytes = buf.getvalue()
+        # Persist to DB (as a separate CV record for now)
+        from .models import CV
+        new_cv = CV(
+            id=uuid.uuid4(),
+            user_id=auth["user_id"],
+            name="Generated Cover Letter",
+            description="Cover letter generated via API",
+            is_default=False,
+            version=1,
+            template_id="default",
+            summary=None,
+            docx_file=docx_bytes
+        )
+        db.add(new_cv)
+        db.commit()
+        db.refresh(new_cv)
+        logger.info(f"Cover Letter DOCX generated and persisted in DB for user_id={auth.get('user_id')}, cv_id={new_cv.id}")
+        try:
+            docx_b64 = base64.b64encode(docx_bytes).decode('utf-8')
+        except Exception as e:
+            logger.error(f"Base64 encoding failed: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to encode DOCX as base64")
+        return {
+            "filename": f"cover_letter_{new_cv.id}.docx",
+            "filedata": docx_b64,
+            "cv_id": str(new_cv.id)
+        }
+    except Exception as e:
+        logger.error(f"Error generating Cover Letter DOCX: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate Cover Letter DOCX")
 
 @app.get("/api/cv/{cv_id}")
 async def get_cv(
