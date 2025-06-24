@@ -210,20 +210,19 @@ async def health_check():
 @app.get("/api/cv")
 async def get_cvs(
     auth: dict = Depends(verify_token), 
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db_session),
+    type: str = Query(None, description="Filter by type: 'cv' or 'cover_letter'")
 ):
-    """Get all CVs for the current user."""
+    """Get all CVs for the current user, optionally filtered by type."""
     user_id = auth["user_id"]
-    
-    # Query CVs for this user, ordered by last modified
-    cvs = db.query(models.CV).filter(models.CV.user_id == user_id).order_by(
-        desc(models.CV.is_default),  # Default CV first
-        desc(models.CV.last_modified)  # Then by modification date
+    query = db.query(models.CV).filter(models.CV.user_id == user_id)
+    if type:
+        query = query.filter(models.CV.type == type)
+    cvs = query.order_by(
+        desc(models.CV.is_default),
+        desc(models.CV.last_modified)
     ).all()
-    
-    # Convert to API response format
     result = [serialize_cv(cv) for cv in cvs]
-    
     return result
 
 @app.post("/api/cv/upload", status_code=status.HTTP_201_CREATED)
@@ -315,7 +314,8 @@ async def generate_cv_docx(
             version=1,
             template_id="default",
             summary=None,
-            docx_file=docx_bytes
+            docx_file=docx_bytes,
+            type="cv"
         )
         db.add(new_cv)
         db.commit()
@@ -375,7 +375,8 @@ async def generate_cover_letter_docx(
             version=1,
             template_id="default",
             summary=None,
-            docx_file=docx_bytes
+            docx_file=docx_bytes,
+            type="cover_letter"
         )
         db.add(new_cv)
         db.commit()

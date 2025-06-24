@@ -54,6 +54,7 @@ class CV(Base):
     version = Column(Integer, default=1)
     template_id = Column(String(50), nullable=False)
     summary = Column(Text, nullable=True)
+    type = Column(String(32), nullable=False, default="cv")  # 'cv' or 'cover_letter'
     last_modified = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
