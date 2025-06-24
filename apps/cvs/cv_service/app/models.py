@@ -223,4 +223,20 @@ class Template(Base):
         style_options = Column(JSONB, nullable=True)
     
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()) 
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+class Application(Base):
+    __tablename__ = "applications"
+    if is_sqlite:
+        id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+        user_id = Column(String(36), nullable=False, index=True)
+    else:
+        id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+        user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    role_title = Column(String(255), nullable=False)
+    job_description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    cv_docx_file = Column(LargeBinary, nullable=False)
+    cover_letter_docx_file = Column(LargeBinary, nullable=False)
+    cv_text = Column(Text, nullable=True)
+    cover_letter_text = Column(Text, nullable=True) 

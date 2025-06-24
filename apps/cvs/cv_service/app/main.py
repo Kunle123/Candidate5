@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status, Query, Body, Request, File, UploadFile
+from fastapi import FastAPI, HTTPException, Depends, status, Query, Body, Request, File, UploadFile, Path
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
@@ -644,4 +644,110 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
         "filename": f"cv_{cv_id}.docx",
         "filedata": docx_b64,
         "cv_id": str(cv_id)
+    }
+
+@app.post("/api/applications")
+async def create_application(
+    payload: dict = Body(...),
+    auth: dict = Depends(verify_token),
+    db: Session = Depends(get_db_session)
+):
+    """
+    Create an application (role) with CV and cover letter, store both DOCX files.
+    """
+    import base64
+    from .models import Application
+    user_id = auth["user_id"]
+    role_title = payload.get("role_title")
+    job_description = payload.get("job_description")
+    cv_text = payload.get("cv_text")
+    cover_letter_text = payload.get("cover_letter_text")
+    if not (role_title and cv_text and cover_letter_text):
+        raise HTTPException(status_code=400, detail="role_title, cv_text, and cover_letter_text are required.")
+    # Generate CV DOCX
+    from docx import Document
+    from io import BytesIO
+    cv_doc = Document()
+    cv_doc.add_heading("Curriculum Vitae", 0)
+    for line in cv_text.splitlines():
+        if line.strip() == "":
+            cv_doc.add_paragraph()
+        else:
+            cv_doc.add_paragraph(line)
+    cv_buf = BytesIO()
+    cv_doc.save(cv_buf)
+    cv_buf.seek(0)
+    cv_docx_bytes = cv_buf.getvalue()
+    # Generate Cover Letter DOCX
+    cl_doc = Document()
+    cl_doc.add_heading("Cover Letter", 0)
+    for line in cover_letter_text.splitlines():
+        if line.strip() == "":
+            cl_doc.add_paragraph()
+        else:
+            cl_doc.add_paragraph(line)
+    cl_buf = BytesIO()
+    cl_doc.save(cl_buf)
+    cl_buf.seek(0)
+    cl_docx_bytes = cl_buf.getvalue()
+    # Store Application
+    app = Application(
+        user_id=user_id,
+        role_title=role_title,
+        job_description=job_description,
+        cv_docx_file=cv_docx_bytes,
+        cover_letter_docx_file=cl_docx_bytes,
+        cv_text=cv_text,
+        cover_letter_text=cover_letter_text
+    )
+    db.add(app)
+    db.commit()
+    db.refresh(app)
+    return {
+        "id": str(app.id),
+        "role_title": app.role_title,
+        "created_at": app.created_at.isoformat(),
+    }
+
+@app.get("/api/applications")
+async def list_applications(auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    from .models import Application
+    user_id = auth["user_id"]
+    apps = db.query(Application).filter(Application.user_id == user_id).order_by(Application.created_at.desc()).all()
+    return [
+        {
+            "id": str(app.id),
+            "role_title": app.role_title,
+            "created_at": app.created_at.isoformat(),
+        } for app in apps
+    ]
+
+@app.get("/api/applications/{id}/cv")
+async def download_application_cv(id: str = Path(...), auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    from .models import Application
+    import base64
+    user_id = auth["user_id"]
+    app = db.query(Application).filter(Application.id == id, Application.user_id == user_id).first()
+    if not app or not app.cv_docx_file:
+        raise HTTPException(status_code=404, detail="Application or CV not found")
+    docx_b64 = base64.b64encode(app.cv_docx_file).decode('utf-8')
+    return {
+        "filename": f"cv_{id}.docx",
+        "filedata": docx_b64,
+        "application_id": str(id)
+    }
+
+@app.get("/api/applications/{id}/cover-letter")
+async def download_application_cover_letter(id: str = Path(...), auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    from .models import Application
+    import base64
+    user_id = auth["user_id"]
+    app = db.query(Application).filter(Application.id == id, Application.user_id == user_id).first()
+    if not app or not app.cover_letter_docx_file:
+        raise HTTPException(status_code=404, detail="Application or cover letter not found")
+    docx_b64 = base64.b64encode(app.cover_letter_docx_file).decode('utf-8')
+    return {
+        "filename": f"cover_letter_{id}.docx",
+        "filedata": docx_b64,
+        "application_id": str(id)
     }
