@@ -752,29 +752,22 @@ def generate_application_materials(data: GenerateRequest):
 
     # Extract cvOptions fields if present
     relevant_experience = None
-    keywords = None
     style = None
     tone = None
     if data.cvOptions:
         relevant_experience = data.cvOptions.get("relevantExperience")
-        keywords = data.cvOptions.get("keywords")
         style = data.cvOptions.get("style")
         tone = data.cvOptions.get("tone")
 
     # Build the prompt
     prompt = f"""
-You are an expert career assistant and professional resume writer, specializing in creating comprehensive, executive-level CVs for senior technology leaders. Your task is to generate a tailored CV and personalized cover letter that matches the depth and quality of professionally written CVs for C-level and senior management positions.
-
-**Primary Directive: Create a document that comprehensively showcases the candidate's full career journey, technical expertise, and quantifiable business impact at an executive level.**
-
-"""
+You are an expert career assistant and professional resume writer, specializing in creating comprehensive, executive-level CVs for senior technology leaders. Your task is to generate a tailored CV and personalized cover letter that matches the depth and quality of professionally written CVs for C-level and senior management positions.\n\n"""
     if relevant_experience:
         prompt += (
             f"The CV MUST include a dedicated section at the top titled 'Relevant Experience', listing and highlighting the following experiences before the main work experience section: {relevant_experience}. \\n"
             f"In addition, highlight these experiences throughout the CV as appropriate.\\n"
         )
-    if keywords:
-        prompt += f"Ensure the following keywords are included throughout the CV (especially in skills, summary, and experience sections): {keywords}.\n"
+    prompt += "Use job-relevant keywords and industry-specific terminology throughout the CV, especially in the skills, summary, and experience sections.\n"
     if style:
         prompt += f"Use the selected style: {style}.\n"
     if tone:
