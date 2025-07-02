@@ -750,22 +750,41 @@ def generate_application_materials(data: GenerateRequest):
     client = OpenAI(api_key=openai_api_key)
     # Build the prompt
     prompt = f"""
-You are an expert career assistant. Using the following user's normalized CV data and the provided job advert, generate:
-1. A tailored CV (resume) that best matches the job advert, using the user's real experience, education, skills, and certifications.
-2. A personalized cover letter for the job advert, highlighting the user's most relevant experience and skills.
+You are an expert career assistant and professional resume writer. Your task is to generate a tailored CV and a personalized cover letter for a job application, using the provided user's CV data and the job advert.
 
-Return a JSON object with two fields: 'cv' and 'cover_letter'.
+**Instructions:**
+
+1.  **Analyze the Job Advert:**
+    *   Identify the key responsibilities, required skills (both technical and soft), and qualifications mentioned in the job advert.
+    *   Pay close attention to the company's industry and the tone of the job description.
+
+2.  **Generate a Tailored CV:**
+    *   **Professional Summary:** Rewrite the professional summary to align with the job title and the core requirements of the role. Incorporate 2-3 key skills or experiences from the job advert that the user possesses.
+    *   **Work Experience:**
+        *   For each role, rephrase the responsibilities as **quantifiable achievements**. Use action verbs and focus on the impact of the user's work. For example, instead of "Managed a team," write "Led a team of 8 to deliver the project 15% under budget."
+        *   Prioritize and highlight the bullet points that are most relevant to the job advert.
+        *   Integrate keywords from the job advert naturally into the descriptions of the work experience.
+    *   **Skills Section:** Create a "Core Competencies" or "Key Skills" section near the top of the CV. This section should list a mix of the user's most relevant technical and soft skills that directly match the requirements in the job advert.
+    *   **Tone and Formatting:** The CV should be professional, concise, and easy to read. Use a clean and modern format.
+
+3.  **Generate a Personalized Cover Letter:**
+    *   The cover letter should be professional, enthusiastic, and no longer than one page.
+    *   In the opening paragraph, clearly state the position being applied for and where it was advertised.
+    *   In the body of the letter, highlight 2-3 of the user's most relevant accomplishments from their work experience and connect them directly to the needs of the employer as stated in the job advert.
+    *   In the closing paragraph, reiterate interest in the role, express enthusiasm for the company, and include a call to action (e.g., "I am eager to discuss how my skills can benefit your team and look forward to hearing from you soon.").
+
+**Return a JSON object with two fields: 'cv' and 'cover_letter'.**
 
 ---
-USER CV DATA (JSON):
+**USER CV DATA (JSON):**
 {data.arcData}
 
 ---
-JOB ADVERT:
+**JOB ADVERT:**
 {data.jobAdvert}
 
 ---
-RESPONSE FORMAT:
+**RESPONSE FORMAT:**
 {{
   "cv": "...",
   "cover_letter": "..."
