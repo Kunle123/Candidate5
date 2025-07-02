@@ -763,9 +763,16 @@ def generate_application_materials(data: GenerateRequest):
 
     # Build the prompt
     prompt = f"""
-You are an expert career assistant and professional resume writer. Your task is to generate a tailored CV and a personalized cover letter for a job application, using the provided user's CV data and the job advert.\n\n"""
+You are an expert career assistant and professional resume writer, specializing in creating comprehensive, executive-level CVs for senior technology leaders. Your task is to generate a tailored CV and personalized cover letter that matches the depth and quality of professionally written CVs for C-level and senior management positions.
+
+**Primary Directive: Create a document that comprehensively showcases the candidate's full career journey, technical expertise, and quantifiable business impact at an executive level.**
+
+"""
     if relevant_experience:
-        prompt += f"Highlight the following relevant experiences in the CV: {relevant_experience}.\n"
+        prompt += (
+            f"The CV MUST include a dedicated section at the top titled 'Relevant Experience', listing and highlighting the following experiences before the main work experience section: {relevant_experience}. \\n"
+            f"In addition, highlight these experiences throughout the CV as appropriate.\\n"
+        )
     if keywords:
         prompt += f"Ensure the following keywords are included throughout the CV (especially in skills, summary, and experience sections): {keywords}.\n"
     if style:
@@ -773,35 +780,102 @@ You are an expert career assistant and professional resume writer. Your task is 
     if tone:
         prompt += f"Use the selected tone: {tone}.\n"
     prompt += """
-Instructions:
-Analyze the Job Advert:
-Identify the key responsibilities, required skills (both technical and soft), and qualifications mentioned in the job advert.
-Pay close attention to the company's industry and the tone of the job description.
-Generate a Tailored CV:
-Length and Detail: The CV should be comprehensive and detailed enough to reflect a senior-level role. A length of 1.5 to 2 pages is appropriate. Do not over-summarize; retain key technical details and project scope from the source data.
-Professional Summary: Rewrite the professional summary to be 3-4 sentences. It should align with the job title and highlight the breadth of industry experience (e.g., transport, public health, energy) and key technology platforms (e.g., Azure, AWS) mentioned in the user's CV data.
-Core Competencies Section: Create a "Core Competencies" or "Key Skills" section near the top of the CV. This section should list a mix of the user's most relevant technical and soft skills that directly match the requirements in the job advert.
-Work Experience:
-Include all work experiences provided in the source data to show a clear and complete career progression.
-For the most recent and relevant roles, provide 4-6 detailed bullet points. For older roles, 2-4 bullet points are sufficient.
-Rephrase responsibilities as quantifiable achievements. Use action verbs and focus on the impact of the user's work. Where specific numbers aren't available, describe the scale and business impact (e.g., "managed a nationwide logistics program for millions of units," "improved system stability and long-term scalability").
-Ensure that specific technologies mentioned in the original CV (e.g., Mulesoft, Power Apps, Power BI, VBA, AWS) are included in the relevant job descriptions to provide technical depth.
-Tone and Formatting: The CV should be professional, concise, and easy to read. Use a clean and modern format.
-Generate a Personalized Cover Letter:
-The cover letter should be professional, enthusiastic, and no longer than one page.
-In the opening paragraph, clearly state the position being applied for and where it was advertised.
-In the body of the letter, highlight 2-3 of the user's most relevant accomplishments from their work experience and connect them directly to the needs of the employer as stated in the job advert.
-In the closing paragraph, reiterate interest in the role, express enthusiasm for the company, and include a call to action (e.g., "I am eager to discuss how my skills can benefit your team and look forward to hearing from you soon.").
-Return a JSON object with two fields: 'cv' and 'cover_letter'.
-USER CV DATA (JSON):
-""" + str(data.arcData) + """
-JOB ADVERT:
-""" + str(data.jobAdvert) + """
-RESPONSE FORMAT:
-{
-"cv": "...",
-"cover_letter": "..."
-}
+**Instructions:**
+
+1. **Analyze the Job Advert:**
+   - Identify the top 7-10 most critical skills, responsibilities, and qualifications.
+   - Determine the seniority level and scope of the role (team size, budget, strategic impact).
+   - Infer the employer's primary business needs and strategic challenges.
+   - Note industry-specific terminology and technical requirements.
+
+2. **Data Pre-processing and Validation:**
+   - Review the user's work history for roles at the same company.
+   - **Apply conditional logic:**
+     - **IF** two roles at the same company have **identical or overlapping date ranges**, treat as a data error and **merge them**.
+     - **IF** two roles at the same company have **distinct, non-overlapping date ranges**, treat as **separate, legitimate periods of employment** (rehiring scenario).
+   - Ensure chronological accuracy and complete career representation.
+
+3. **Generate a Comprehensive, Executive-Level CV:**
+
+   **A. Structure and Length:**
+   - **Target Length:** 2-4 pages as appropriate for the seniority level. Senior roles (10+ years) should be comprehensive, not artificially condensed.
+   - **Format:** Professional, clean layout with clear section headers and consistent formatting.
+
+   **B. Contact Information:**
+   - Include full professional contact details section at the top.
+   - Use placeholder format: [Your Address], [City, State, ZIP], [Your Email], [Your Phone Number].
+
+   **C. Professional Summary:**
+   - Write a substantial 4-5 sentence summary that positions the candidate as the ideal solution to the employer's strategic needs.
+   - Include: years of experience, industry breadth, key technical platforms, leadership scope, and strategic impact.
+   - Weave in specific technologies and methodologies from the source data.
+
+   **D. Core Competencies Section:**
+   - Create a comprehensive skills section with 8-12 key competencies.
+   - Mix technical skills, methodologies, and leadership capabilities.
+   - Prioritize skills that directly match the job requirements.
+   - Include industry-specific terminology and certifications.
+
+   **E. Work Experience - Executive Detail Standard:**
+   
+   **For Each Role, Follow This Framework:**
+   - **Role Title, Company, Dates** (clear formatting)
+   - **6-8 comprehensive bullet points for recent/relevant roles (last 10 years)**
+   - **4-6 bullet points for earlier career roles**
+   - **3-4 bullet points for early career positions**
+
+   **Bullet Point Quality Standards:**
+   - **Executive Impact Formula:** Action Verb + Specific Technical Implementation + Scope/Scale + Quantifiable Business Result
+   - **Technical Depth Required:** Include specific platforms, tools, methodologies, and technical architectures used
+   - **Business Context:** Explain WHY the work mattered - regulatory compliance, cost reduction, efficiency gains, strategic advantage
+   - **Scale Indicators:** Team sizes, budget figures, user numbers, geographic scope, timeline achievements
+   - **Industry Terminology:** Use sector-specific language and technical jargon appropriately
+
+   **Mandatory Quantification Rules:**
+   - Every bullet point should include either a specific metric OR a clear statement of business impact
+   - When source data lacks numbers, create realistic, industry-appropriate metrics
+   - Examples: "reducing operational costs by 15%", "managing teams of 50+ across 3 locations", "delivering £2M project under budget", "achieving 99.9% system uptime"
+
+   **Technical Integration Requirements:**
+   - Naturally weave specific technologies from source data into achievement descriptions
+   - Include technical architectures, platforms, and methodologies
+   - Demonstrate progression in technical complexity and leadership scope
+   - Show expertise across multiple technology stacks and business domains
+
+   **F. Education and Certifications:**
+   - List education with institution, degree, and dates
+   - Highlight relevant certifications prominently
+   - Include any additional professional development if mentioned in source data
+
+   **G. Professional Presentation:**
+   - Use strong, active leadership language throughout
+   - Maintain consistent tense and formatting
+   - Ensure logical flow and readability
+   - Include "References available upon request" if appropriate for the market
+
+4. **Generate a Strategic Cover Letter:**
+   - Structure as a compelling business case: "You need X strategic capability, here's evidence I've delivered X successfully at scale"
+   - Reference 3-4 specific, quantified achievements from the CV
+   - Demonstrate understanding of the employer's business challenges
+   - Show strategic thinking and leadership capability
+   - Length: 3-4 substantial paragraphs, professional tone
+
+**Return a JSON object with two fields: 'cv' and 'cover_letter'.**
+
+---
+**USER CV DATA (JSON):**
+{data.arcData}
+
+---
+**JOB ADVERT:**
+{data.jobAdvert}
+
+---
+**RESPONSE FORMAT:**
+{{
+  "cv": "...",
+  "cover_letter": "..."
+}}
 """
     try:
         response = client.chat.completions.create(
