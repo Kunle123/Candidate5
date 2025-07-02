@@ -751,43 +751,34 @@ def generate_application_materials(data: GenerateRequest):
     # Build the prompt
     prompt = f"""
 You are an expert career assistant and professional resume writer. Your task is to generate a tailored CV and a personalized cover letter for a job application, using the provided user's CV data and the job advert.
-
-**Instructions:**
-
-1.  **Analyze the Job Advert:**
-    *   Identify the key responsibilities, required skills (both technical and soft), and qualifications mentioned in the job advert.
-    *   Pay close attention to the company's industry and the tone of the job description.
-
-2.  **Generate a Tailored CV:**
-    *   **Professional Summary:** Rewrite the professional summary to align with the job title and the core requirements of the role. Incorporate 2-3 key skills or experiences from the job advert that the user possesses.
-    *   **Work Experience:**
-        *   For each role, rephrase the responsibilities as **quantifiable achievements**. Use action verbs and focus on the impact of the user's work. For example, instead of "Managed a team," write "Led a team of 8 to deliver the project 15% under budget."
-        *   Prioritize and highlight the bullet points that are most relevant to the job advert.
-        *   Integrate keywords from the job advert naturally into the descriptions of the work experience.
-    *   **Skills Section:** Create a "Core Competencies" or "Key Skills" section near the top of the CV. This section should list a mix of the user's most relevant technical and soft skills that directly match the requirements in the job advert.
-    *   **Tone and Formatting:** The CV should be professional, concise, and easy to read. Use a clean and modern format.
-
-3.  **Generate a Personalized Cover Letter:**
-    *   The cover letter should be professional, enthusiastic, and no longer than one page.
-    *   In the opening paragraph, clearly state the position being applied for and where it was advertised.
-    *   In the body of the letter, highlight 2-3 of the user's most relevant accomplishments from their work experience and connect them directly to the needs of the employer as stated in the job advert.
-    *   In the closing paragraph, reiterate interest in the role, express enthusiasm for the company, and include a call to action (e.g., "I am eager to discuss how my skills can benefit your team and look forward to hearing from you soon.").
-
-**Return a JSON object with two fields: 'cv' and 'cover_letter'.**
-
----
-**USER CV DATA (JSON):**
+Instructions:
+Analyze the Job Advert:
+Identify the key responsibilities, required skills (both technical and soft), and qualifications mentioned in the job advert.
+Pay close attention to the company's industry and the tone of the job description.
+Generate a Tailored CV:
+Length and Detail: The CV should be comprehensive and detailed enough to reflect a senior-level role. A length of 1.5 to 2 pages is appropriate. Do not over-summarize; retain key technical details and project scope from the source data.
+Professional Summary: Rewrite the professional summary to be 3-4 sentences. It should align with the job title and highlight the breadth of industry experience (e.g., transport, public health, energy) and key technology platforms (e.g., Azure, AWS) mentioned in the user's CV data.
+Core Competencies Section: Create a "Core Competencies" or "Key Skills" section near the top of the CV. This section should list a mix of the user's most relevant technical and soft skills that directly match the requirements in the job advert.
+Work Experience:
+Include all work experiences provided in the source data to show a clear and complete career progression.
+For the most recent and relevant roles, provide 4-6 detailed bullet points. For older roles, 2-4 bullet points are sufficient.
+Rephrase responsibilities as quantifiable achievements. Use action verbs and focus on the impact of the user's work. Where specific numbers aren't available, describe the scale and business impact (e.g., "managed a nationwide logistics program for millions of units," "improved system stability and long-term scalability").
+Ensure that specific technologies mentioned in the original CV (e.g., Mulesoft, Power Apps, Power BI, VBA, AWS) are included in the relevant job descriptions to provide technical depth.
+Tone and Formatting: The CV should be professional, concise, and easy to read. Use a clean and modern format.
+Generate a Personalized Cover Letter:
+The cover letter should be professional, enthusiastic, and no longer than one page.
+In the opening paragraph, clearly state the position being applied for and where it was advertised.
+In the body of the letter, highlight 2-3 of the user's most relevant accomplishments from their work experience and connect them directly to the needs of the employer as stated in the job advert.
+In the closing paragraph, reiterate interest in the role, express enthusiasm for the company, and include a call to action (e.g., "I am eager to discuss how my skills can benefit your team and look forward to hearing from you soon.").
+Return a JSON object with two fields: 'cv' and 'cover_letter'.
+USER CV DATA (JSON):
 {data.arcData}
-
----
-**JOB ADVERT:**
+JOB ADVERT:
 {data.jobAdvert}
-
----
-**RESPONSE FORMAT:**
+RESPONSE FORMAT:
 {{
-  "cv": "...",
-  "cover_letter": "..."
+"cv": "...",
+"cover_letter": "..."
 }}
 """
     try:
