@@ -739,6 +739,7 @@ def upload_cv_for_profile(profile_id: UUID, file: UploadFile = File(...), db: Se
 class GenerateRequest(BaseModel):
     jobAdvert: str
     arcData: dict
+    cvOptions: Optional[dict] = None
 
 @router.post("/generate")
 def generate_application_materials(data: GenerateRequest):
@@ -748,9 +749,30 @@ def generate_application_materials(data: GenerateRequest):
         logger.error("OpenAI API key not set in environment variables.")
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = OpenAI(api_key=openai_api_key)
+
+    # Extract cvOptions fields if present
+    relevant_experience = None
+    keywords = None
+    style = None
+    tone = None
+    if data.cvOptions:
+        relevant_experience = data.cvOptions.get("relevantExperience")
+        keywords = data.cvOptions.get("keywords")
+        style = data.cvOptions.get("style")
+        tone = data.cvOptions.get("tone")
+
     # Build the prompt
     prompt = f"""
-You are an expert career assistant and professional resume writer. Your task is to generate a tailored CV and a personalized cover letter for a job application, using the provided user's CV data and the job advert.
+You are an expert career assistant and professional resume writer. Your task is to generate a tailored CV and a personalized cover letter for a job application, using the provided user's CV data and the job advert.\n\n"""
+    if relevant_experience:
+        prompt += f"Highlight the following relevant experiences in the CV: {relevant_experience}.\n"
+    if keywords:
+        prompt += f"Ensure the following keywords are included throughout the CV (especially in skills, summary, and experience sections): {keywords}.\n"
+    if style:
+        prompt += f"Use the selected style: {style}.\n"
+    if tone:
+        prompt += f"Use the selected tone: {tone}.\n"
+    prompt += """
 Instructions:
 Analyze the Job Advert:
 Identify the key responsibilities, required skills (both technical and soft), and qualifications mentioned in the job advert.
@@ -772,14 +794,14 @@ In the body of the letter, highlight 2-3 of the user's most relevant accomplishm
 In the closing paragraph, reiterate interest in the role, express enthusiasm for the company, and include a call to action (e.g., "I am eager to discuss how my skills can benefit your team and look forward to hearing from you soon.").
 Return a JSON object with two fields: 'cv' and 'cover_letter'.
 USER CV DATA (JSON):
-{data.arcData}
+""" + str(data.arcData) + """
 JOB ADVERT:
-{data.jobAdvert}
+""" + str(data.jobAdvert) + """
 RESPONSE FORMAT:
-{{
+{
 "cv": "...",
 "cover_letter": "..."
-}}
+}
 """
     try:
         response = client.chat.completions.create(
