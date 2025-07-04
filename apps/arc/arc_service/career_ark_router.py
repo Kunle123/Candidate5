@@ -750,6 +750,11 @@ def generate_application_materials(data: GenerateRequest):
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = OpenAI(api_key=openai_api_key)
 
+    # Log the actual user data being sent to OpenAI
+    import json
+    logger.info("[DEBUG] data.arcData sent to OpenAI: " + json.dumps(data.arcData, indent=2))
+    logger.info("[DEBUG] data.jobAdvert sent to OpenAI: " + str(data.jobAdvert))
+
     # Extract cvOptions fields if present
     relevant_experience = None
     style = None
