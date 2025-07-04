@@ -881,6 +881,7 @@ Before finalizing, verify that every statement in the CV can be directly traced 
   "cover_letter": "..."
 }}
 """
+    logger.info("[DEBUG] OpenAI prompt for /generate:\n" + prompt)
     try:
         response = client.chat.completions.create(
             model="gpt-4o-2024-08-06",
