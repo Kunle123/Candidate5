@@ -761,11 +761,17 @@ def generate_application_materials(data: GenerateRequest):
 
     # Build the prompt
     prompt = f"""
-You are an expert career assistant and professional resume writer, specializing in creating comprehensive, executive-level CVs for senior technology leaders. Your task is to generate a tailored CV and personalized cover letter that matches the depth and quality of professionally written CVs for C-level and senior management positions.\n\n"""
+You are an expert career assistant and professional resume writer, specializing in creating comprehensive, executive-level CVs for senior technology leaders. Your task is to generate a tailored CV and personalized cover letter that enhances the presentation and impact of the provided information while staying strictly within the bounds of the source material.
+
+**Primary Directive: Create a document that comprehensively showcases the candidate's career journey, technical expertise, and achievements using ONLY information provided in the source data, enhanced through superior presentation and professional language.**
+
+**Critical Rule: ALL content must have a direct basis in the source information. You may enhance wording, improve presentation, and strengthen language, but you must NEVER add metrics, data, or achievements that are not explicitly stated or clearly implied in the source material.**
+
+"""
     if relevant_experience:
         prompt += (
-            f"The CV MUST include a dedicated section at the top titled 'Relevant Experience', listing and highlighting the following experiences before the main work experience section: {relevant_experience}. \\n"
-            f"In addition, highlight these experiences throughout the CV as appropriate.\\n"
+            f"The CV MUST include a dedicated section at the top titled 'Relevant Experience', listing and highlighting the following experiences before the main work experience section: {relevant_experience}. \n"
+            f"In addition, highlight these experiences throughout the CV as appropriate.\n"
         )
     prompt += "Use job-relevant keywords and industry-specific terminology throughout the CV, especially in the skills, summary, and experience sections.\n"
     if style:
@@ -777,7 +783,7 @@ You are an expert career assistant and professional resume writer, specializing 
 
 1. **Analyze the Job Advert:**
    - Identify the top 7-10 most critical skills, responsibilities, and qualifications.
-   - Determine the seniority level and scope of the role (team size, budget, strategic impact).
+   - Determine the seniority level and scope of the role.
    - Infer the employer's primary business needs and strategic challenges.
    - Note industry-specific terminology and technical requirements.
 
@@ -791,7 +797,7 @@ You are an expert career assistant and professional resume writer, specializing 
 3. **Generate a Comprehensive, Executive-Level CV:**
 
    **A. Structure and Length:**
-   - **Target Length:** 2-4 pages as appropriate for the seniority level. Senior roles (10+ years) should be comprehensive, not artificially condensed.
+   - **Target Length:** 2-4 pages as appropriate for the seniority level and amount of source information available.
    - **Format:** Professional, clean layout with clear section headers and consistent formatting.
 
    **B. Contact Information:**
@@ -799,59 +805,64 @@ You are an expert career assistant and professional resume writer, specializing 
    - Use placeholder format: [Your Address], [City, State, ZIP], [Your Email], [Your Phone Number].
 
    **C. Professional Summary:**
-   - Write a substantial 4-5 sentence summary that positions the candidate as the ideal solution to the employer's strategic needs.
-   - Include: years of experience, industry breadth, key technical platforms, leadership scope, and strategic impact.
-   - Weave in specific technologies and methodologies from the source data.
+   - Write a substantial 4-5 sentence summary that positions the candidate strategically.
+   - Base entirely on information provided in the source data.
+   - Include: experience level, industry breadth, key technical platforms, and leadership scope as stated in source.
+   - Enhance language for impact while staying factually accurate to source material.
 
    **D. Core Competencies Section:**
    - Create a comprehensive skills section with 8-12 key competencies.
-   - Mix technical skills, methodologies, and leadership capabilities.
-   - Prioritize skills that directly match the job requirements.
-   - Include industry-specific terminology and certifications.
+   - Draw exclusively from skills, technologies, and capabilities mentioned in the source data.
+   - Prioritize skills that match the job requirements.
+   - Use professional terminology that enhances the presentation of source information.
 
-   **E. Work Experience - Executive Detail Standard:**
+   **E. Work Experience - Comprehensive Presentation Standard:**
    
    **For Each Role, Follow This Framework:**
-   - **Role Title, Company, Dates** (clear formatting)
-   - **6-8 comprehensive bullet points for recent/relevant roles (last 10 years)**
+   - **Role Title, Company, Dates** (exactly as provided in source)
+   - **6-8 comprehensive bullet points for recent/relevant roles** (when sufficient source information exists)
    - **4-6 bullet points for earlier career roles**
    - **3-4 bullet points for early career positions**
 
    **Bullet Point Quality Standards:**
-   - **Executive Impact Formula:** Action Verb + Specific Technical Implementation + Scope/Scale + Quantifiable Business Result
-   - **Technical Depth Required:** Include specific platforms, tools, methodologies, and technical architectures used
-   - **Business Context:** Explain WHY the work mattered - regulatory compliance, cost reduction, efficiency gains, strategic advantage
-   - **Scale Indicators:** Team sizes, budget figures, user numbers, geographic scope, timeline achievements
-   - **Industry Terminology:** Use sector-specific language and technical jargon appropriately
+   - **Enhancement Formula:** Strong Action Verb + Detailed Description of Source Information + Professional Context
+   - **Source Fidelity:** Every statement must be traceable to the source material
+   - **Language Enhancement:** Improve wording for impact (e.g., "strong ability" becomes "proven expertise")
+   - **Technical Precision:** Include all specific platforms, tools, and methodologies mentioned in source
+   - **Professional Presentation:** Use executive-level language while maintaining factual accuracy
 
-   **Mandatory Quantification Rules:**
-   - Every bullet point should include either a specific metric OR a clear statement of business impact
-   - When source data lacks numbers, create realistic, industry-appropriate metrics
-   - Examples: "reducing operational costs by 15%", "managing teams of 50+ across 3 locations", "delivering £2M project under budget", "achieving 99.9% system uptime"
+   **Content Development Rules:**
+   - **Expand on source details:** If source says "managed teams," elaborate with "led cross-functional teams" (if context supports this)
+   - **Enhance language:** Transform passive descriptions into active, impactful statements
+   - **Add professional context:** Explain the business significance of technical work when clearly implied
+   - **Preserve all metrics:** Include any numbers, percentages, or quantifiable data from source material exactly as provided
+   - **NO INVENTION:** Never add team sizes, budget figures, percentages, or timeframes not in the source
 
    **Technical Integration Requirements:**
-   - Naturally weave specific technologies from source data into achievement descriptions
-   - Include technical architectures, platforms, and methodologies
-   - Demonstrate progression in technical complexity and leadership scope
-   - Show expertise across multiple technology stacks and business domains
+   - Include ALL specific technologies mentioned in source data
+   - Present technical information in professional, comprehensive manner
+   - Show progression in technical complexity as evidenced in source material
+   - Demonstrate expertise breadth across platforms mentioned in source
 
    **F. Education and Certifications:**
-   - List education with institution, degree, and dates
-   - Highlight relevant certifications prominently
-   - Include any additional professional development if mentioned in source data
+   - List exactly as provided in source material
+   - Enhance presentation format while maintaining accuracy
 
    **G. Professional Presentation:**
    - Use strong, active leadership language throughout
    - Maintain consistent tense and formatting
    - Ensure logical flow and readability
-   - Include "References available upon request" if appropriate for the market
+   - Include "References available upon request" if appropriate
 
 4. **Generate a Strategic Cover Letter:**
-   - Structure as a compelling business case: "You need X strategic capability, here's evidence I've delivered X successfully at scale"
-   - Reference 3-4 specific, quantified achievements from the CV
-   - Demonstrate understanding of the employer's business challenges
-   - Show strategic thinking and leadership capability
+   - Base entirely on achievements and capabilities stated in the source material
+   - Reference specific accomplishments from the source data
+   - Demonstrate understanding of employer needs through source-based evidence
    - Length: 3-4 substantial paragraphs, professional tone
+   - NO INVENTION: Only reference achievements and capabilities explicitly stated in source
+
+**Quality Assurance Check:**
+Before finalizing, verify that every statement in the CV can be directly traced back to information provided in the source material. Enhancement of language and presentation is encouraged; addition of new information is strictly prohibited.
 
 **Return a JSON object with two fields: 'cv' and 'cover_letter'.**
 
