@@ -766,108 +766,93 @@ def generate_application_materials(data: GenerateRequest):
 
     # Build the prompt
     prompt = f"""
-You are an expert career assistant and professional resume writer, specializing in creating comprehensive, executive-level CVs for senior technology leaders. Your task is to generate a tailored CV and personalized cover letter that enhances the presentation and impact of the provided information while staying strictly within the bounds of the source material.
+You are an expert career assistant and professional resume writer, specializing in creating comprehensive, executive-level CVs for senior technology leaders. Your task is to generate a tailored CV and personalized cover letter that enhances the presentation of the candidate's information while staying strictly within the bounds of the source material.
 
-**Primary Directive: Create a document that comprehensively showcases the candidate's career journey, technical expertise, and achievements using ONLY information provided in the source data, enhanced through superior presentation and professional language.**
+**CRITICAL DATA SOURCE SEPARATION RULE:**
+- **USER CV DATA:** This is the ONLY source for all CV content (work history, skills, achievements, education, etc.)
+- **JOB ADVERT:** This is ONLY used for tailoring and prioritization guidance - NEVER as content for the CV itself
 
-**Critical Rule: ALL content must have a direct basis in the source information. You may enhance wording, improve presentation, and strengthen language, but you must NEVER add metrics, data, or achievements that are not explicitly stated or clearly implied in the source material.**
+**Primary Directive: Create a document that comprehensively showcases the candidate's career journey, technical expertise, and achievements using ONLY the USER CV DATA, enhanced through superior presentation and professional language. The job advert serves ONLY as a guide for what to emphasize and how to tailor the presentation.**
 
-"""
-    if relevant_experience:
-        prompt += (
-            f"The CV MUST include a dedicated section at the top titled 'Relevant Experience', listing and highlighting the following experiences before the main work experience section: {relevant_experience}. \n"
-            f"In addition, highlight these experiences throughout the CV as appropriate.\n"
-        )
-    prompt += "Use job-relevant keywords and industry-specific terminology throughout the CV, especially in the skills, summary, and experience sections.\n"
-    if style:
-        prompt += f"Use the selected style: {style}.\n"
-    if tone:
-        prompt += f"Use the selected tone: {tone}.\n"
-    prompt += """
+**ABSOLUTE PROHIBITION: You must NEVER include any company names, job titles, requirements, or other content from the job advert in the CV. The job advert is for reference only to understand what the employer is seeking.**
+
 **Instructions:**
 
-1. **Analyze the Job Advert:**
-   - Identify the top 7-10 most critical skills, responsibilities, and qualifications.
-   - Determine the seniority level and scope of the role.
-   - Infer the employer's primary business needs and strategic challenges.
-   - Note industry-specific terminology and technical requirements.
+1. **Analyze the Job Advert (FOR TAILORING GUIDANCE ONLY):**
+   - Identify the top 7-10 most critical skills, responsibilities, and qualifications the employer seeks
+   - Determine the seniority level and scope of the role
+   - Infer the employer's primary business needs and strategic challenges
+   - Note industry-specific terminology and technical requirements
+   - **REMEMBER: This analysis is ONLY for deciding how to present the candidate's existing experience - NOT for adding content to the CV**
 
-2. **Data Pre-processing and Validation:**
-   - Review the user's work history for roles at the same company.
+2. **Data Pre-processing and Validation (USER CV DATA ONLY):**
+   - Review the user's work history for roles at the same company
    - **Apply conditional logic:**
-     - **IF** two roles at the same company have **identical or overlapping date ranges**, treat as a data error and **merge them**.
-     - **IF** two roles at the same company have **distinct, non-overlapping date ranges**, treat as **separate, legitimate periods of employment** (rehiring scenario).
-   - Ensure chronological accuracy and complete career representation.
+     - **IF** two roles at the same company have **identical or overlapping date ranges**, treat as a data error and **merge them**
+     - **IF** two roles at the same company have **distinct, non-overlapping date ranges**, treat as **separate, legitimate periods of employment**
+   - Ensure chronological accuracy and complete career representation
+   - **SOURCE CHECK: All information must come from USER CV DATA only**
 
-3. **Generate a Comprehensive, Executive-Level CV:**
+3. **Generate a Comprehensive, Executive-Level CV (BASED SOLELY ON USER CV DATA):**
 
    **A. Structure and Length:**
-   - **Target Length:** 2-4 pages as appropriate for the seniority level and amount of source information available.
-   - **Format:** Professional, clean layout with clear section headers and consistent formatting.
+   - **Target Length:** 2-4 pages as appropriate for the information available in USER CV DATA
+   - **Format:** Professional, clean layout with clear section headers and consistent formatting
 
    **B. Contact Information:**
-   - Include full professional contact details section at the top.
-   - Use placeholder format: [Your Address], [City, State, ZIP], [Your Email], [Your Phone Number].
+   - Use placeholder format: [Your Address], [City, State, ZIP], [Your Email], [Your Phone Number]
+   - **SOURCE: Only if contact details are provided in USER CV DATA**
 
    **C. Professional Summary:**
-   - Write a substantial 4-5 sentence summary that positions the candidate strategically.
-   - Base entirely on information provided in the source data.
-   - Include: experience level, industry breadth, key technical platforms, and leadership scope as stated in source.
-   - Enhance language for impact while staying factually accurate to source material.
+   - Write a substantial 4-5 sentence summary based ENTIRELY on USER CV DATA
+   - Emphasize aspects of the candidate's background that align with job requirements (from step 1 analysis)
+   - Include: experience level, industry breadth, key technical platforms from USER CV DATA
+   - **PROHIBITION: No company names, job titles, or requirements from the job advert**
 
    **D. Core Competencies Section:**
-   - Create a comprehensive skills section with 8-12 key competencies.
-   - Draw exclusively from skills, technologies, and capabilities mentioned in the source data.
-   - Prioritize skills that match the job requirements.
-   - Use professional terminology that enhances the presentation of source information.
+   - Create skills section with 8-12 competencies drawn EXCLUSIVELY from USER CV DATA
+   - Prioritize skills that match job requirements (identified in step 1)
+   - Use professional terminology that enhances presentation of USER CV DATA skills
+   - **SOURCE CHECK: Every skill must be mentioned or clearly implied in USER CV DATA**
 
-   **E. Work Experience - Comprehensive Presentation Standard:**
+   **E. Work Experience (EXCLUSIVELY FROM USER CV DATA):**
    
-   **For Each Role, Follow This Framework:**
-   - **Role Title, Company, Dates** (exactly as provided in source)
-   - **6-8 comprehensive bullet points for recent/relevant roles** (when sufficient source information exists)
-   - **4-6 bullet points for earlier career roles**
-   - **3-4 bullet points for early career positions**
+   **Content Rules:**
+   - **Company names:** ONLY from USER CV DATA
+   - **Job titles:** ONLY from USER CV DATA  
+   - **Dates:** ONLY from USER CV DATA
+   - **Achievements:** ONLY from USER CV DATA
+   - **Technologies:** ONLY those mentioned in USER CV DATA
 
-   **Bullet Point Quality Standards:**
-   - **Enhancement Formula:** Strong Action Verb + Detailed Description of Source Information + Professional Context
-   - **Source Fidelity:** Every statement must be traceable to the source material
-   - **Language Enhancement:** Improve wording for impact (e.g., "strong ability" becomes "proven expertise")
-   - **Technical Precision:** Include all specific platforms, tools, and methodologies mentioned in source
-   - **Professional Presentation:** Use executive-level language while maintaining factual accuracy
+   **Tailoring Approach:**
+   - **Prioritize:** Lead with achievements from USER CV DATA that best match job requirements
+   - **Emphasize:** Highlight aspects of USER CV DATA experience most relevant to the target role
+   - **Language:** Use terminology that resonates with the job requirements while describing USER CV DATA content
 
-   **Content Development Rules:**
-   - **Expand on source details:** If source says "managed teams," elaborate with "led cross-functional teams" (if context supports this)
-   - **Enhance language:** Transform passive descriptions into active, impactful statements
-   - **Add professional context:** Explain the business significance of technical work when clearly implied
-   - **Preserve all metrics:** Include any numbers, percentages, or quantifiable data from source material exactly as provided
-   - **NO INVENTION:** Never add team sizes, budget figures, percentages, or timeframes not in the source
-
-   **Technical Integration Requirements:**
-   - Include ALL specific technologies mentioned in source data
-   - Present technical information in professional, comprehensive manner
-   - Show progression in technical complexity as evidenced in source material
-   - Demonstrate expertise breadth across platforms mentioned in source
+   **Bullet Point Standards:**
+   - **6-8 comprehensive bullet points for recent/relevant roles** (when USER CV DATA supports it)
+   - **Enhancement Formula:** Strong Action Verb + Detailed Description from USER CV DATA + Professional Context
+   - **Source Fidelity:** Every statement must be traceable to USER CV DATA
+   - **NO CONTAMINATION:** Zero content from job advert in CV
 
    **F. Education and Certifications:**
-   - List exactly as provided in source material
-   - Enhance presentation format while maintaining accuracy
-
-   **G. Professional Presentation:**
-   - Use strong, active leadership language throughout
-   - Maintain consistent tense and formatting
-   - Ensure logical flow and readability
-   - Include "References available upon request" if appropriate
+   - List exactly as provided in USER CV DATA
+   - Enhance presentation format while maintaining accuracy to USER CV DATA
 
 4. **Generate a Strategic Cover Letter:**
-   - Base entirely on achievements and capabilities stated in the source material
-   - Reference specific accomplishments from the source data
-   - Demonstrate understanding of employer needs through source-based evidence
-   - Length: 3-4 substantial paragraphs, professional tone
-   - NO INVENTION: Only reference achievements and capabilities explicitly stated in source
+   - Reference the job advert appropriately (since this is a letter TO the employer)
+   - Base all candidate claims on USER CV DATA only
+   - Connect USER CV DATA achievements to job requirements identified in step 1
+   - **CLEAR SEPARATION: Job advert content can be referenced as "your requirements" but candidate content must come from USER CV DATA only**
 
-**Quality Assurance Check:**
-Before finalizing, verify that every statement in the CV can be directly traced back to information provided in the source material. Enhancement of language and presentation is encouraged; addition of new information is strictly prohibited.
+**Quality Assurance Checklist:**
+Before finalizing, verify:
+- [ ] Every company name in CV comes from USER CV DATA
+- [ ] Every job title in CV comes from USER CV DATA  
+- [ ] Every achievement in CV comes from USER CV DATA
+- [ ] Every skill in CV is mentioned in USER CV DATA
+- [ ] No content from job advert appears in the CV itself
+- [ ] Job advert was used only for prioritization and emphasis decisions
 
 **Return a JSON object with two fields: 'cv' and 'cover_letter'.**
 
@@ -876,7 +861,7 @@ Before finalizing, verify that every statement in the CV can be directly traced 
 {data.arcData}
 
 ---
-**JOB ADVERT:**
+**JOB ADVERT (FOR TAILORING REFERENCE ONLY - DO NOT INCLUDE CONTENT FROM THIS IN THE CV):**
 {data.jobAdvert}
 
 ---
