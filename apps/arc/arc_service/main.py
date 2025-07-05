@@ -910,4 +910,12 @@ async def get_task_status(taskId: UUID = Path(...), user_id: str = Depends(get_c
 
 @app.get("/health", include_in_schema=False)
 async def health():
-    return {"status": "ok"} 
+    return {"status": "ok"}
+
+@app.get("/version")
+def version():
+    return {
+        "version": "1.0.0",
+        "git_commit": os.getenv("GIT_COMMIT", "unknown"),
+        "deployed_at": os.getenv("DEPLOYED_AT", "unknown")
+    } 
