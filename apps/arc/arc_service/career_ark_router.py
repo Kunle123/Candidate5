@@ -943,6 +943,74 @@ def generate_application_materials(data: GenerateRequest):
         logger.error(f"[ERROR] OpenAI generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"OpenAI generation failed: {e}")
 
+@router.post("/generate-assistant")
+def generate_application_materials_assistant(data: GenerateRequest):
+    logger = logging.getLogger("arc")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = OpenAI(api_key=openai_api_key)
+
+    assistant_id = "asst_vzJYNrSJrJb78reL4LeqRKEs"
+    logger.info(f"[DEBUG] Using OpenAI Assistant ID: {assistant_id}")
+
+    # Prepare the message for the assistant
+    import json
+    user_message = {
+        "jobAdvert": data.jobAdvert,
+        "arcData": data.arcData,
+        "cvOptions": data.cvOptions or {}
+    }
+    logger.info("[DEBUG] Payload sent to Assistant: " + json.dumps(user_message, indent=2))
+
+    # 1. Create a thread
+    thread = client.beta.threads.create()
+    thread_id = thread.id
+    logger.info(f"[DEBUG] Created thread with ID: {thread_id}")
+
+    # 2. Add a message to the thread
+    client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content=json.dumps(user_message)
+    )
+
+    # 3. Run the assistant
+    run = client.beta.threads.runs.create(
+        thread_id=thread_id,
+        assistant_id=assistant_id
+    )
+
+    # 4. Poll for completion
+    import time
+    for _ in range(60):  # Wait up to 60 seconds
+        run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+        if run_status.status == "completed":
+            break
+        elif run_status.status in ("failed", "cancelled", "expired"):
+            logger.error(f"[ERROR] Assistant run failed: {run_status.status}")
+            raise HTTPException(status_code=500, detail=f"Assistant run failed: {run_status.status}")
+        time.sleep(1)
+    else:
+        logger.error("[ERROR] Assistant run timed out")
+        raise HTTPException(status_code=504, detail="Assistant run timed out")
+
+    # 5. Get the response message
+    messages = client.beta.threads.messages.list(thread_id=thread_id)
+    # Get the latest message from the assistant
+    for msg in reversed(messages.data):
+        if msg.role == "assistant":
+            try:
+                content = msg.content[0].text.value
+                logger.info(f"[DEBUG] Assistant response: {content[:500]}...")
+                return json.loads(content)
+            except Exception as e:
+                logger.error(f"[ERROR] Failed to parse assistant response: {e}")
+                raise HTTPException(status_code=500, detail="Failed to parse assistant response")
+    logger.error("[ERROR] No assistant response found")
+    raise HTTPException(status_code=500, detail="No assistant response found")
+
 @router.get("/cv/tasks")
 async def list_cv_tasks(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     db_tasks = db.query(CVTask).filter(CVTask.user_id == user_id).all()
