@@ -1102,4 +1102,12 @@ async def get_arcdata(taskId: UUID = Path(...), user_id: str = Depends(get_curre
         raise
     except Exception as e:
         logger.error(f"Unexpected error in get_arcdata: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error") 
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.get("/version")
+def version():
+    return {
+        "version": "1.0.0",
+        "git_commit": os.getenv("GIT_COMMIT", "unknown"),
+        "deployed_at": os.getenv("DEPLOYED_AT", "unknown")
+    } 
