@@ -172,4 +172,29 @@ All section endpoints follow this pattern:
 
 ---
 
+## Deployment Checklist & Troubleshooting for New Endpoints
+
+If you add a new endpoint (e.g., `/generate-assistant`) and it is not recognized in production (404 Not Found), follow this checklist:
+
+### Deployment Checklist
+- [ ] Confirm the endpoint is defined in the correct router (e.g., `@router.post("/new-endpoint")`).
+- [ ] Confirm the router is included in the FastAPI app (e.g., `app.include_router(...)`).
+- [ ] Push all changes to the correct branch (usually `main`).
+- [ ] Trigger a redeploy (push a dummy change if needed).
+- [ ] Add or check a `/version` endpoint to confirm the deployed code is the latest.
+- [ ] Test the new endpoint after deployment.
+- [ ] Update this documentation to include the new endpoint.
+
+### Troubleshooting
+- If you get `{"detail":"Not Found"}` for a new endpoint:
+  - Check the `/version` endpoint to confirm the deployed code is up to date.
+  - Review backend logs for startup and route registration.
+  - Ensure the API gateway is forwarding requests to the correct backend service.
+  - If using CI/CD, check that the pipeline completed successfully and deployed the latest code.
+  - If the problem persists, try restarting the backend service manually.
+
+---
+
+For persistent issues, contact the backend team or check the deployment logs for errors.
+
 For detailed schemas and additional options, refer to the backend OpenAPI docs or contact the backend team. 
