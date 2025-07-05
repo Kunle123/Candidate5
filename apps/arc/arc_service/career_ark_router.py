@@ -18,6 +18,7 @@ from .cv_utils import extract_text_from_docx, extract_text_from_pdf, split_cv_by
 from .ai_utils import parse_cv_with_ai_chunk
 from .schemas import ProfileCreate, ProfileUpdate, ProfileOut, WorkExperienceCreate, WorkExperienceUpdate, WorkExperienceOut, EducationCreate, EducationUpdate, EducationOut, SkillCreate, SkillOut, ProjectCreate, ProjectUpdate, ProjectOut, CertificationCreate, CertificationUpdate, CertificationOut, TrainingCreate, TrainingUpdate, Role
 from openai import OpenAI
+from fastapi.routing import APIRoute
 
 router = APIRouter()
 
@@ -1110,4 +1111,8 @@ def version():
         "version": "1.0.0",
         "git_commit": os.getenv("GIT_COMMIT", "unknown"),
         "deployed_at": os.getenv("DEPLOYED_AT", "unknown")
-    } 
+    }
+
+@router.get("/debug/routes")
+def list_routes():
+    return [route.path for route in router.routes if isinstance(route, APIRoute)] 
