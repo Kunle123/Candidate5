@@ -20,6 +20,9 @@ from .schemas import ProfileCreate, ProfileUpdate, ProfileOut, WorkExperienceCre
 from openai import OpenAI
 from fastapi.routing import APIRoute
 
+# --- Add OpenAI Assistants API imports ---
+import openai
+
 router = APIRouter()
 
 # --- OpenAI config (if not already present) ---
@@ -61,11 +64,12 @@ class UpdateCVResponse(BaseModel):
 
 class AssistantActionRequest(BaseModel):
     action: str
-    profile: Dict[str, Any]
-    job_description: str
+    profile: Optional[Dict[str, Any]] = None
+    job_description: Optional[str] = None
     keywords: Optional[List[str]] = None
     additional_keypoints: Optional[List[str]] = None
     previous_cv: Optional[str] = None
+    thread_id: Optional[str] = None
 
 # --- Profile Endpoints ---
 @router.post("/profiles", response_model=ProfileOut)
@@ -998,125 +1002,99 @@ async def generate_assistant_action(data: AssistantActionRequest):
     keywords = data.keywords
     additional_keypoints = data.additional_keypoints
     previous_cv = data.previous_cv
+    thread_id = data.thread_id
 
-    if not action or not profile or not job_description:
-        return {"error": "Missing required fields: action, profile, job_description"}
+    # --- OpenAI Assistants API setup ---
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = openai.OpenAI(api_key=openai_api_key)
 
+    # --- Use a single assistant for all actions (create if not exists) ---
+    ASSISTANT_NAME = "Career Ark Assistant"
+    ASSISTANT_INSTRUCTIONS = "You are a career assistant for CV and cover letter generation, keyword extraction, and CV updating. Always return valid JSON as specified."
+    ASSISTANT_TOOLS = []
+    assistant_id = os.getenv("OPENAI_ASSISTANT_ID")
+    if not assistant_id:
+        assistant = client.beta.assistants.create(
+            name=ASSISTANT_NAME,
+            instructions=ASSISTANT_INSTRUCTIONS,
+            tools=ASSISTANT_TOOLS,
+            model="gpt-4o-2024-08-06"
+        )
+        assistant_id = assistant.id
+
+    # --- Thread management ---
+    if thread_id:
+        thread = client.beta.threads.retrieve(thread_id)
+    else:
+        # On first call, require profile and job_description
+        if not profile or not job_description:
+            raise HTTPException(status_code=400, detail="'profile' and 'job_description' are required on the first call (when no thread_id is provided). Subsequent calls can omit them.")
+        thread = client.beta.threads.create()
+        thread_id = thread.id
+
+    # --- Compose the user message for the thread ---
     if action == "extract_keywords":
-        N = 20
-        system_prompt = '''
-You are an expert ATS (Applicant Tracking System) keyword extraction specialist. Your task is to analyze the provided job description and extract EXACTLY 20 of the most critical keywords and phrases that recruiters and ATS systems prioritize when filtering and ranking resumes.
-
-CRITICAL REQUIREMENT: You MUST return exactly 20 keywords - no more, no less.
-
-EXTRACTION CRITERIA:
-Select the top 20 keywords prioritizing them in this order:
-
-1. HARD SKILLS & TECHNICAL REQUIREMENTS (Highest Priority)
-   - Programming languages, software, tools, platforms
-   - Technical certifications and credentials
-   - Industry-specific technologies and methodologies
-   - Measurable technical competencies
-2. QUALIFICATIONS & EXPERIENCE REQUIREMENTS (High Priority)
-   - Education requirements (degree types, fields of study)
-   - Years of experience (specific numbers: "3+ years", "5-7 years")
-   - Professional certifications and licenses
-   - Industry experience requirements
-3. JOB TITLES & ROLE-SPECIFIC TERMS (Medium-High Priority)
-   - Exact job titles mentioned
-   - Related role titles and seniority levels
-   - Department or function names
-   - Industry-specific role terminology
-4. SOFT SKILLS & COMPETENCIES (Medium Priority - only if space allows)
-   - Communication, leadership, teamwork abilities
-   - Problem-solving and analytical thinking
-   - Project management and organizational skills
-   - Only include if explicitly mentioned as requirements
-
-PRIORITIZATION RULES:
-- Prioritize keywords that appear multiple times in the job description
-- Give higher weight to terms in "Requirements" or "Qualifications" sections
-- Include both exact phrases and individual component words when relevant
-- Focus on "must-have" requirements over "nice-to-have" preferences
-- If multiple similar terms exist, choose the most commonly used industry standard
-
-KEYWORD FORMAT GUIDELINES:
-- Include both acronyms and full terms when both appear (e.g., "SQL", "Structured Query Language")
-- Preserve exact capitalization and formatting as written
-- Include compound phrases as single keywords when they represent unified concepts
-- Maintain industry-standard terminology and spelling
-
-COUNT ENFORCEMENT:
-- Count your keywords before finalizing
-- If you have more than 20, remove the least critical ones
-- If you have fewer than 20, add the next most important keywords from the job description
-- Double-check that your final array contains exactly 20 elements
-
-OUTPUT FORMAT:
-Return ONLY a valid JSON object in the following format (no extra text, no explanations):
-{"keywords": ["keyword1", "keyword2", ..., "keyword20"], "match_percentage": 87}
-
-MATCH PERCENTAGE:
-After extracting the keywords, compare them to the user's profile.
-- Calculate a percentage match (0-100) based on how many of the 20 keywords are present in the user's profile (case-insensitive, partial matches allowed).
-- Return this as "match_percentage" in the output JSON.
-'''
-        prompt = system_prompt + f"\n\nJOB DESCRIPTION:\n{job_description}\n\nUSER PROFILE:\n{profile}"
-        completion = client.chat.completions.create(
-            model="gpt-4o-2024-08-06",
-            messages=[{"role": "system", "content": prompt}],
-            temperature=0.2,
-            max_tokens=1000,
-            response_format={"type": "json_object"}
-        )
-        raw_response = completion.choices[0].message.content
-        logger.info(f"[DEBUG] OpenAI response for /generate-assistant extract_keywords: {raw_response[:500]}...")
-        result = json.loads(raw_response)
-        return result
-
+        user_message = f"""
+ACTION: extract_keywords\n\nPROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\nJOB DESCRIPTION:\n{job_description if job_description else ''}\n\nReturn ONLY a valid JSON object in the format: {{\n  \"keywords\": [\"keyword1\", ...], \"match_percentage\": 87\n}}\n"""
     elif action == "generate_cv":
-        system_prompt = """
-[...PASTE FULL SYSTEM INSTRUCTIONS PROMPT HERE...]
-USER CV DATA (JSON):\n{profile}\n\nJOB ADVERT (FOR STRATEGIC TAILORING REFERENCE ONLY - DO NOT INCLUDE CONTENT FROM THIS IN THE CV):\n{job_description}\n\nRESPONSE FORMAT:\n{{\n  \"cv\": \"...\",\n  \"cover_letter\": \"...\"\n}}\n"""
-        prompt = system_prompt.format(profile=profile, job_description=job_description)
+        user_message = f"""
+ACTION: generate_cv\n\nPROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\nJOB DESCRIPTION:\n{job_description if job_description else ''}\n"
         if keywords:
-            prompt += f"\nKEYWORDS TO EMPHASIZE: {', '.join(keywords)}\n"
-        completion = client.chat.completions.create(
-            model="gpt-4o-2024-08-06",
-            messages=[{"role": "system", "content": prompt}],
-            temperature=0.3,
-            max_tokens=3000,
-            response_format={"type": "json_object"}
-        )
-        raw_response = completion.choices[0].message.content
-        logger.info(f"[DEBUG] OpenAI response for /generate-assistant generate_cv: {raw_response[:500]}...")
-        result = json.loads(raw_response)
-        return result
-
+            user_message += f"\nKEYWORDS TO EMPHASIZE: {', '.join(keywords)}"
+        user_message += "\nReturn ONLY a valid JSON object in the format: {\n  \"cv\": \"...\", \"cover_letter\": \"...\"\n}"
     elif action == "update_cv":
-        system_prompt = """
-[...PASTE FULL SYSTEM INSTRUCTIONS PROMPT HERE...]
-USER CV DATA (JSON):\n{profile}\n\nJOB ADVERT (FOR STRATEGIC TAILORING REFERENCE ONLY - DO NOT INCLUDE CONTENT FROM THIS IN THE CV):\n{job_description}\n\nPREVIOUS CV:\n{previous_cv}\n\nADDITIONAL KEY POINTS TO INTEGRATE:\n{additional_keypoints}\n\nRESPONSE FORMAT:\n{{\n  \"cv\": \"...updated...\",\n  \"cover_letter\": \"...\"\n}}\n"""
-        prompt = system_prompt.format(
-            profile=profile,
-            job_description=job_description,
-            previous_cv=previous_cv,
-            additional_keypoints="\n".join(additional_keypoints or [])
-        )
-        completion = client.chat.completions.create(
-            model="gpt-4o-2024-08-06",
-            messages=[{"role": "system", "content": prompt}],
-            temperature=0.3,
-            max_tokens=3000,
-            response_format={"type": "json_object"}
-        )
-        raw_response = completion.choices[0].message.content
-        logger.info(f"[DEBUG] OpenAI response for /generate-assistant update_cv: {raw_response[:500]}...")
-        result = json.loads(raw_response)
-        return result
-
+        user_message = f"""
+ACTION: update_cv\n\nPROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\nJOB DESCRIPTION:\n{job_description if job_description else ''}\n\nPREVIOUS CV:\n{previous_cv}\n"
+        if additional_keypoints:
+            user_message += f"\nADDITIONAL KEY POINTS TO INTEGRATE:\n{json.dumps(additional_keypoints, indent=2)}"
+        user_message += "\nReturn ONLY a valid JSON object in the format: {\n  \"cv\": \"...updated...\", \"cover_letter\": \"...\"\n}"
     else:
         return {"error": "Unrecognized action. Must be one of: extract_keywords, generate_cv, update_cv"}
+
+    # --- Add the message to the thread ---
+    client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content=user_message
+    )
+
+    # --- Run the assistant on the thread ---
+    run = client.beta.threads.runs.create(
+        thread_id=thread_id,
+        assistant_id=assistant_id,
+        instructions=None
+    )
+
+    # --- Wait for the run to complete (polling) ---
+    import time
+    while True:
+        run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+        if run_status.status in ["completed", "failed", "cancelled"]:
+            break
+        time.sleep(1)
+
+    if run_status.status != "completed":
+        logger.error(f"OpenAI Assistant run failed: {run_status.status}")
+        raise HTTPException(status_code=500, detail=f"OpenAI Assistant run failed: {run_status.status}")
+
+    # --- Get the latest assistant message ---
+    messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
+    if not messages.data:
+        logger.error("No assistant message returned.")
+        raise HTTPException(status_code=500, detail="No assistant message returned.")
+    content = messages.data[0].content[0].text.value
+    try:
+        result = json.loads(content)
+    except Exception as e:
+        logger.error(f"Failed to parse assistant response as JSON: {e}\nRaw content: {content}")
+        raise HTTPException(status_code=500, detail="Failed to parse assistant response as JSON.")
+
+    # --- Always return the thread_id in the response ---
+    result["thread_id"] = thread_id
+    return result
 
 @router.get("/cv/tasks")
 async def list_cv_tasks(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
