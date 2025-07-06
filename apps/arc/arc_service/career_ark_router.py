@@ -1290,7 +1290,7 @@ After extracting the keywords, compare them to the user's profile.
 - Return this as `"match_percentage"` in the output JSON.
 """.replace("{N}", str(N))
         prompt = system_prompt + f"\n\nJOB DESCRIPTION:\n{request.job_description}\n\nUSER PROFILE:\n{request.profile}"
-        completion = await client.chat.completions.create(
+        completion = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[{"role": "system", "content": prompt}],
             temperature=0.2,
@@ -1323,7 +1323,7 @@ USER CV DATA (JSON):\n{profile}\n\nJOB ADVERT (FOR STRATEGIC TAILORING REFERENCE
         prompt = system_prompt.format(profile=request.profile, job_description=request.job_description)
         if request.keywords:
             prompt += f"\nKEYWORDS TO EMPHASIZE: {', '.join(request.keywords)}\n"
-        completion = await client.chat.completions.create(
+        completion = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[{"role": "system", "content": prompt}],
             temperature=0.3,
@@ -1353,7 +1353,7 @@ USER CV DATA (JSON):\n{profile}\n\nJOB ADVERT (FOR STRATEGIC TAILORING REFERENCE
             previous_cv=request.previous_cv,
             additional_keypoints="\n".join(request.additional_keypoints)
         )
-        completion = await client.chat.completions.create(
+        completion = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[{"role": "system", "content": prompt}],
             temperature=0.3,
