@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from .models import CVProfile, WorkExperience, Education, Skill, Project, Certification, Training, UserArcData, CVTask
 from .db import get_db
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from .auth import get_current_user
 import logging
@@ -58,6 +58,14 @@ class UpdateCVRequest(BaseModel):
 class UpdateCVResponse(BaseModel):
     cv: str
     cover_letter: str
+
+class AssistantActionRequest(BaseModel):
+    action: str
+    profile: Dict[str, Any]
+    job_description: str
+    keywords: Optional[List[str]] = None
+    additional_keypoints: Optional[List[str]] = None
+    previous_cv: Optional[str] = None
 
 # --- Profile Endpoints ---
 @router.post("/profiles", response_model=ProfileOut)
@@ -981,30 +989,20 @@ def generate_application_materials(data: GenerateRequest):
         raise HTTPException(status_code=500, detail=f"OpenAI generation failed: {e}")
 
 @router.post("/generate-assistant")
-def generate_assistant_action(request: Request):
+async def generate_assistant_action(data: AssistantActionRequest):
     import json
     logger = logging.getLogger("arc")
-    try:
-        data = request.json() if hasattr(request, 'json') else None
-        if data is None:
-            data = json.loads(request.body().decode())
-    except Exception:
-        data = request._json if hasattr(request, '_json') else None
-        if data is None:
-            data = {}
-    # Accepts: { action, profile, job_description, keywords?, additional_keypoints?, previous_cv? }
-    action = data.get("action")
-    profile = data.get("profile")
-    job_description = data.get("job_description")
-    keywords = data.get("keywords")
-    additional_keypoints = data.get("additional_keypoints")
-    previous_cv = data.get("previous_cv")
+    action = data.action
+    profile = data.profile
+    job_description = data.job_description
+    keywords = data.keywords
+    additional_keypoints = data.additional_keypoints
+    previous_cv = data.previous_cv
 
     if not action or not profile or not job_description:
         return {"error": "Missing required fields: action, profile, job_description"}
 
     if action == "extract_keywords":
-        # Use the same logic as the /keywords endpoint
         N = 20
         system_prompt = '''
 You are an expert ATS (Applicant Tracking System) keyword extraction specialist. Your task is to analyze the provided job description and extract EXACTLY 20 of the most critical keywords and phrases that recruiters and ATS systems prioritize when filtering and ranking resumes.
