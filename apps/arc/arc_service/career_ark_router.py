@@ -1228,85 +1228,83 @@ async def extract_keywords(request: KeywordsRequest):
         raise HTTPException(status_code=503, detail="OpenAI client not configured.")
     try:
         N = 20
-        system_prompt = """
-You are an expert ATS (Applicant Tracking System) keyword extraction specialist. Your task is to analyze the following job description and extract EXACTLY {N} of the most critical keywords and phrases that recruiters and ATS systems prioritize when filtering and ranking resumes.
+        system_prompt = '''
+You are an expert ATS (Applicant Tracking System) keyword extraction specialist. Your task is to analyze the provided job description and extract EXACTLY 20 of the most critical keywords and phrases that recruiters and ATS systems prioritize when filtering and ranking resumes.
 
-**CRITICAL REQUIREMENT: You MUST return exactly {N} keywords - no more, no less.**
+CRITICAL REQUIREMENT: You MUST return exactly 20 keywords - no more, no less.
 
-**EXTRACTION CRITERIA:**
-Select the top {N} keywords prioritizing them in this order:
+EXTRACTION CRITERIA:
+Select the top 20 keywords prioritizing them in this order:
 
-1. **HARD SKILLS & TECHNICAL REQUIREMENTS** (Highest Priority)
+1. HARD SKILLS & TECHNICAL REQUIREMENTS (Highest Priority)
    - Programming languages, software, tools, platforms
-   - Technical certifications and credentials  
+   - Technical certifications and credentials
    - Industry-specific technologies and methodologies
    - Measurable technical competencies
-
-2. **QUALIFICATIONS & EXPERIENCE REQUIREMENTS** (High Priority)
+2. QUALIFICATIONS & EXPERIENCE REQUIREMENTS (High Priority)
    - Education requirements (degree types, fields of study)
    - Years of experience (specific numbers: "3+ years", "5-7 years")
    - Professional certifications and licenses
    - Industry experience requirements
-
-3. **JOB TITLES & ROLE-SPECIFIC TERMS** (Medium-High Priority)
+3. JOB TITLES & ROLE-SPECIFIC TERMS (Medium-High Priority)
    - Exact job titles mentioned
    - Related role titles and seniority levels
    - Department or function names
    - Industry-specific role terminology
-
-4. **SOFT SKILLS & COMPETENCIES** (Medium Priority - only if space allows)
+4. SOFT SKILLS & COMPETENCIES (Medium Priority - only if space allows)
    - Communication, leadership, teamwork abilities
    - Problem-solving and analytical thinking
    - Project management and organizational skills
    - Only include if explicitly mentioned as requirements
 
-**PRIORITIZATION RULES:**
+PRIORITIZATION RULES:
 - Prioritize keywords that appear multiple times in the job description
 - Give higher weight to terms in "Requirements" or "Qualifications" sections
 - Include both exact phrases and individual component words when relevant
 - Focus on "must-have" requirements over "nice-to-have" preferences
 - If multiple similar terms exist, choose the most commonly used industry standard
 
-**KEYWORD FORMAT GUIDELINES:**
+KEYWORD FORMAT GUIDELINES:
 - Include both acronyms and full terms when both appear (e.g., "SQL", "Structured Query Language")
 - Preserve exact capitalization and formatting as written
 - Include compound phrases as single keywords when they represent unified concepts
 - Maintain industry-standard terminology and spelling
 
-**COUNT ENFORCEMENT:**
+COUNT ENFORCEMENT:
 - Count your keywords before finalizing
-- If you have more than {N}, remove the least critical ones
-- If you have fewer than {N}, add the next most important keywords from the job description
-- Double-check that your final array contains exactly {N} elements
+- If you have more than 20, remove the least critical ones
+- If you have fewer than 20, add the next most important keywords from the job description
+- Double-check that your final array contains exactly 20 elements
 
-**OUTPUT FORMAT:**
-Return ONLY a JSON array containing exactly {N} strings, ordered by priority (most critical first).  
-Example format for 20 keywords: ["keyword1", "keyword2", "keyword3", "keyword4", ...]  
-No additional text, explanations, or formatting outside the JSON array.
+OUTPUT FORMAT:
+Return ONLY a valid JSON object in the following format (no extra text, no explanations):
+{"keywords": ["keyword1", "keyword2", ..., "keyword20"], "match_percentage": 87}
 
-**MATCH PERCENTAGE:**
-After extracting the keywords, compare them to the user's profile.  
+MATCH PERCENTAGE:
+After extracting the keywords, compare them to the user's profile.
 - Calculate a percentage match (0-100) based on how many of the 20 keywords are present in the user's profile (case-insensitive, partial matches allowed).
-- Return this as `"match_percentage"` in the output JSON.
-""".replace("{N}", str(N))
+- Return this as "match_percentage" in the output JSON.
+'''
         prompt = system_prompt + f"\n\nJOB DESCRIPTION:\n{request.job_description}\n\nUSER PROFILE:\n{request.profile}"
-        completion = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[{"role": "system", "content": prompt}],
-            temperature=0.2,
-            max_tokens=1000
-        )
-        import json as pyjson
+        logger.info(f"[DEBUG] OpenAI prompt for /keywords:\n{prompt}")
         try:
-            result = pyjson.loads(completion.choices[0].message.content)
-            keywords = result if isinstance(result, list) else result.get("keywords", [])
-        except Exception:
-            raise HTTPException(status_code=500, detail="AI response was not valid JSON.")
-        # Calculate match percentage
-        profile_text = str(request.profile).lower()
-        match_count = sum(1 for kw in keywords if kw.lower() in profile_text)
-        match_percentage = int((match_count / N) * 100)
-        return KeywordsResponse(keywords=keywords, match_percentage=match_percentage)
+            completion = client.chat.completions.create(
+                model="gpt-4o-2024-08-06",
+                messages=[{"role": "system", "content": prompt}],
+                temperature=0.2,
+                max_tokens=1000,
+                response_format={"type": "json_object"}
+            )
+            raw_response = completion.choices[0].message.content
+            logger.info(f"[DEBUG] OpenAI response for /keywords: {raw_response[:500]}...")
+            import json as pyjson
+            result = pyjson.loads(raw_response)
+            keywords = result.get("keywords", [])
+            match_percentage = result.get("match_percentage", 0)
+            return KeywordsResponse(keywords=keywords, match_percentage=match_percentage)
+        except Exception as e:
+            logger.error(f"[ERROR] OpenAI /keywords failed: {e}")
+            raise HTTPException(status_code=500, detail=f"OpenAI /keywords failed: {e}")
     except Exception as e:
         logger.error(f"Error extracting keywords: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error extracting keywords: {str(e)}")
@@ -1323,18 +1321,23 @@ USER CV DATA (JSON):\n{profile}\n\nJOB ADVERT (FOR STRATEGIC TAILORING REFERENCE
         prompt = system_prompt.format(profile=request.profile, job_description=request.job_description)
         if request.keywords:
             prompt += f"\nKEYWORDS TO EMPHASIZE: {', '.join(request.keywords)}\n"
-        completion = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[{"role": "system", "content": prompt}],
-            temperature=0.3,
-            max_tokens=3000
-        )
-        import json as pyjson
+        logger.info(f"[DEBUG] OpenAI prompt for /generate-cv:\n{prompt}")
         try:
-            result = pyjson.loads(completion.choices[0].message.content)
-        except Exception:
-            raise HTTPException(status_code=500, detail="AI response was not valid JSON.")
-        return GenerateCVResponse(**result)
+            completion = client.chat.completions.create(
+                model="gpt-4o-2024-08-06",
+                messages=[{"role": "system", "content": prompt}],
+                temperature=0.3,
+                max_tokens=3000,
+                response_format={"type": "json_object"}
+            )
+            raw_response = completion.choices[0].message.content
+            logger.info(f"[DEBUG] OpenAI response for /generate-cv: {raw_response[:500]}...")
+            import json as pyjson
+            result = pyjson.loads(raw_response)
+            return GenerateCVResponse(**result)
+        except Exception as e:
+            logger.error(f"[ERROR] OpenAI /generate-cv failed: {e}")
+            raise HTTPException(status_code=500, detail=f"OpenAI /generate-cv failed: {e}")
     except Exception as e:
         logger.error(f"Error generating CV: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generating CV: {str(e)}")
@@ -1353,18 +1356,23 @@ USER CV DATA (JSON):\n{profile}\n\nJOB ADVERT (FOR STRATEGIC TAILORING REFERENCE
             previous_cv=request.previous_cv,
             additional_keypoints="\n".join(request.additional_keypoints)
         )
-        completion = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[{"role": "system", "content": prompt}],
-            temperature=0.3,
-            max_tokens=3000
-        )
-        import json as pyjson
+        logger.info(f"[DEBUG] OpenAI prompt for /update-cv:\n{prompt}")
         try:
-            result = pyjson.loads(completion.choices[0].message.content)
-        except Exception:
-            raise HTTPException(status_code=500, detail="AI response was not valid JSON.")
-        return UpdateCVResponse(**result)
+            completion = client.chat.completions.create(
+                model="gpt-4o-2024-08-06",
+                messages=[{"role": "system", "content": prompt}],
+                temperature=0.3,
+                max_tokens=3000,
+                response_format={"type": "json_object"}
+            )
+            raw_response = completion.choices[0].message.content
+            logger.info(f"[DEBUG] OpenAI response for /update-cv: {raw_response[:500]}...")
+            import json as pyjson
+            result = pyjson.loads(raw_response)
+            return UpdateCVResponse(**result)
+        except Exception as e:
+            logger.error(f"[ERROR] OpenAI /update-cv failed: {e}")
+            raise HTTPException(status_code=500, detail=f"OpenAI /update-cv failed: {e}")
     except Exception as e:
         logger.error(f"Error updating CV: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error updating CV: {str(e)}") 
