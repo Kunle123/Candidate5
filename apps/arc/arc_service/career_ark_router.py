@@ -1034,6 +1034,7 @@ async def generate_assistant_action(data: AssistantActionRequest):
             raise HTTPException(status_code=400, detail="'profile' and 'job_description' are required on the first call (when no thread_id is provided). Subsequent calls can omit them.")
         thread = client.beta.threads.create()
         thread_id = thread.id
+        logger.info(f"[DEBUG] Created new OpenAI thread with thread_id: {thread_id}")
 
     # --- Compose the user message for the thread ---
     if action == "extract_keywords":
