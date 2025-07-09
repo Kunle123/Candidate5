@@ -1038,17 +1038,28 @@ async def generate_assistant_action(data: AssistantActionRequest):
 
     # --- Compose the user message for the thread ---
     if action == "extract_keywords":
-        user_message = f"""
-ACTION: extract_keywords\n\nPROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\nJOB DESCRIPTION:\n{job_description if job_description else ''}\n\nReturn ONLY a valid JSON object in the format: {{\n  \"keywords\": [\"keyword1\", ...], \"match_percentage\": 87\n}}\n"""
+        user_message = (
+            "ACTION: extract_keywords\n\n"
+            f"PROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\n"
+            f"JOB DESCRIPTION:\n{job_description if job_description else ''}\n\n"
+            "Return ONLY a valid JSON object in the format: {\"keywords\": [\"keyword1\", ...], \"match_percentage\": 87}\n"
+        )
     elif action == "generate_cv":
-        user_message = f"""
-ACTION: generate_cv\n\nPROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\nJOB DESCRIPTION:\n{job_description if job_description else ''}\n"
+        user_message = (
+            "ACTION: generate_cv\n\n"
+            f"PROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\n"
+            f"JOB DESCRIPTION:\n{job_description if job_description else ''}\n"
+        )
         if keywords:
             user_message += f"\nKEYWORDS TO EMPHASIZE: {', '.join(keywords)}"
         user_message += "\nReturn ONLY a valid JSON object in the format: {\n  \"cv\": \"...\", \"cover_letter\": \"...\"\n}"
     elif action == "update_cv":
-        user_message = f"""
-ACTION: update_cv\n\nPROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\nJOB DESCRIPTION:\n{job_description if job_description else ''}\n\nPREVIOUS CV:\n{previous_cv}\n"
+        user_message = (
+            "ACTION: update_cv\n\n"
+            f"PROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\n"
+            f"JOB DESCRIPTION:\n{job_description if job_description else ''}\n\n"
+            f"PREVIOUS CV:\n{previous_cv}\n"
+        )
         if additional_keypoints:
             user_message += f"\nADDITIONAL KEY POINTS TO INTEGRATE:\n{json.dumps(additional_keypoints, indent=2)}"
         user_message += "\nReturn ONLY a valid JSON object in the format: {\n  \"cv\": \"...updated...\", \"cover_letter\": \"...\"\n}"
