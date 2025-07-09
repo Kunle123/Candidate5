@@ -33,6 +33,25 @@ def generate_cv(token, ark_data, job_description):
     resp.raise_for_status()
     return resp.json()
 
+def download_docx_by_id(token, cv_id, label=None):
+    url = f"{API_BASE}/api/cv/{cv_id}/download"
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = requests.get(url, headers=headers)
+    print(f"Download DOCX for {label or cv_id} response:", resp.status_code)
+    if resp.status_code == 200:
+        data = resp.json()
+        filedata = data.get("filedata")
+        filename = data.get("filename", f"persisted_cv_{cv_id}.docx")
+        if filedata:
+            import base64
+            with open(filename, "wb") as f:
+                f.write(base64.b64decode(filedata))
+            print(f"Persisted DOCX downloaded as {filename}")
+        else:
+            print("No filedata found in download response.")
+    else:
+        print("Failed to download persisted DOCX:", resp.text)
+
 def create_cv(token, cv_text, cover_letter):
     url = f"{API_BASE}/api/cv"
     headers = {"Authorization": f"Bearer {token}"}
@@ -41,13 +60,65 @@ def create_cv(token, cv_text, cover_letter):
     resp = requests.post(url, json=payload, headers=headers)
     print("Create CV response:", resp.status_code, resp.headers.get('content-type'), resp.text[:200])
     resp.raise_for_status()
-    # Save DOCX if returned
-    if resp.headers.get("content-type", "").startswith("application/vnd.openxmlformats-officedocument.wordprocessingml.document"):
-        with open("generated_cv.docx", "wb") as f:
-            f.write(resp.content)
-        print("Saved generated CV as generated_cv.docx")
+    data = resp.json()
+    filedata = data.get("filedata")
+    filename = data.get("filename", "generated_cv.docx")
+    cv_id = data.get("cv_id")
+    if filedata:
+        import base64
+        with open(filename, "wb") as f:
+            f.write(base64.b64decode(filedata))
+        print(f"Saved generated CV as {filename}")
     else:
-        print("Did not receive a DOCX file.")
+        print("No filedata found in response.")
+    if cv_id:
+        download_docx_by_id(token, cv_id, label="combined CV")
+    return resp
+
+def create_cv_only(token, cv_text):
+    url = f"{API_BASE}/api/cv"
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {"cv": cv_text}
+    print("Payload to /api/cv (CV only):", str(payload)[:500], '...')
+    resp = requests.post(url, json=payload, headers=headers)
+    print("Create CV (CV only) response:", resp.status_code, resp.headers.get('content-type'), resp.text[:200])
+    resp.raise_for_status()
+    data = resp.json()
+    filedata = data.get("filedata")
+    filename = data.get("filename", "generated_cv_only.docx")
+    cv_id = data.get("cv_id")
+    if filedata:
+        import base64
+        with open(filename, "wb") as f:
+            f.write(base64.b64decode(filedata))
+        print(f"Saved generated CV (CV only) as {filename}")
+    else:
+        print("No filedata found in response.")
+    if cv_id:
+        download_docx_by_id(token, cv_id, label="CV only")
+    return resp
+
+def create_cover_letter_only(token, cover_letter):
+    url = f"{API_BASE}/api/cover-letter"
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {"cover_letter": cover_letter}
+    print("Payload to /api/cover-letter (Cover Letter only):", str(payload)[:500], '...')
+    resp = requests.post(url, json=payload, headers=headers)
+    print("Create Cover Letter response:", resp.status_code, resp.headers.get('content-type'), resp.text[:200])
+    resp.raise_for_status()
+    data = resp.json()
+    filedata = data.get("filedata")
+    filename = data.get("filename", "generated_cover_letter.docx")
+    cv_id = data.get("cv_id")
+    if filedata:
+        import base64
+        with open(filename, "wb") as f:
+            f.write(base64.b64decode(filedata))
+        print(f"Saved generated Cover Letter as {filename}")
+    else:
+        print("No filedata found in response.")
+    if cv_id:
+        download_docx_by_id(token, cv_id, label="cover letter")
     return resp
 
 def get_cvs(token):
@@ -64,9 +135,16 @@ def download_persisted_cv(token, cv_id):
     resp = requests.get(url, headers=headers)
     print("Download persisted CV response:", resp.status_code)
     if resp.status_code == 200:
-        with open(f"persisted_cv_{cv_id}.docx", "wb") as f:
-            f.write(resp.content)
-        print(f"Persisted CV downloaded as persisted_cv_{cv_id}.docx")
+        data = resp.json()
+        filedata = data.get("filedata")
+        filename = data.get("filename", f"persisted_cv_{cv_id}.docx")
+        if filedata:
+            import base64
+            with open(filename, "wb") as f:
+                f.write(base64.b64decode(filedata))
+            print(f"Persisted CV downloaded as {filename}")
+        else:
+            print("No filedata found in response.")
     else:
         print("Failed to download persisted CV:", resp.text)
 
@@ -78,6 +156,10 @@ if __name__ == "__main__":
     cv_text = generated.get("cv")
     cover_letter = generated.get("cover_letter")
     create_cv(token, cv_text, cover_letter)
+
+    # Test new separate endpoints
+    create_cv_only(token, cv_text)
+    create_cover_letter_only(token, cover_letter)
 
     # Fetch CVs and download the latest persisted DOCX
     cvs = get_cvs(token)

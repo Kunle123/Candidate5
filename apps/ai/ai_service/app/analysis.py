@@ -61,6 +61,25 @@ class KeywordsRequest(BaseModel):
 class KeywordsResponse(BaseModel):
     keywords: List[str]
 
+class GenerateCVRequest(BaseModel):
+    profile: dict
+    job_description: str
+    keywords: Optional[list[str]] = None
+
+class GenerateCVResponse(BaseModel):
+    cv: str
+    cover_letter: str
+
+class UpdateCVRequest(BaseModel):
+    profile: dict
+    job_description: str
+    additional_keypoints: list[str]
+    previous_cv: str
+
+class UpdateCVResponse(BaseModel):
+    cv: str
+    cover_letter: str
+
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=0.5, max=10))
 async def fetch_cv_data(cv_id: str, token: str) -> Dict[str, Any]:
     """Fetch CV data from the CV service."""
@@ -353,3 +372,82 @@ No additional text, explanations, or formatting outside the JSON array.
     keywords = [w for w in words if len(w) > 3]
     logger.info(f"[DEBUG] Returning {len(keywords)} keywords from fallback")
     return KeywordsResponse(keywords=keywords) 
+
+@router.post("/generate-cv", response_model=GenerateCVResponse)
+async def generate_cv(request: GenerateCVRequest):
+    """
+    Generate a CV and cover letter using the user's profile and job description.
+    Emphasize the provided keywords if present. Do NOT include any content from the job advert in the CV.
+    Follows strict source fidelity and completeness rules.
+    """
+    if not client:
+        raise HTTPException(status_code=503, detail="OpenAI client not configured.")
+    try:
+        # Build the system prompt from docs/assistant_system_instructions.md
+        system_prompt = """
+You are an expert career assistant and professional resume writer, specializing in creating comprehensive, executive-level CVs for senior technology leaders. Your task is to generate a tailored CV and personalized cover letter that strategically positions the candidate's COMPLETE experience to match specific job requirements while staying strictly within the bounds of the source material.
+
+[...TRUNCATED: Use the full prompt from docs/assistant_system_instructions.md here...]
+
+USER CV DATA (JSON):\n{profile}\n\nJOB ADVERT (FOR STRATEGIC TAILORING REFERENCE ONLY - DO NOT INCLUDE CONTENT FROM THIS IN THE CV):\n{job_description}\n\nRESPONSE FORMAT:\n{{\n  \"cv\": \"...\",\n  \"cover_letter\": \"...\"\n}}\n"""
+        # Format the prompt with user data
+        prompt = system_prompt.format(profile=request.profile, job_description=request.job_description)
+        if request.keywords:
+            prompt += f"\nKEYWORDS TO EMPHASIZE: {', '.join(request.keywords)}\n"
+        # Call OpenAI (assume chat completion)
+        completion = await client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[{"role": "system", "content": prompt}],
+            temperature=0.3,
+            max_tokens=3000
+        )
+        # Parse response
+        import json as pyjson
+        try:
+            result = pyjson.loads(completion.choices[0].message.content)
+        except Exception:
+            raise HTTPException(status_code=500, detail="AI response was not valid JSON.")
+        return GenerateCVResponse(**result)
+    except Exception as e:
+        logger.error(f"Error generating CV: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating CV: {str(e)}") 
+
+@router.post("/update-cv", response_model=UpdateCVResponse)
+async def update_cv(request: UpdateCVRequest):
+    """
+    Update a CV and cover letter by integrating additional key points. Maintains all previous requirements for source fidelity and structure.
+    """
+    if not client:
+        raise HTTPException(status_code=503, detail="OpenAI client not configured.")
+    try:
+        # Build the system prompt from docs/assistant_system_instructions.md
+        system_prompt = """
+You are an expert career assistant and professional resume writer, specializing in creating comprehensive, executive-level CVs for senior technology leaders. Your task is to generate a tailored CV and personalized cover letter that strategically positions the candidate's COMPLETE experience to match specific job requirements while staying strictly within the bounds of the source material.
+
+[...TRUNCATED: Use the full prompt from docs/assistant_system_instructions.md here...]
+
+USER CV DATA (JSON):\n{profile}\n\nJOB ADVERT (FOR STRATEGIC TAILORING REFERENCE ONLY - DO NOT INCLUDE CONTENT FROM THIS IN THE CV):\n{job_description}\n\nPREVIOUS CV:\n{previous_cv}\n\nADDITIONAL KEY POINTS TO INTEGRATE:\n{additional_keypoints}\n\nRESPONSE FORMAT:\n{{\n  \"cv\": \"...updated...\",\n  \"cover_letter\": \"...\"\n}}\n"""
+        # Format the prompt with user data
+        prompt = system_prompt.format(
+            profile=request.profile,
+            job_description=request.job_description,
+            previous_cv=request.previous_cv,
+            additional_keypoints="\n".join(request.additional_keypoints)
+        )
+        # Call OpenAI (assume chat completion)
+        completion = await client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[{"role": "system", "content": prompt}],
+            temperature=0.3,
+            max_tokens=3000
+        )
+        # Parse response
+        import json as pyjson
+        try:
+            result = pyjson.loads(completion.choices[0].message.content)
+        except Exception:
+            raise HTTPException(status_code=500, detail="AI response was not valid JSON.")
+        return UpdateCVResponse(**result)
+    except Exception as e:
+        logger.error(f"Error updating CV: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating CV: {str(e)}") 
