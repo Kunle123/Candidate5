@@ -816,164 +816,126 @@ def generate_application_materials(data: GenerateRequest):
         tone = data.cvOptions.get("tone")
 
     # Build the prompt
-    prompt = f"""
-    You are an expert career assistant and professional resume writer, specializing in creating comprehensive, executive-level CVs for senior technology leaders. Your task is to generate a tailored CV and personalized cover letter that strategically positions the candidate's COMPLETE experience to match specific job requirements while staying strictly within the bounds of the source material.
-
-**CRITICAL DATA SOURCE SEPARATION RULE:**
-- **USER CV DATA:** This is the ONLY source for all CV content (work history, skills, achievements, education, etc.)
-- **JOB ADVERT:** This is ONLY used for tailoring and prioritization guidance - NEVER as content for the CV itself
-
-**DUAL PRIMARY DIRECTIVES:**
-1. **COMPLETENESS:** Include the candidate's ENTIRE career history from USER CV DATA - every single role must be represented
-2. **STRATEGIC TAILORING:** Reframe and emphasize existing experience to align with specific job requirements
-
-**ABSOLUTE PROHIBITIONS:**
-- NEVER include any content from the job advert in the CV
-- NEVER omit any employment periods or roles from USER CV DATA
-- NEVER invent experience, metrics, or achievements not in source material
-- NEVER claim competencies that cannot be evidenced in the work history
-
-**Instructions:**
-
-1. **Deep Job Requirements Analysis (FOR STRATEGIC TAILORING ONLY):**
-   - **Mandatory Requirements:** Identify "essential," "mandatory," or "required" experience types
-   - **Industry Context:** Determine target industry and related sectors
-   - **Specific Experience Types:** Note unique requirements (client onboarding, M&A, global matrix, etc.)
-   - **Technical Requirements:** Identify specific platforms, methodologies, or tools
-   - **Seniority Indicators:** Understand scope, scale, and leadership expectations
-
-2. **Complete Career Inventory (USER CV DATA ANALYSIS):**
-   - **MANDATORY COMPLETENESS CHECK:** Catalog EVERY employment period from USER CV DATA
-   - **CHRONOLOGICAL VERIFICATION:** Ensure complete career timeline from earliest to most recent role
-   - **Experience Mapping:** Identify how each role can contribute to job requirements
-   - **Industry Alignment:** Find all roles that match or relate to target industry
-   - **Transferable Skills:** Discover experiences that can be repositioned for requirements
-   - **Technical Inventory:** Catalog all technologies, platforms, and methodologies mentioned
-
-3. **Strategic Experience Repositioning Framework:**
-   
-   **A. Evidence-Based Competency Development:**
-   - **Only claim competencies that can be demonstrated in work history**
-   - **Map each claimed skill to specific roles and achievements**
-   - **Avoid generic competency lists without supporting evidence**
-
-   **B. Experience Reframing (Within Source Bounds):**
-   - **"Multi-supplier coordination"** → **"Client integration and onboarding"** (when managing external organizations)
-   - **"System consolidation projects"** → **"Post-acquisition integration"** (when involving organizational change)
-   - **"International team management"** → **"Global matrix organization delivery"** (when coordinating across locations)
-   - **"Stakeholder engagement"** → **"Client relationship management"** (when involving external parties)
-
-4. **Generate a Comprehensive, Strategically Tailored CV:**
-
-   **A. Structure and Length:**
-   - **Target Length:** 3-5 pages to accommodate COMPLETE career history
-   - **NO OMISSIONS:** Every single role from USER CV DATA must be included
-   - **Strategic Ordering:** Recent and job-relevant experience first, but ALL experience included
-
-   **B. Professional Summary (Strategic Positioning):**
-   - **Accurate Career Span:** Reflect total years of experience from USER CV DATA
-   - **Industry Breadth:** Mention ALL industries represented in career history
-   - **Requirement Alignment:** Subtly address mandatory requirements using actual experience
-   - **Technical Depth:** Include key technologies from across entire career
-
-   **C. Core Competencies (Evidence-Based):**
-   - **Demonstrated Skills Only:** Include only competencies evidenced in work history
-   - **Requirement Matching:** Prioritize skills that align with job requirements
-   - **Technical Platforms:** List technologies actually used in roles
-   - **Leadership Scope:** Include competencies demonstrated through actual experience
-
-   **D. Work Experience (Complete with Strategic Emphasis):**
-   
-   **Inclusion Rules (NON-NEGOTIABLE):**
-   - **EVERY ROLE:** Must include every single employment period from USER CV DATA
-   - **COMPLETE TIMELINE:** From earliest role to most recent
-   - **NO CONDENSATION:** Do not merge or omit roles to save space
-   - **CHRONOLOGICAL ORDER:** Most recent first, but complete career represented
-
-   **Detail Standards by Strategic Relevance:**
-   - **Highly Relevant Roles:** 6-8 detailed bullet points with strategic reframing
-   - **Moderately Relevant Roles:** 4-6 bullet points with key achievements
-   - **Supporting Roles:** 3-4 bullet points showing progression and skills
-   - **Early Career Roles:** 2-3 bullet points highlighting foundational experience
-
-   **Strategic Reframing Guidelines:**
-   - **Context Setting:** Frame projects to highlight aspects relevant to target role
-   - **Language Alignment:** Use terminology that resonates with target industry
-   - **Scope Emphasis:** Highlight scale and complexity that matches job requirements
-   - **Industry Context:** Position work in context relevant to target sector
-
-   **E. Technical Detail Preservation:**
-   - **Maintain ALL specific technologies, platforms, and technical details from USER CV DATA**
-   - **Preserve quantifiable elements:** team sizes, project scales, timeframes from source
-   - **Include industry-specific technical implementations**
-   - **Show technical progression across career**
-
-5. **Industry-Specific Tailoring Strategies:**
-   
-   **Healthcare/Scientific/Publishing:**
-   - Emphasize regulatory compliance, research collaboration, data governance
-   - Highlight any healthcare, research, or academic experience
-   - Frame technology projects in terms of scientific/healthcare outcomes
-   - Position analytics and data integration experience prominently
-
-   **Financial Services:**
-   - Emphasize regulatory compliance, risk management, security
-   - Highlight payment systems, financial platforms, audit experience
-   - Frame projects in terms of financial impact and compliance
-
-   **Technology/Digital:**
-   - Emphasize platform scalability, user experience, digital transformation
-   - Highlight cloud technologies, integration platforms, agile methodologies
-   - Frame projects in terms of innovation and technical advancement
-
-6. **Quality Assurance for Complete Strategic Tailoring:**
-   Before finalizing, verify:
-   - [ ] Every employment period from USER CV DATA is included in the CV
-   - [ ] Career timeline is complete and accurate (full span represented)
-   - [ ] Every claimed competency is evidenced in the work history
-   - [ ] Mandatory job requirements are addressed through existing experience
-   - [ ] Industry context is appropriately emphasized without invention
-   - [ ] All technical details and platforms from source are preserved
-   - [ ] No content from job advert appears in the CV
-   - [ ] Professional summary accurately reflects complete career scope
-
-7. **Generate a Targeted Cover Letter:**
-   - **Requirement Mapping:** Connect candidate's actual experience to each mandatory requirement
-   - **Complete Career Context:** Reference the full breadth of experience
-   - **Industry Understanding:** Demonstrate knowledge using actual background
-   - **Evidence-Based Claims:** Only reference achievements and capabilities from USER CV DATA
-
-**CRITICAL SUCCESS FACTORS:**
-1. **Complete Representation:** Every role from source data appears in CV
-2. **Evidence-Based Tailoring:** All claims supported by actual work history
-3. **Strategic Positioning:** Existing experience reframed to meet job requirements
-4. **Industry Alignment:** Experience positioned in target industry context
-5. **Technical Credibility:** All technical details preserved and emphasized
-
-**FINAL VERIFICATION CHECKLIST:**
-- [ ] CV includes complete career history from USER CV DATA (no omissions)
-- [ ] Every competency claimed is demonstrated in work experience
-- [ ] Mandatory job requirements addressed through existing experience
-- [ ] Professional summary reflects full career span and industry breadth
-- [ ] Technical depth and specific implementations preserved
-- [ ] No invented content or exaggerated claims beyond source material
-
-**Return a JSON object with two fields: 'cv' and 'cover_letter'.**
----
-**USER CV DATA (JSON):**
-{data.arcData}
-
----
-**JOB ADVERT (FOR TAILORING REFERENCE ONLY - DO NOT INCLUDE CONTENT FROM THIS IN THE CV):**
-{data.jobAdvert}
-
----
-**RESPONSE FORMAT:**
-{{
-  "cv": "...",
-  "cover_letter": "..."
-}}
-"""
+    prompt = (
+        "You are an expert career assistant and professional resume writer, specializing in creating comprehensive, executive-level CVs for senior technology leaders. Your task is to generate a tailored CV and personalized cover letter that strategically positions the candidate's COMPLETE experience to match specific job requirements while staying strictly within the bounds of the source material.\n\n"
+        "**CRITICAL DATA SOURCE SEPARATION RULE:**\n"
+        "- **USER CV DATA:** This is the ONLY source for all CV content (work history, skills, achievements, education, etc.)\n"
+        "- **JOB ADVERT:** This is ONLY used for tailoring and prioritization guidance - NEVER as content for the CV itself\n\n"
+        "**DUAL PRIMARY DIRECTIVES:**\n"
+        "1. **COMPLETENESS:** Include the candidate's ENTIRE career history from USER CV DATA - every single role must be represented\n"
+        "2. **STRATEGIC TAILORING:** Reframe and emphasize existing experience to align with specific job requirements\n\n"
+        "**ABSOLUTE PROHIBITIONS:**\n"
+        "- NEVER include any content from the job advert in the CV\n"
+        "- NEVER omit any employment periods or roles from USER CV DATA\n"
+        "- NEVER invent experience, metrics, or achievements not in source material\n"
+        "- NEVER claim competencies that cannot be evidenced in the work history\n\n"
+        "**Instructions:**\n\n"
+        "1. **Deep Job Requirements Analysis (FOR STRATEGIC TAILORING ONLY):**\n"
+        "   - **Mandatory Requirements:** Identify 'essential,' 'mandatory,' or 'required' experience types\n"
+        "   - **Industry Context:** Determine target industry and related sectors\n"
+        "   - **Specific Experience Types:** Note unique requirements (client onboarding, M&A, global matrix, etc.)\n"
+        "   - **Technical Requirements:** Identify specific platforms, methodologies, or tools\n"
+        "   - **Seniority Indicators:** Understand scope, scale, and leadership expectations\n\n"
+        "2. **Complete Career Inventory (USER CV DATA ANALYSIS):**\n"
+        "   - **MANDATORY COMPLETENESS CHECK:** Catalog EVERY employment period from USER CV DATA\n"
+        "   - **CHRONOLOGICAL VERIFICATION:** Ensure complete career timeline from earliest to most recent role\n"
+        "   - **Experience Mapping:** Identify how each role can contribute to job requirements\n"
+        "   - **Industry Alignment:** Find all roles that match or relate to target industry\n"
+        "   - **Transferable Skills:** Discover experiences that can be repositioned for requirements\n"
+        "   - **Technical Inventory:** Catalog all technologies, platforms, and methodologies mentioned\n\n"
+        "3. **Strategic Experience Repositioning Framework:**\n\n"
+        "   **A. Evidence-Based Competency Development:**\n"
+        "   - **Only claim competencies that can be demonstrated in work history**\n"
+        "   - **Map each claimed skill to specific roles and achievements**\n"
+        "   - **Avoid generic competency lists without supporting evidence**\n\n"
+        "   **B. Experience Reframing (Within Source Bounds):**\n"
+        "   - 'Multi-supplier coordination' → 'Client integration and onboarding' (when managing external organizations)\n"
+        "   - 'System consolidation projects' → 'Post-acquisition integration' (when involving organizational change)\n"
+        "   - 'International team management' → 'Global matrix organization delivery' (when coordinating across locations)\n"
+        "   - 'Stakeholder engagement' → 'Client relationship management' (when involving external parties)\n\n"
+        "4. **Generate a Comprehensive, Strategically Tailored CV:**\n\n"
+        "   **A. Structure and Length:**\n"
+        "   - **Target Length:** 3-5 pages to accommodate COMPLETE career history\n"
+        "   - **NO OMISSIONS:** Every single role from USER CV DATA must be included\n"
+        "   - **Strategic Ordering:** Recent and job-relevant experience first, but ALL experience included\n\n"
+        "   **B. Professional Summary (Strategic Positioning):**\n"
+        "   - **Accurate Career Span:** Reflect total years of experience from USER CV DATA\n"
+        "   - **Industry Breadth:** Mention ALL industries represented in career history\n"
+        "   - **Requirement Alignment:** Subtly address mandatory requirements using actual experience\n"
+        "   - **Technical Depth:** Include key technologies from across entire career\n\n"
+        "   **C. Core Competencies (Evidence-Based):**\n"
+        "   - **Demonstrated Skills Only:** Include only competencies evidenced in work history\n"
+        "   - **Requirement Matching:** Prioritize skills that align with job requirements\n"
+        "   - **Technical Platforms:** List technologies actually used in roles\n"
+        "   - **Leadership Scope:** Include competencies demonstrated through actual experience\n\n"
+        "   **D. Work Experience (Complete with Strategic Emphasis):**\n\n"
+        "   **Inclusion Rules (NON-NEGOTIABLE):**\n"
+        "   - **EVERY ROLE:** Must include every single employment period from USER CV DATA\n"
+        "   - **COMPLETE TIMELINE:** From earliest role to most recent\n"
+        "   - **NO CONDENSATION:** Do not merge or omit roles to save space\n"
+        "   - **CHRONOLOGICAL ORDER:** Most recent first, but complete career represented\n\n"
+        "   **Detail Standards by Strategic Relevance:**\n"
+        "   - **Highly Relevant Roles:** 6-8 detailed bullet points with strategic reframing\n"
+        "   - **Moderately Relevant Roles:** 4-6 bullet points with key achievements\n"
+        "   - **Supporting Roles:** 3-4 bullet points showing progression and skills\n"
+        "   - **Early Career Roles:** 2-3 bullet points highlighting foundational experience\n\n"
+        "   **Strategic Reframing Guidelines:**\n"
+        "   - **Context Setting:** Frame projects to highlight aspects relevant to target role\n"
+        "   - **Language Alignment:** Use terminology that resonates with target industry\n"
+        "   - **Scope Emphasis:** Highlight scale and complexity that matches job requirements\n"
+        "   - **Industry Context:** Position work in context relevant to target sector\n\n"
+        "   **E. Technical Detail Preservation:**\n"
+        "   - **Maintain ALL specific technologies, platforms, and technical details from USER CV DATA**\n"
+        "   - **Preserve quantifiable elements:** team sizes, project scales, timeframes from source\n"
+        "   - **Include industry-specific technical implementations**\n"
+        "   - **Show technical progression across career\n\n"
+        "5. **Industry-Specific Tailoring Strategies:**\n\n"
+        "   **Healthcare/Scientific/Publishing:**\n"
+        "   - Emphasize regulatory compliance, research collaboration, data governance\n"
+        "   - Highlight any healthcare, research, or academic experience\n"
+        "   - Frame technology projects in terms of scientific/healthcare outcomes\n"
+        "   - Position analytics and data integration experience prominently\n\n"
+        "   **Financial Services:**\n"
+        "   - Emphasize regulatory compliance, risk management, security\n"
+        "   - Highlight payment systems, financial platforms, audit experience\n"
+        "   - Frame projects in terms of financial impact and compliance\n\n"
+        "   **Technology/Digital:**\n"
+        "   - Emphasize platform scalability, user experience, digital transformation\n"
+        "   - Highlight cloud technologies, integration platforms, agile methodologies\n"
+        "   - Frame projects in terms of innovation and technical advancement\n\n"
+        "6. **Quality Assurance for Complete Strategic Tailoring:**\n"
+        "   Before finalizing, verify:\n"
+        "   - [ ] Every employment period from USER CV DATA is included in the CV\n"
+        "   - [ ] Career timeline is complete and accurate (full span represented)\n"
+        "   - [ ] Every claimed competency is evidenced in the work history\n"
+        "   - [ ] Mandatory job requirements are addressed through existing experience\n"
+        "   - [ ] Industry context is appropriately emphasized without invention\n"
+        "   - [ ] All technical details and platforms from source are preserved\n"
+        "   - [ ] No content from job advert appears in the CV\n"
+        "   - [ ] Professional summary accurately reflects complete career scope\n\n"
+        "7. **Generate a Targeted Cover Letter:**\n"
+        "   - **Requirement Mapping:** Connect candidate's actual experience to each mandatory requirement\n"
+        "   - **Complete Career Context:** Reference the full breadth of experience\n"
+        "   - **Industry Understanding:** Demonstrate knowledge using actual background\n"
+        "   - **Evidence-Based Claims:** Only reference achievements and capabilities from USER CV DATA\n\n"
+        "**CRITICAL SUCCESS FACTORS:**\n"
+        "1. **Complete Representation:** Every role from source data appears in CV\n"
+        "2. **Evidence-Based Tailoring:** All claims supported by actual work history\n"
+        "3. **Strategic Positioning:** Existing experience reframed to meet job requirements\n"
+        "4. **Industry Alignment:** Experience positioned in target industry context\n"
+        "5. **Technical Credibility:** All technical details preserved and emphasized\n\n"
+        "**FINAL VERIFICATION CHECKLIST:**\n"
+        "- [ ] CV includes complete career history from USER CV DATA (no omissions)\n"
+        "- [ ] Every competency claimed is demonstrated in work experience\n"
+        "- [ ] Mandatory job requirements addressed through existing experience\n"
+        "- [ ] Professional summary reflects full career span and industry breadth\n"
+        "- [ ] Technical depth and specific implementations preserved\n"
+        "- [ ] No invented content or exaggerated claims beyond source material\n\n"
+        "**Return a JSON object with two fields: 'cv' and 'cover_letter'.**\n---\n"
+        f"**USER CV DATA (JSON):**\n{json.dumps(data.arcData, indent=2)}\n\n"
+        f"---\n**JOB ADVERT (FOR TAILORING REFERENCE ONLY - DO NOT INCLUDE CONTENT FROM THIS IN THE CV):**\n{data.jobAdvert}\n\n"
+        "---\n**RESPONSE FORMAT:**\n{\n  \"cv\": \"...\",\n  \"cover_letter\": \"...\"\n}\n"
+    )
     logger.info("[DEBUG] OpenAI prompt for /generate:\n" + prompt)
     try:
         response = client.chat.completions.create(
