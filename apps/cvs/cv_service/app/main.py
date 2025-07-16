@@ -294,11 +294,24 @@ async def generate_cv_docx(
             raise HTTPException(status_code=400, detail="'cv' field is required in the request body.")
         doc = Document()
         doc.add_heading("Curriculum Vitae", 0)
+        from docx.shared import Pt
+        sections = [
+            "SUMMARY", "PROFESSIONAL SUMMARY", "CORE COMPETENCIES", "EXPERIENCE", "PROFESSIONAL EXPERIENCE", "EDUCATION", "SKILLS", "CERTIFICATIONS", "PROJECTS", "REFERENCES"
+        ]
         for line in cv_text.splitlines():
-            if line.strip() == "":
-                doc.add_paragraph()
+            stripped = line.strip()
+            if not stripped:
+                continue  # Skip empty lines to reduce excess spacing
+            upper = stripped.upper()
+            if upper in sections:
+                para = doc.add_paragraph()
+                run = para.add_run(stripped.title())
+                run.bold = True
+                para.paragraph_format.space_before = Pt(8)
+                para.paragraph_format.space_after = Pt(4)
             else:
-                doc.add_paragraph(line)
+                para = doc.add_paragraph(stripped)
+                para.paragraph_format.space_after = Pt(2)
         buf = BytesIO()
         doc.save(buf)
         buf.seek(0)
@@ -591,7 +604,7 @@ async def get_cvs_v2(auth: dict = Depends(verify_token), db: Session = Depends(g
 
 @app.post("/cvs", status_code=status.HTTP_201_CREATED)
 async def create_cv_v2(file: UploadFile = File(...), auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
-    return await create_cv(file, auth, db)
+    return await create_cv_from_file(file, auth, db) # Reusing the existing function
 
 @app.get("/cvs/{cv_id}")
 async def get_cv_v2(cv_id: str, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):

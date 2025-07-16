@@ -372,10 +372,17 @@ class DocumentGenerator:
             # Get style settings from template options
             font_name = "Calibri"
             heading_color = "0000FF"  # Blue
+            font_size = Pt(11)
             
             if template_options:
                 font_name = template_options.get("font", "Calibri")
                 heading_color = template_options.get("heading_color", "0000FF")
+            
+            # Set default font for the document
+            style = doc.styles['Normal']
+            font = style.font
+            font.name = font_name
+            font.size = font_size
             
             # Add title
             title = doc.add_heading(cv_data.get("title", "Curriculum Vitae"), 0)
@@ -386,95 +393,98 @@ class DocumentGenerator:
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p.add_run(f"{personal_info.get('first_name', '')} {personal_info.get('last_name', '')}\n").bold = True
-            p.add_run(f"Email: {personal_info.get('email', '')}\n")
-            p.add_run(f"Phone: {personal_info.get('phone', '')}\n")
+            p.add_run(f"Email: {personal_info.get('email', '')} | Phone: {personal_info.get('phone', '')}\n")
             p.add_run(f"Location: {personal_info.get('location', '')}")
-            
             doc.add_paragraph()
             
             # Add summary section
             if "summary" in cv_data and cv_data["summary"]:
-                doc.add_heading("Summary", 1)
+                doc.add_heading("Professional Summary", 1)
                 doc.add_paragraph(cv_data["summary"])
                 doc.add_paragraph()
             
             # Add experience section
             if "experience" in cv_data and cv_data["experience"]:
-                doc.add_heading("Experience", 1)
-                
+                doc.add_heading("Work Experience", 1)
                 for exp in cv_data["experience"]:
+                    # Job title and company (Heading 2)
                     job_title = exp.get("title", "")
                     company = exp.get("company", "")
                     location = exp.get("location", "")
                     start_date = exp.get("start_date", "")
                     end_date = "Present" if exp.get("current", False) else exp.get("end_date", "")
-                    
-                    p = doc.add_paragraph()
-                    p.add_run(f"{job_title} at {company}").bold = True
+                    h2 = doc.add_heading(level=2)
+                    run = h2.add_run(f"{job_title} at {company}")
+                    run.bold = True
                     if location:
-                        p.add_run(f", {location}")
-                    
-                    p = doc.add_paragraph()
-                    p.add_run(f"{start_date} - {end_date}")
-                    
+                        run = h2.add_run(f", {location}")
+                        run.italic = True
+                    # Dates
+                    date_p = doc.add_paragraph()
+                    date_run = date_p.add_run(f"{start_date} - {end_date}")
+                    date_run.italic = True
+                    # Description as bullet points
                     if "description" in exp and exp["description"]:
-                        doc.add_paragraph(exp["description"])
-                    
+                        desc = exp["description"]
+                        if isinstance(desc, str):
+                            desc_lines = [line.strip() for line in desc.split("\n") if line.strip()]
+                        elif isinstance(desc, list):
+                            desc_lines = desc
+                        else:
+                            desc_lines = []
+                        for line in desc_lines:
+                            doc.add_paragraph(line, style='List Bullet')
                     doc.add_paragraph()
             
             # Add education section
             if "education" in cv_data and cv_data["education"]:
                 doc.add_heading("Education", 1)
-                
                 for edu in cv_data["education"]:
                     degree = edu.get("degree", "")
                     field = edu.get("field_of_study", "")
                     institution = edu.get("institution", "")
                     start_date = edu.get("start_date", "")
                     end_date = edu.get("end_date", "")
-                    
-                    p = doc.add_paragraph()
-                    p.add_run(f"{degree} in {field}").bold = True
-                    
-                    p = doc.add_paragraph()
-                    p.add_run(f"{institution}")
-                    
-                    p = doc.add_paragraph()
-                    p.add_run(f"{start_date} - {end_date}")
-                    
+                    h2 = doc.add_heading(level=2)
+                    run = h2.add_run(f"{degree} in {field}")
+                    run.bold = True
+                    # Institution
+                    inst_p = doc.add_paragraph()
+                    inst_run = inst_p.add_run(f"{institution}")
+                    inst_run.italic = True
+                    # Dates
+                    date_p = doc.add_paragraph()
+                    date_run = date_p.add_run(f"{start_date} - {end_date}")
+                    date_run.italic = True
+                    # Description
                     if "description" in edu and edu["description"]:
                         doc.add_paragraph(edu["description"])
-                    
                     doc.add_paragraph()
             
             # Add skills section
             if "skills" in cv_data and cv_data["skills"]:
                 doc.add_heading("Skills", 1)
-                
-                # Create a bullet list of skills
                 for skill in cv_data["skills"]:
                     doc.add_paragraph(skill, style='List Bullet')
-                
                 doc.add_paragraph()
             
             # Add certifications section
             if "certifications" in cv_data and cv_data["certifications"]:
                 doc.add_heading("Certifications", 1)
-                
                 for cert in cv_data["certifications"]:
                     name = cert.get("name", "")
                     issuer = cert.get("issuer", "")
                     date = cert.get("date", "")
-                    
-                    p = doc.add_paragraph()
-                    p.add_run(f"{name}").bold = True
-                    
-                    p = doc.add_paragraph()
-                    p.add_run(f"Issued by {issuer}, {date}")
-                    
+                    h2 = doc.add_heading(level=2)
+                    run = h2.add_run(f"{name}")
+                    run.bold = True
+                    # Issuer and date
+                    cert_p = doc.add_paragraph()
+                    cert_run = cert_p.add_run(f"Issued by {issuer}, {date}")
+                    cert_run.italic = True
+                    # Description
                     if "description" in cert and cert["description"]:
                         doc.add_paragraph(cert["description"])
-                    
                     doc.add_paragraph()
             
             # Save the document
