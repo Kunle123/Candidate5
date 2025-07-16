@@ -362,134 +362,236 @@ class DocumentGenerator:
     async def generate_docx(cv_data: Dict[str, Any], output_path: str, template_options: Optional[Dict[str, Any]] = None) -> str:
         """Generate a DOCX document using python-docx"""
         try:
+            from docx.oxml.ns import qn
+            from docx.oxml import OxmlElement
+            from docx.enum.section import WD_ORIENT, WD_SECTION
+            from docx.enum.text import WD_LINE_SPACING
+            from docx.shared import RGBColor
+
             # Create a new document
             doc = Document()
-            
-            # Set document properties
-            doc.core_properties.title = cv_data.get("title", "CV")
-            doc.core_properties.author = f"{cv_data.get('personal_info', {}).get('first_name', '')} {cv_data.get('personal_info', {}).get('last_name', '')}"
-            
-            # Get style settings from template options
-            font_name = "Calibri"
-            heading_color = "0000FF"  # Blue
-            font_size = Pt(11)
-            
-            if template_options:
-                font_name = template_options.get("font", "Calibri")
-                heading_color = template_options.get("heading_color", "0000FF")
-            
-            # Set default font for the document
+
+            # Set page size and margins (A4, 1" margins)
+            section = doc.sections[0]
+            section.page_height = Inches(11.69)
+            section.page_width = Inches(8.27)
+            section.top_margin = Inches(1)
+            section.bottom_margin = Inches(1)
+            section.left_margin = Inches(1)
+            section.right_margin = Inches(1)
+
+            # Set default font to Arial
             style = doc.styles['Normal']
             font = style.font
-            font.name = font_name
-            font.size = font_size
-            
-            # Add title
-            title = doc.add_heading(cv_data.get("title", "Curriculum Vitae"), 0)
-            title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            
-            # Add personal information
-            personal_info = cv_data.get("personal_info", {})
-            p = doc.add_paragraph()
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.add_run(f"{personal_info.get('first_name', '')} {personal_info.get('last_name', '')}\n").bold = True
-            p.add_run(f"Email: {personal_info.get('email', '')} | Phone: {personal_info.get('phone', '')}\n")
-            p.add_run(f"Location: {personal_info.get('location', '')}")
-            doc.add_paragraph()
-            
-            # Add summary section
-            if "summary" in cv_data and cv_data["summary"]:
-                doc.add_heading("Professional Summary", 1)
-                doc.add_paragraph(cv_data["summary"])
-                doc.add_paragraph()
-            
-            # Add experience section
-            if "experience" in cv_data and cv_data["experience"]:
-                doc.add_heading("Work Experience", 1)
-                for exp in cv_data["experience"]:
-                    # Job title and company (Heading 2)
-                    job_title = exp.get("title", "")
-                    company = exp.get("company", "")
-                    location = exp.get("location", "")
-                    start_date = exp.get("start_date", "")
-                    end_date = "Present" if exp.get("current", False) else exp.get("end_date", "")
-                    h2 = doc.add_heading(level=2)
-                    run = h2.add_run(f"{job_title} at {company}")
+            font.name = 'Arial'
+            font.size = Pt(11)
+            font.color.rgb = RGBColor(0, 0, 0)
+            style._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
+
+            # Helper: Add spacing after paragraphs
+            def set_paragraph_spacing(paragraph, before=0, after=6, line=1.15):
+                paragraph.paragraph_format.space_before = Pt(before)
+                paragraph.paragraph_format.space_after = Pt(after)
+                paragraph.paragraph_format.line_spacing = line
+
+            # Helper: Add section heading
+            def add_section_heading(text):
+                heading = doc.add_paragraph()
+                run = heading.add_run(text.upper())
+                run.bold = True
+                run.font.size = Pt(14)
+                run.font.name = 'Arial'
+                heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                set_paragraph_spacing(heading, before=18, after=12, line=1.15)
+                # Optional divider line
+                p = doc.add_paragraph()
+                p_format = p.paragraph_format
+                p_format.space_after = Pt(0)
+                p_format.space_before = Pt(0)
+                p_format.line_spacing = 1.0
+                p._element.get_or_add_pPr().append(OxmlElement('w:pBdr'))
+                bdr = p._element.pPr.pBdr
+                bottom = OxmlElement('w:bottom')
+                bottom.set(qn('w:val'), 'single')
+                bottom.set(qn('w:sz'), '4')
+                bottom.set(qn('w:space'), '1')
+                bottom.set(qn('w:color'), 'auto')
+                bdr.append(bottom)
+
+            # Helper: Add bullet point
+            def add_bullet(text):
+                p = doc.add_paragraph(style='List Bullet')
+                run = p.add_run(text)
+                run.font.size = Pt(11)
+                run.font.name = 'Arial'
+                set_paragraph_spacing(p, before=0, after=3, line=1.15)
+                p.paragraph_format.left_indent = Inches(0.25)
+                p.paragraph_format.first_line_indent = Inches(-0.25)
+
+            # Helper: Format date
+            def format_date(date_str):
+                if not date_str:
+                    return ''
+                try:
+                    dt = datetime.strptime(date_str, '%Y-%m-%d')
+                    return dt.strftime('%b %Y')
+                except Exception:
+                    return date_str
+
+            # Candidate Name
+            name = f"{cv_data.get('personal_info', {}).get('first_name', '')} {cv_data.get('personal_info', {}).get('last_name', '')}".strip()
+            name_p = doc.add_paragraph()
+            run = name_p.add_run(name)
+            run.bold = True
+            run.font.size = Pt(20)
+            run.font.name = 'Arial'
+            name_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            set_paragraph_spacing(name_p, before=0, after=6, line=1.0)
+
+            # Contact Information
+            personal_info = cv_data.get('personal_info', {})
+            contact_items = []
+            if personal_info.get('phone'):
+                contact_items.append(personal_info['phone'])
+            if personal_info.get('email'):
+                contact_items.append(personal_info['email'].lower())
+            if personal_info.get('location'):
+                contact_items.append(personal_info['location'])
+            contact_str = ' | '.join(contact_items)
+            contact_p = doc.add_paragraph(contact_str)
+            contact_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            set_paragraph_spacing(contact_p, before=0, after=6, line=1.0)
+
+            # LinkedIn (optional)
+            if personal_info.get('linkedin'):
+                linkedin_p = doc.add_paragraph(personal_info['linkedin'])
+                linkedin_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                set_paragraph_spacing(linkedin_p, before=0, after=6, line=1.0)
+
+            # Summary
+            if cv_data.get('summary'):
+                add_section_heading('Summary')
+                summary_p = doc.add_paragraph(cv_data['summary'])
+                set_paragraph_spacing(summary_p, before=0, after=6, line=1.15)
+
+            # Experience
+            if cv_data.get('experience'):
+                add_section_heading('Experience')
+                for exp in cv_data['experience']:
+                    # Job title and dates on same line
+                    p = doc.add_paragraph()
+                    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                    # Job title
+                    run = p.add_run(exp.get('title', '').title())
                     run.bold = True
-                    if location:
-                        run = h2.add_run(f", {location}")
-                        run.italic = True
-                    # Dates
-                    date_p = doc.add_paragraph()
-                    date_run = date_p.add_run(f"{start_date} - {end_date}")
-                    date_run.italic = True
-                    # Description as bullet points
-                    if "description" in exp and exp["description"]:
-                        desc = exp["description"]
-                        if isinstance(desc, str):
-                            desc_lines = [line.strip() for line in desc.split("\n") if line.strip()]
-                        elif isinstance(desc, list):
-                            desc_lines = desc
-                        else:
-                            desc_lines = []
-                        for line in desc_lines:
-                            doc.add_paragraph(line, style='List Bullet')
+                    run.font.size = Pt(12)
+                    run.font.name = 'Arial'
+                    # Company name
+                    company = exp.get('company', '')
+                    if company:
+                        run2 = p.add_run(f" at {company}")
+                        run2.font.size = Pt(11)
+                        run2.font.name = 'Arial'
+                    # Dates (right-aligned)
+                    start = format_date(exp.get('start_date', ''))
+                    end = 'Present' if exp.get('current', False) else format_date(exp.get('end_date', ''))
+                    if start or end:
+                        tab = p.add_run("\t")
+                        tab.font.size = Pt(10)
+                        tab.font.name = 'Arial'
+                        date_run = p.add_run(f"{start} – {end}")
+                        date_run.font.size = Pt(10)
+                        date_run.font.name = 'Arial'
+                    set_paragraph_spacing(p, before=12, after=6, line=1.15)
+                    p.paragraph_format.tab_stops.add_tab_stop(Inches(6.0), WD_ALIGN_PARAGRAPH.RIGHT)
+                    # Location (optional)
+                    if exp.get('location'):
+                        loc_p = doc.add_paragraph(exp['location'])
+                        loc_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                        set_paragraph_spacing(loc_p, before=0, after=0, line=1.0)
+                    # Bullets
+                    desc = exp.get('description', [])
+                    if isinstance(desc, str):
+                        desc = [line.strip() for line in desc.split('\n') if line.strip()]
+                    for i, bullet in enumerate(desc[:5]):
+                        add_bullet(bullet)
+                    # Space after each role
                     doc.add_paragraph()
-            
-            # Add education section
-            if "education" in cv_data and cv_data["education"]:
-                doc.add_heading("Education", 1)
-                for edu in cv_data["education"]:
-                    degree = edu.get("degree", "")
-                    field = edu.get("field_of_study", "")
-                    institution = edu.get("institution", "")
-                    start_date = edu.get("start_date", "")
-                    end_date = edu.get("end_date", "")
-                    h2 = doc.add_heading(level=2)
-                    run = h2.add_run(f"{degree} in {field}")
+
+            # Education
+            if cv_data.get('education'):
+                add_section_heading('Education')
+                for edu in cv_data['education']:
+                    p = doc.add_paragraph()
+                    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                    run = p.add_run(f"{edu.get('degree', '').title()} in {edu.get('field_of_study', '')}")
                     run.bold = True
+                    run.font.size = Pt(12)
+                    run.font.name = 'Arial'
                     # Institution
-                    inst_p = doc.add_paragraph()
-                    inst_run = inst_p.add_run(f"{institution}")
-                    inst_run.italic = True
+                    inst = edu.get('institution', '')
+                    if inst:
+                        run2 = p.add_run(f" at {inst}")
+                        run2.font.size = Pt(11)
+                        run2.font.name = 'Arial'
                     # Dates
-                    date_p = doc.add_paragraph()
-                    date_run = date_p.add_run(f"{start_date} - {end_date}")
-                    date_run.italic = True
+                    start = format_date(edu.get('start_date', ''))
+                    end = format_date(edu.get('end_date', ''))
+                    if start or end:
+                        tab = p.add_run("\t")
+                        tab.font.size = Pt(10)
+                        tab.font.name = 'Arial'
+                        date_run = p.add_run(f"{start} – {end}")
+                        date_run.font.size = Pt(10)
+                        date_run.font.name = 'Arial'
+                    set_paragraph_spacing(p, before=12, after=6, line=1.15)
+                    p.paragraph_format.tab_stops.add_tab_stop(Inches(6.0), WD_ALIGN_PARAGRAPH.RIGHT)
                     # Description
-                    if "description" in edu and edu["description"]:
-                        doc.add_paragraph(edu["description"])
+                    if edu.get('description'):
+                        desc_p = doc.add_paragraph(edu['description'])
+                        set_paragraph_spacing(desc_p, before=0, after=6, line=1.15)
                     doc.add_paragraph()
-            
-            # Add skills section
-            if "skills" in cv_data and cv_data["skills"]:
-                doc.add_heading("Skills", 1)
-                for skill in cv_data["skills"]:
-                    doc.add_paragraph(skill, style='List Bullet')
+
+            # Skills
+            if cv_data.get('skills'):
+                add_section_heading('Skills')
+                for skill in cv_data['skills']:
+                    add_bullet(skill)
                 doc.add_paragraph()
-            
-            # Add certifications section
-            if "certifications" in cv_data and cv_data["certifications"]:
-                doc.add_heading("Certifications", 1)
-                for cert in cv_data["certifications"]:
-                    name = cert.get("name", "")
-                    issuer = cert.get("issuer", "")
-                    date = cert.get("date", "")
-                    h2 = doc.add_heading(level=2)
-                    run = h2.add_run(f"{name}")
+
+            # Certifications
+            if cv_data.get('certifications'):
+                add_section_heading('Certifications')
+                for cert in cv_data['certifications']:
+                    p = doc.add_paragraph()
+                    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                    run = p.add_run(cert.get('name', ''))
                     run.bold = True
-                    # Issuer and date
-                    cert_p = doc.add_paragraph()
-                    cert_run = cert_p.add_run(f"Issued by {issuer}, {date}")
-                    cert_run.italic = True
-                    # Description
-                    if "description" in cert and cert["description"]:
-                        doc.add_paragraph(cert["description"])
+                    run.font.size = Pt(12)
+                    run.font.name = 'Arial'
+                    issuer = cert.get('issuer', '')
+                    date = format_date(cert.get('date', ''))
+                    if issuer:
+                        run2 = p.add_run(f" by {issuer}")
+                        run2.font.size = Pt(11)
+                        run2.font.name = 'Arial'
+                    if date:
+                        tab = p.add_run("\t")
+                        tab.font.size = Pt(10)
+                        tab.font.name = 'Arial'
+                        date_run = p.add_run(f"{date}")
+                        date_run.font.size = Pt(10)
+                        date_run.font.name = 'Arial'
+                    set_paragraph_spacing(p, before=12, after=6, line=1.15)
+                    p.paragraph_format.tab_stops.add_tab_stop(Inches(6.0), WD_ALIGN_PARAGRAPH.RIGHT)
+                    if cert.get('description'):
+                        desc_p = doc.add_paragraph(cert['description'])
+                        set_paragraph_spacing(desc_p, before=0, after=6, line=1.15)
                     doc.add_paragraph()
-            
+
             # Save the document
             doc.save(output_path)
-            
+
             logger.info(f"DOCX document generated at {output_path}")
             return output_path
             
