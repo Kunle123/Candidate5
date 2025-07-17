@@ -419,7 +419,7 @@ class DocumentGenerator:
                 bottom.set(qn('w:color'), 'auto')
                 bdr.append(bottom)
 
-            # Helper: Add bullet point
+            # Helper: Add bullet point with hanging indent
             def add_bullet(text):
                 p = doc.add_paragraph(style='List Bullet')
                 run = p.add_run(text)
@@ -429,6 +429,7 @@ class DocumentGenerator:
                 set_paragraph_spacing(p, before=0, after=3, line=1.15)
                 p.paragraph_format.left_indent = Inches(0.25)
                 p.paragraph_format.first_line_indent = Inches(-0.25)
+                p.paragraph_format.hanging_indent = Inches(0.5)
 
             # Helper: Format date
             def format_date(date_str):
@@ -479,7 +480,10 @@ class DocumentGenerator:
             # Experience
             if cv_data.get('experience'):
                 add_section_heading('Experience')
-                for exp in cv_data['experience']:
+                for idx, exp in enumerate(cv_data['experience']):
+                    # Add extra space before each role except the first
+                    if idx > 0:
+                        doc.add_paragraph()  # Adds a blank line for separation
                     # Job title, company, and dates on the same line
                     p = doc.add_paragraph()
                     p.alignment = WD_ALIGN_PARAGRAPH.LEFT
@@ -501,7 +505,7 @@ class DocumentGenerator:
                         date_run.font.size = Pt(10)
                         date_run.font.name = 'Arial'
                         date_run.font.color.rgb = RGBColor(0, 0, 0)
-                    set_paragraph_spacing(p, before=12, after=0, line=1.15)
+                    set_paragraph_spacing(p, before=18, after=0, line=1.15)  # More space before each role
                     p.paragraph_format.tab_stops.add_tab_stop(Inches(6.0), WD_ALIGN_PARAGRAPH.RIGHT)
                     # Company name (below, black)
                     company = exp.get('company', '')
@@ -526,8 +530,6 @@ class DocumentGenerator:
                         desc = [line.strip() for line in desc.split('\n') if line.strip()]
                     for i, bullet in enumerate(desc[:5]):
                         add_bullet(bullet)
-                    # Space after each role
-                    doc.add_paragraph()
 
             # Education
             if cv_data.get('education'):
