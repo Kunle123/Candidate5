@@ -362,6 +362,7 @@ class DocumentGenerator:
     async def generate_docx(cv_data: Dict[str, Any], output_path: str, template_options: Optional[Dict[str, Any]] = None) -> str:
         """Generate a DOCX document using python-docx"""
         try:
+            logger.info("[DEBUG] generate_docx called: Applying latest formatting logic for CV DOCX generation.")
             from docx.oxml import OxmlElement
             from docx.oxml.ns import qn
             from docx.shared import RGBColor
