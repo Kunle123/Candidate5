@@ -288,7 +288,7 @@ async def generate_cv_docx(
     import base64
     try:
         logger.info(f"Received {request.method} to {request.url} from {request.client.host if request.client else 'unknown'} (CV only)")
-        logger.info("[DEBUG] generate_cv_docx called: Applying clean, professional formatting (all black text, title case headings, simple bullets, no dividers, clean spacing)")
+        logger.info("[DEBUG] generate_docx called: Enforcing strict, professional, consistent CV structure.")
         from docx.shared import Pt, Inches
         from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
         from docx.oxml.ns import qn
@@ -309,7 +309,7 @@ async def generate_cv_docx(
                 run.font.size = Pt(size)
                 run.bold = bold
             paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
-        # Helper: Add section heading (Title Case, bold, no divider)
+        # Helper: Add section heading (Title Case, bold)
         def add_section_heading(text):
             para = doc.add_paragraph()
             run = para.add_run(text.title())
@@ -317,7 +317,7 @@ async def generate_cv_docx(
             para.paragraph_format.space_before = Pt(18)
             para.paragraph_format.space_after = Pt(12)
             return para
-        # Helper: Add job title, company, and dates (all black, left-aligned)
+        # Helper: Add job block (dates, job title, company)
         def add_job_block(dates, title, company):
             para_dates = doc.add_paragraph(dates)
             set_font(para_dates, 11, bold=False)
@@ -329,16 +329,20 @@ async def generate_cv_docx(
             para_company = doc.add_paragraph(company)
             set_font(para_company, 11, bold=False)
             para_company.paragraph_format.space_after = Pt(6)
-        # Helper: Add bullet point (simple, consistent indent)
-        def add_bullet(text):
-            para = doc.add_paragraph(style=None)
-            run = para.add_run("• "+text)
-            set_font(para, 11)
-            para.paragraph_format.left_indent = Inches(0.25)
+        # Helper: Add bullet point (all regular weight, consistent, real bullet)
+        def add_bullet(text, indent=0.25):
+            para = doc.add_paragraph()
+            para.style = doc.styles['List Bullet']
+            para.paragraph_format.left_indent = Inches(indent)
             para.paragraph_format.first_line_indent = Inches(0)
             para.paragraph_format.space_after = Pt(3)
             para.paragraph_format.line_spacing = 1.15
+            set_font(para, 11, bold=False)
+            para.text = text
             return para
+        # Helper: Add sub-bullet (further indented, regular weight)
+        def add_sub_bullet(text):
+            return add_bullet(text, indent=0.5)
         # Helper: Add contact info (centered, smaller)
         def add_contact_info(text):
             para = doc.add_paragraph(text)
@@ -380,9 +384,13 @@ async def generate_cv_docx(
                 add_job_block(lines[i], lines[i+1], lines[i+2])
                 i += 3
                 continue
-            # Bullet point
+            # Bullet point or sub-bullet
             if line.startswith("•") or line.startswith("-"):
-                add_bullet(line[1:].strip())
+                # Sub-bullet if indented (starts with two spaces or tab)
+                if line.startswith("    ") or line.startswith("\t"):
+                    add_sub_bullet(line.lstrip("•- \t"))
+                else:
+                    add_bullet(line[1:].strip())
                 i += 1
                 continue
             # Default: body text
