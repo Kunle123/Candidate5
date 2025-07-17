@@ -288,7 +288,7 @@ async def generate_cv_docx(
     import base64
     try:
         logger.info(f"Received {request.method} to {request.url} from {request.client.host if request.client else 'unknown'} (CV only)")
-        logger.info("[DEBUG] generate_docx called: Enforcing strict, professional, consistent CV structure.")
+        logger.info("[DEBUG] generate_docx called: Refining to match user's CV structure and style.")
         from docx.shared import Pt, Inches
         from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
         from docx.oxml.ns import qn
@@ -317,18 +317,18 @@ async def generate_cv_docx(
             para.paragraph_format.space_before = Pt(18)
             para.paragraph_format.space_after = Pt(12)
             return para
-        # Helper: Add job block (dates, job title, company)
-        def add_job_block(dates, title, company):
-            para_dates = doc.add_paragraph(dates)
-            set_font(para_dates, 11, bold=False)
-            para_dates.paragraph_format.space_before = Pt(12)
-            para_dates.paragraph_format.space_after = Pt(0)
+        # Helper: Add job block (Job Title, Company, Dates)
+        def add_job_block(title, company, dates):
             para_title = doc.add_paragraph(title)
             set_font(para_title, 12, bold=True)
+            para_title.paragraph_format.space_before = Pt(12)
             para_title.paragraph_format.space_after = Pt(0)
             para_company = doc.add_paragraph(company)
             set_font(para_company, 11, bold=False)
-            para_company.paragraph_format.space_after = Pt(6)
+            para_company.paragraph_format.space_after = Pt(0)
+            para_dates = doc.add_paragraph(dates)
+            set_font(para_dates, 11, bold=False)
+            para_dates.paragraph_format.space_after = Pt(6)
         # Helper: Add bullet point (all regular weight, consistent, real bullet)
         def add_bullet(text, indent=0.25):
             para = doc.add_paragraph()
@@ -379,8 +379,8 @@ async def generate_cv_docx(
                 add_section_heading(line)
                 i += 1
                 continue
-            # Dates + job title + company block (pattern: date, title, company)
-            if i+2 < len(lines) and any(month in lines[i] for month in ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]):
+            # Job block (Job Title, Company, Dates)
+            if i+2 < len(lines) and not any(lines[i].startswith(b) for b in ["•", "-"]) and not any(lines[i+1].startswith(b) for b in ["•", "-"]) and not any(lines[i+2].startswith(b) for b in ["•", "-"]):
                 add_job_block(lines[i], lines[i+1], lines[i+2])
                 i += 3
                 continue
