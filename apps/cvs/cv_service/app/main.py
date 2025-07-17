@@ -127,8 +127,8 @@ async def verify_token(token: Optional[str] = Depends(oauth2_scheme)):
         )
 
 # Helper function to serialize database objects to JSON-compatible dictionaries
-def serialize_cv(cv, include_relationships=True):
-    """Convert a CV database object to a dictionary."""
+def serialize_cv(cv, include_relationships=True, db=None):
+    """Convert a CV database object to a dictionary, with job_title, company, and cover letter info."""
     result = {
         "id": str(cv.id) if hasattr(cv.id, "hex") else cv.id,
         "user_id": str(cv.user_id) if hasattr(cv.user_id, "hex") else cv.user_id,
@@ -149,12 +149,17 @@ def serialize_cv(cv, include_relationships=True):
         "created_at": cv.created_at.isoformat() if cv.created_at else None,
         "updated_at": cv.updated_at.isoformat() if cv.updated_at else None
     }
-    
-    # Add relationships if database supports them and they should be included
+    # Extract job_title and company from first experience if available
+    job_title = None
+    company = None
     if include_relationships and not is_sqlite:
         # Experiences
+        exps = getattr(cv, "experiences", [])
+        if exps:
+            job_title = exps[0].position
+            company = exps[0].company
         result["content"]["experiences"] = []
-        for exp in getattr(cv, "experiences", []):
+        for exp in exps:
             result["content"]["experiences"].append({
                 "id": str(exp.id) if hasattr(exp.id, "hex") else exp.id,
                 "company": exp.company,
@@ -165,7 +170,6 @@ def serialize_cv(cv, include_relationships=True):
                 "included": exp.included,
                 "order": exp.order
             })
-        
         # Education
         result["content"]["education"] = []
         for edu in getattr(cv, "education", []):
@@ -180,9 +184,28 @@ def serialize_cv(cv, include_relationships=True):
                 "included": edu.included,
                 "order": edu.order
             })
-        
-        # Add other relationships as needed (skills, languages, etc.)
-    
+    # Fallback: try to get job_title/company from content if not found
+    if not job_title:
+        job_title = result["content"].get("personal_info", {}).get("job_title")
+    if not company:
+        company = result["content"].get("personal_info", {}).get("company")
+    result["job_title"] = job_title
+    result["company"] = company
+    # Cover letter info (if db is provided)
+    cover_letter_available = False
+    cover_letter_download_url = None
+    if db is not None:
+        from .models import CV as CVModel
+        q = db.query(CVModel).filter(CVModel.user_id == cv.user_id, CVModel.type == "cover_letter")
+        # Try to match job_title/company if possible
+        if job_title:
+            q = q.filter(CVModel.name.ilike(f"%{job_title}%"))
+        cover_letter = q.order_by(CVModel.created_at.desc()).first()
+        if cover_letter:
+            cover_letter_available = True
+            cover_letter_download_url = f"/api/cv/{cover_letter.id}/download"
+    result["cover_letter_available"] = cover_letter_available
+    result["cover_letter_download_url"] = cover_letter_download_url
     return result
 
 # Routes
@@ -222,7 +245,7 @@ async def get_cvs(
         desc(models.CV.is_default),
         desc(models.CV.last_modified)
     ).all()
-    result = [serialize_cv(cv) for cv in cvs]
+    result = [serialize_cv(cv, db=db) for cv in cvs]
     return result
 
 @app.post("/api/cv/upload", status_code=status.HTTP_201_CREATED)
@@ -528,7 +551,7 @@ async def get_cv(
     
     logger.info(f"CV found for ID: '{cv_id}'. Serializing.")
     try:
-        serialized_cv = serialize_cv(cv)
+        serialized_cv = serialize_cv(cv, db=db)
         logger.info(f"Serialization successful for CV ID: '{cv_id}'")
         return serialized_cv
     except Exception as e:
