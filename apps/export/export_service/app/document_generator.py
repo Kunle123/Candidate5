@@ -401,9 +401,10 @@ class DocumentGenerator:
                 run.bold = True
                 run.font.size = Pt(14)
                 run.font.name = 'Arial'
+                run.font.color.rgb = RGBColor(0, 0, 0)
                 heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 set_paragraph_spacing(heading, before=18, after=12, line=1.15)
-                # Optional divider line
+                # Divider line
                 p = doc.add_paragraph()
                 p_format = p.paragraph_format
                 p_format.space_after = Pt(0)
@@ -424,6 +425,7 @@ class DocumentGenerator:
                 run = p.add_run(text)
                 run.font.size = Pt(11)
                 run.font.name = 'Arial'
+                run.font.color.rgb = RGBColor(0, 0, 0)
                 set_paragraph_spacing(p, before=0, after=3, line=1.15)
                 p.paragraph_format.left_indent = Inches(0.25)
                 p.paragraph_format.first_line_indent = Inches(-0.25)
@@ -478,20 +480,15 @@ class DocumentGenerator:
             if cv_data.get('experience'):
                 add_section_heading('Experience')
                 for exp in cv_data['experience']:
-                    # Job title and dates on same line
+                    # Job title, company, and dates on the same line
                     p = doc.add_paragraph()
                     p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                    # Job title
+                    # Job title (dark blue)
                     run = p.add_run(exp.get('title', '').title())
                     run.bold = True
                     run.font.size = Pt(12)
                     run.font.name = 'Arial'
-                    # Company name
-                    company = exp.get('company', '')
-                    if company:
-                        run2 = p.add_run(f" at {company}")
-                        run2.font.size = Pt(11)
-                        run2.font.name = 'Arial'
+                    run.font.color.rgb = RGBColor(0, 51, 153)  # Dark blue
                     # Dates (right-aligned)
                     start = format_date(exp.get('start_date', ''))
                     end = 'Present' if exp.get('current', False) else format_date(exp.get('end_date', ''))
@@ -499,15 +496,29 @@ class DocumentGenerator:
                         tab = p.add_run("\t")
                         tab.font.size = Pt(10)
                         tab.font.name = 'Arial'
+                        tab.font.color.rgb = RGBColor(0, 0, 0)
                         date_run = p.add_run(f"{start} – {end}")
                         date_run.font.size = Pt(10)
                         date_run.font.name = 'Arial'
-                    set_paragraph_spacing(p, before=12, after=6, line=1.15)
+                        date_run.font.color.rgb = RGBColor(0, 0, 0)
+                    set_paragraph_spacing(p, before=12, after=0, line=1.15)
                     p.paragraph_format.tab_stops.add_tab_stop(Inches(6.0), WD_ALIGN_PARAGRAPH.RIGHT)
-                    # Location (optional)
+                    # Company name (below, black)
+                    company = exp.get('company', '')
+                    if company:
+                        company_p = doc.add_paragraph(company)
+                        company_run = company_p.runs[0]
+                        company_run.font.size = Pt(11)
+                        company_run.font.name = 'Arial'
+                        company_run.font.color.rgb = RGBColor(0, 0, 0)
+                        set_paragraph_spacing(company_p, before=0, after=0, line=1.0)
+                    # Location (optional, below company)
                     if exp.get('location'):
                         loc_p = doc.add_paragraph(exp['location'])
-                        loc_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                        loc_run = loc_p.runs[0]
+                        loc_run.font.size = Pt(11)
+                        loc_run.font.name = 'Arial'
+                        loc_run.font.color.rgb = RGBColor(0, 0, 0)
                         set_paragraph_spacing(loc_p, before=0, after=0, line=1.0)
                     # Bullets
                     desc = exp.get('description', [])
