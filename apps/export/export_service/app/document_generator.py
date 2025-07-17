@@ -362,11 +362,10 @@ class DocumentGenerator:
     async def generate_docx(cv_data: Dict[str, Any], output_path: str, template_options: Optional[Dict[str, Any]] = None) -> str:
         """Generate a DOCX document using python-docx"""
         try:
-            from docx.oxml.ns import qn
             from docx.oxml import OxmlElement
-            from docx.enum.section import WD_ORIENT, WD_SECTION
-            from docx.enum.text import WD_LINE_SPACING
+            from docx.oxml.ns import qn
             from docx.shared import RGBColor
+            from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 
             # Create a new document
             doc = Document()
@@ -477,13 +476,56 @@ class DocumentGenerator:
                 summary_p = doc.add_paragraph(cv_data['summary'])
                 set_paragraph_spacing(summary_p, before=0, after=6, line=1.15)
 
+            # Create custom bullet style with hanging indent
+            styles = doc.styles
+            if 'CustomBullet' not in styles:
+                bullet_style = styles.add_style('CustomBullet', 1)
+                bullet_style.font.name = 'Arial'
+                bullet_style.font.size = Pt(11)
+                bullet_style.font.color.rgb = RGBColor(0, 0, 0)
+                bullet_style.paragraph_format.left_indent = Inches(0.25)
+                bullet_style.paragraph_format.first_line_indent = Inches(-0.25)
+                bullet_style.paragraph_format.hanging_indent = Inches(0.5)
+                bullet_style.paragraph_format.space_after = Pt(3)
+                bullet_style.paragraph_format.line_spacing = 1.15
+
+            # Helper: Add bullet point with custom style and hanging indent
+            def add_bullet(text):
+                p = doc.add_paragraph(style='CustomBullet')
+                run = p.add_run(text)
+                run.font.size = Pt(11)
+                run.font.name = 'Arial'
+                run.font.color.rgb = RGBColor(0, 0, 0)
+                p.paragraph_format.left_indent = Inches(0.25)
+                p.paragraph_format.first_line_indent = Inches(-0.25)
+                p.paragraph_format.hanging_indent = Inches(0.5)
+                p.paragraph_format.space_after = Pt(3)
+                p.paragraph_format.line_spacing = 1.15
+
+            # Helper: Add a visible horizontal divider line
+            def add_divider():
+                p = doc.add_paragraph()
+                p_format = p.paragraph_format
+                p_format.space_after = Pt(6)
+                p_format.space_before = Pt(18)
+                p_format.line_spacing = 1.0
+                p.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+                p._element.get_or_add_pPr().append(OxmlElement('w:pBdr'))
+                bdr = p._element.pPr.pBdr
+                bottom = OxmlElement('w:bottom')
+                bottom.set(qn('w:val'), 'single')
+                bottom.set(qn('w:sz'), '8')
+                bottom.set(qn('w:space'), '1')
+                bottom.set(qn('w:color'), 'auto')
+                bdr.append(bottom)
+
             # Experience
             if cv_data.get('experience'):
                 add_section_heading('Experience')
                 for idx, exp in enumerate(cv_data['experience']):
-                    # Add extra space before each role except the first
+                    # Add divider and extra space before each role except the first
                     if idx > 0:
-                        doc.add_paragraph()  # Adds a blank line for separation
+                        add_divider()
                     # Job title, company, and dates on the same line
                     p = doc.add_paragraph()
                     p.alignment = WD_ALIGN_PARAGRAPH.LEFT
@@ -505,7 +547,7 @@ class DocumentGenerator:
                         date_run.font.size = Pt(10)
                         date_run.font.name = 'Arial'
                         date_run.font.color.rgb = RGBColor(0, 0, 0)
-                    set_paragraph_spacing(p, before=18, after=0, line=1.15)  # More space before each role
+                    set_paragraph_spacing(p, before=18, after=0, line=1.15)
                     p.paragraph_format.tab_stops.add_tab_stop(Inches(6.0), WD_ALIGN_PARAGRAPH.RIGHT)
                     # Company name (below, black)
                     company = exp.get('company', '')
