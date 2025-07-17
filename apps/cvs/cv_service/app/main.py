@@ -288,30 +288,138 @@ async def generate_cv_docx(
     import base64
     try:
         logger.info(f"Received {request.method} to {request.url} from {request.client.host if request.client else 'unknown'} (CV only)")
+        logger.info("[DEBUG] generate_cv_docx called: Applying latest formatting logic for CV DOCX generation.")
+        from docx.shared import Pt, Inches, RGBColor
+        from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+        from docx.oxml.ns import qn
+        from docx.oxml import OxmlElement
+        doc = Document()
+        # Set page size and margins (A4, 1" margins)
+        section = doc.sections[0]
+        section.page_height = Inches(11.69)
+        section.page_width = Inches(8.27)
+        section.top_margin = Inches(1)
+        section.bottom_margin = Inches(1)
+        section.left_margin = Inches(1)
+        section.right_margin = Inches(1)
+        # Helper: Set font for all runs in a paragraph
+        def set_font(paragraph, size, bold=False, color=None, align=None):
+            for run in paragraph.runs:
+                run.font.name = 'Arial'
+                run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
+                run.font.size = Pt(size)
+                run.bold = bold
+                if color:
+                    run.font.color.rgb = color
+            if align:
+                paragraph.alignment = align
+        # Helper: Add section heading
+        def add_section_heading(text):
+            para = doc.add_paragraph()
+            run = para.add_run(text.upper())
+            set_font(para, 14, bold=True)
+            para.paragraph_format.space_before = Pt(18)
+            para.paragraph_format.space_after = Pt(12)
+            para.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+            # Optional divider line
+            p = para._element
+            pPr = p.get_or_add_pPr()
+            pbdr = OxmlElement('w:pBdr')
+            bottom = OxmlElement('w:bottom')
+            bottom.set(qn('w:val'), 'single')
+            bottom.set(qn('w:sz'), '4')
+            bottom.set(qn('w:space'), '1')
+            bottom.set(qn('w:color'), 'auto')
+            pbdr.append(bottom)
+            pPr.append(pbdr)
+            return para
+        # Helper: Add job title line
+        def add_job_title_line(title, company, dates):
+            para = doc.add_paragraph()
+            run_title = para.add_run(title)
+            set_font(para, 12, bold=True, color=RGBColor(0,51,153))
+            para.paragraph_format.space_before = Pt(18)
+            para.paragraph_format.space_after = Pt(6)
+            para.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+            # Company below
+            para2 = doc.add_paragraph(company)
+            set_font(para2, 11, bold=False)
+            para2.paragraph_format.space_after = Pt(0)
+            para2.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+            # Dates right-aligned on same line as job title (simulate with tab)
+            if dates:
+                para.add_run("\t" + dates)
+                for run in para.runs:
+                    if run.text.strip() == dates:
+                        run.font.size = Pt(10)
+                        run.font.name = 'Arial'
+                        run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
+                        run.bold = False
+                        run.font.color.rgb = RGBColor(0,0,0)
+                para.paragraph_format.tab_stops.add_tab_stop(Inches(6.0), WD_PARAGRAPH_ALIGNMENT.RIGHT)
+            return para
+        # Helper: Add bullet point with hanging indent
+        def add_bullet(text):
+            para = doc.add_paragraph(style=None)
+            run = para.add_run("• "+text)
+            set_font(para, 11)
+            para.paragraph_format.left_indent = Inches(0.25)
+            para.paragraph_format.first_line_indent = Inches(-0.25)
+            para.paragraph_format.space_after = Pt(3)
+            para.paragraph_format.line_spacing = 1.15
+            para.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+            return para
+        # Helper: Add contact info
+        def add_contact_info(text):
+            para = doc.add_paragraph(text)
+            set_font(para, 10, bold=False)
+            para.paragraph_format.space_after = Pt(6)
+            para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            return para
+        # Parse cv_text
         cv_text = payload.get("cv")
         if not cv_text:
             logger.warning("Missing 'cv' field in request body")
             raise HTTPException(status_code=400, detail="'cv' field is required in the request body.")
-        doc = Document()
-        doc.add_heading("Curriculum Vitae", 0)
-        from docx.shared import Pt
-        sections = [
+        lines = [l.strip() for l in cv_text.splitlines() if l.strip()]
+        # Candidate name (first non-empty line)
+        if lines:
+            para = doc.add_paragraph(lines[0])
+            set_font(para, 20, bold=True)
+            para.paragraph_format.space_after = Pt(6)
+            para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            lines = lines[1:]
+        # Contact info (next line if present)
+        if lines and ("@" in lines[0] or any(c.isdigit() for c in lines[0])):
+            add_contact_info(lines[0])
+            lines = lines[1:]
+        # Section parsing
+        section_headers = [
             "SUMMARY", "PROFESSIONAL SUMMARY", "CORE COMPETENCIES", "EXPERIENCE", "PROFESSIONAL EXPERIENCE", "EDUCATION", "SKILLS", "CERTIFICATIONS", "PROJECTS", "REFERENCES"
         ]
-        for line in cv_text.splitlines():
-            stripped = line.strip()
-            if not stripped:
-                continue  # Skip empty lines to reduce excess spacing
-            upper = stripped.upper()
-            if upper in sections:
-                para = doc.add_paragraph()
-                run = para.add_run(stripped.title())
-                run.bold = True
-                para.paragraph_format.space_before = Pt(8)
-                para.paragraph_format.space_after = Pt(4)
-            else:
-                para = doc.add_paragraph(stripped)
-                para.paragraph_format.space_after = Pt(2)
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            if line.upper() in section_headers:
+                add_section_heading(line)
+                i += 1
+                continue
+            # Job title/company/dates pattern (very basic)
+            if i+2 < len(lines) and ("-" in lines[i+2] or "–" in lines[i+2]):
+                add_job_title_line(lines[i], lines[i+1], lines[i+2])
+                i += 3
+                continue
+            # Bullet point
+            if line.startswith("•") or line.startswith("-"):
+                add_bullet(line[1:].strip())
+                i += 1
+                continue
+            # Default: body text
+            para = doc.add_paragraph(line)
+            set_font(para, 11)
+            para.paragraph_format.space_after = Pt(6)
+            para.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+            i += 1
         buf = BytesIO()
         doc.save(buf)
         buf.seek(0)
