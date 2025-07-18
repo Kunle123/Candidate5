@@ -303,7 +303,7 @@ async def generate_cv_docx(
 ):
     """
     Generate a CV DOCX from provided text and return as base64-encoded string in JSON.
-    Accepts optional cover_letter_id to link a cover letter.
+    Accepts optional cover_letter and links it to the CV if present.
     Stores job_title and company_name in personal_info if provided.
     """
     import base64
@@ -432,9 +432,52 @@ async def generate_cv_docx(
             personal_info["job_title"] = job_title
         if company_name:
             personal_info["company"] = company_name
-        # Persist to DB
+        # --- Handle cover_letter if present ---
+        cover_letter_id = None
+        if payload.get("cover_letter"):
+            cover_letter_text = payload["cover_letter"]
+            cover_doc = Document()
+            cover_doc.add_heading("Cover Letter", 0)
+            for line in cover_letter_text.splitlines():
+                if line.strip() == "":
+                    cover_doc.add_paragraph()
+                else:
+                    para = cover_doc.add_paragraph(line)
+                    for run in para.runs:
+                        run.font.name = 'Arial'
+                        run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
+                        run.font.size = Pt(11)
+            cover_buf = BytesIO()
+            cover_doc.save(cover_buf)
+            cover_buf.seek(0)
+            cover_docx_bytes = cover_buf.getvalue()
+            # Store job_title/company in cover letter personal_info too
+            cover_personal_info = {}
+            if job_title:
+                cover_personal_info["job_title"] = job_title
+            if company_name:
+                cover_personal_info["company"] = company_name
+            from .models import CV
+            cover_letter_obj = CV(
+                id=uuid.uuid4(),
+                user_id=auth["user_id"],
+                name="Generated Cover Letter",
+                description="Cover letter generated via API",
+                is_default=False,
+                version=1,
+                template_id="default",
+                summary=None,
+                docx_file=cover_docx_bytes,
+                type="cover_letter",
+                cover_letter_id=None,
+                personal_info=json.dumps(cover_personal_info) if cover_personal_info else None
+            )
+            db.add(cover_letter_obj)
+            db.commit()
+            db.refresh(cover_letter_obj)
+            cover_letter_id = str(cover_letter_obj.id)
+        # Persist CV to DB
         from .models import CV
-        cover_letter_id = payload.get("cover_letter_id")
         new_cv = CV(
             id=uuid.uuid4(),
             user_id=auth["user_id"],
@@ -461,7 +504,8 @@ async def generate_cv_docx(
         return {
             "filename": f"cv_{new_cv.id}.docx",
             "filedata": docx_b64,
-            "cv_id": str(new_cv.id)
+            "cv_id": str(new_cv.id),
+            "cover_letter_id": cover_letter_id
         }
     except Exception as e:
         logger.error(f"Error generating CV DOCX: {e}", exc_info=True)
