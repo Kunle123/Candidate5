@@ -7,3 +7,4 @@ __pycache__/
 
 # Stripe utility script
 stripe_setup.py
+scripts/clear_all_dbs.py
