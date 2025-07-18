@@ -149,48 +149,12 @@ def serialize_cv(cv, include_relationships=True, db=None):
         "created_at": cv.created_at.isoformat() if cv.created_at else None,
         "updated_at": cv.updated_at.isoformat() if cv.updated_at else None
     }
-    # Extract job_title and company from first experience if available
-    job_title = None
-    company = None
-    if include_relationships and not is_sqlite:
-        # Experiences
-        exps = getattr(cv, "experiences", [])
-        if exps:
-            job_title = exps[0].position
-            company = exps[0].company
-        result["content"]["experiences"] = []
-        for exp in exps:
-            result["content"]["experiences"].append({
-                "id": str(exp.id) if hasattr(exp.id, "hex") else exp.id,
-                "company": exp.company,
-                "position": exp.position,
-                "start_date": exp.start_date,
-                "end_date": exp.end_date,
-                "description": exp.description,
-                "included": exp.included,
-                "order": exp.order
-            })
-        # Education
-        result["content"]["education"] = []
-        for edu in getattr(cv, "education", []):
-            result["content"]["education"].append({
-                "id": str(edu.id) if hasattr(edu.id, "hex") else edu.id,
-                "institution": edu.institution,
-                "degree": edu.degree,
-                "field_of_study": edu.field_of_study,
-                "start_date": edu.start_date,
-                "end_date": edu.end_date,
-                "description": edu.description,
-                "included": edu.included,
-                "order": edu.order
-            })
-    # Fallback: try to get job_title/company from content if not found
-    if not job_title:
-        job_title = result["content"].get("personal_info", {}).get("job_title")
-    if not company:
-        company = result["content"].get("personal_info", {}).get("company")
+    # Extract job_title and company_name from personal_info if available
+    personal_info = result["content"].get("personal_info", {})
+    job_title = personal_info.get("job_title")
+    company_name = personal_info.get("company_name") or personal_info.get("company")
     result["job_title"] = job_title
-    result["company"] = company
+    result["company_name"] = company_name
     # Cover letter info (direct link)
     cover_letter_available = False
     cover_letter_download_url = None
