@@ -56,7 +56,7 @@ class CVAnalysisResponse(BaseModel):
     timestamp: datetime
 
 class KeywordsRequest(BaseModel):
-    text: str
+    job_description: str
 
 class KeywordsResponse(BaseModel):
     keywords: List[str]
@@ -262,6 +262,7 @@ async def analyze_cv(
 
     return response 
 
+# --- Fix /api/ai/keywords to accept 'job_description' instead of 'text' ---
 @router.post("/keywords", response_model=KeywordsResponse)
 async def extract_keywords(request: KeywordsRequest):
     logger.info("[DEBUG] /api/ai/keywords endpoint hit")
@@ -326,14 +327,10 @@ Example format for {N} keywords: [\"keyword1\", \"keyword2\", \"keyword3\", \"ke
 No additional text, explanations, or formatting outside the JSON array.
 
 **JOB DESCRIPTION:**
-{request.text}
+{request.job_description}
 """
             response = client.chat.completions.create(
                 model="gpt-4o-2024-08-06",
-                messages=[
-                    {"role": "system", "content": "You are an expert at extracting keywords from text. Respond with only a JSON array of keywords."},
-                    {"role": "user", "content": prompt}
-                ],
                 response_format={
                     "type": "json_schema",
                     "json_schema": {
@@ -354,6 +351,10 @@ No additional text, explanations, or formatting outside the JSON array.
                         "strict": True
                     }
                 },
+                messages=[
+                    {"role": "system", "content": "You are an expert at extracting keywords from text. Respond with only a JSON array of keywords."},
+                    {"role": "user", "content": prompt}
+                ],
                 temperature=0.2,
             )
             logger.info(f"[DEBUG] OpenAI response: {response}")
@@ -368,11 +369,12 @@ No additional text, explanations, or formatting outside the JSON array.
             logger.error(f"[ERROR] OpenAI keyword extraction failed: {str(e)}. Falling back to rule-based extraction.")
             # Fallback to rule-based extraction below
     logger.info("[DEBUG] Using fallback rule-based keyword extraction")
-    words = set(word.strip('.,!?()[]{}:;"\'').lower() for word in request.text.split())
+    words = set(word.strip('.,!?()[]{}:;"\'').lower() for word in request.job_description.split())
     keywords = [w for w in words if len(w) > 3]
     logger.info(f"[DEBUG] Returning {len(keywords)} keywords from fallback")
     return KeywordsResponse(keywords=keywords) 
 
+# --- Fix /api/ai/generate-cv to use OpenAI client correctly (remove 'await' if not async) ---
 @router.post("/generate-cv", response_model=GenerateCVResponse)
 async def generate_cv(request: GenerateCVRequest):
     """
@@ -394,22 +396,22 @@ USER CV DATA (JSON):\n{profile}\n\nJOB ADVERT (FOR STRATEGIC TAILORING REFERENCE
         prompt = system_prompt.format(profile=request.profile, job_description=request.job_description)
         if request.keywords:
             prompt += f"\nKEYWORDS TO EMPHASIZE: {', '.join(request.keywords)}\n"
-        # Call OpenAI (assume chat completion)
-        completion = await client.chat.completions.create(
+        # Call OpenAI (synchronous call)
+        completion = client.chat.completions.create(
             model="gpt-4-turbo",
+            response_format={"type": "json_object"},
             messages=[{"role": "system", "content": prompt}],
             temperature=0.3,
             max_tokens=3000
         )
         # Parse response
         import json as pyjson
-        try:
-            result = pyjson.loads(completion.choices[0].message.content)
-        except Exception:
-            raise HTTPException(status_code=500, detail="AI response was not valid JSON.")
-        return GenerateCVResponse(**result)
+        content = completion.choices[0].message.content
+        if isinstance(content, str):
+            content = pyjson.loads(content)
+        return GenerateCVResponse(**content)
     except Exception as e:
-        logger.error(f"Error generating CV: {str(e)}")
+        logger.error(f"[ERROR] Error generating CV: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generating CV: {str(e)}") 
 
 @router.post("/update-cv", response_model=UpdateCVResponse)
@@ -437,6 +439,7 @@ USER CV DATA (JSON):\n{profile}\n\nJOB ADVERT (FOR STRATEGIC TAILORING REFERENCE
         # Call OpenAI (assume chat completion)
         completion = await client.chat.completions.create(
             model="gpt-4-turbo",
+            response_format={"type": "json_object"},
             messages=[{"role": "system", "content": prompt}],
             temperature=0.3,
             max_tokens=3000
