@@ -191,16 +191,12 @@ def serialize_cv(cv, include_relationships=True, db=None):
         company = result["content"].get("personal_info", {}).get("company")
     result["job_title"] = job_title
     result["company"] = company
-    # Cover letter info (if db is provided)
+    # Cover letter info (direct link)
     cover_letter_available = False
     cover_letter_download_url = None
-    if db is not None:
+    if getattr(cv, "cover_letter_id", None) and db is not None:
         from .models import CV as CVModel
-        q = db.query(CVModel).filter(CVModel.user_id == cv.user_id, CVModel.type == "cover_letter")
-        # Try to match job_title/company if possible
-        if job_title:
-            q = q.filter(CVModel.name.ilike(f"%{job_title}%"))
-        cover_letter = q.order_by(CVModel.created_at.desc()).first()
+        cover_letter = db.query(CVModel).filter(CVModel.id == cv.cover_letter_id, CVModel.type == "cover_letter").first()
         if cover_letter:
             cover_letter_available = True
             cover_letter_download_url = f"/api/cv/{cover_letter.id}/download"
@@ -307,6 +303,8 @@ async def generate_cv_docx(
 ):
     """
     Generate a CV DOCX from provided text and return as base64-encoded string in JSON.
+    Accepts optional cover_letter_id to link a cover letter.
+    Stores job_title and company_name in personal_info if provided.
     """
     import base64
     try:
@@ -425,8 +423,18 @@ async def generate_cv_docx(
         doc.save(buf)
         buf.seek(0)
         docx_bytes = buf.getvalue()
+        # Parse job_title and company_name from payload (from assistant)
+        job_title = payload.get("job_title")
+        company_name = payload.get("company_name")
+        # Prepare personal_info JSON
+        personal_info = {}
+        if job_title:
+            personal_info["job_title"] = job_title
+        if company_name:
+            personal_info["company"] = company_name
         # Persist to DB
         from .models import CV
+        cover_letter_id = payload.get("cover_letter_id")
         new_cv = CV(
             id=uuid.uuid4(),
             user_id=auth["user_id"],
@@ -437,7 +445,9 @@ async def generate_cv_docx(
             template_id="default",
             summary=None,
             docx_file=docx_bytes,
-            type="cv"
+            type="cv",
+            cover_letter_id=cover_letter_id,
+            personal_info=json.dumps(personal_info) if personal_info else None
         )
         db.add(new_cv)
         db.commit()
@@ -467,6 +477,8 @@ async def generate_cover_letter_docx(
 ):
     """
     Generate a Cover Letter DOCX from provided text and return as base64-encoded string in JSON.
+    Stores job_title and company_name in personal_info if provided.
+    Returns the new cover letter's ID for linking.
     """
     import base64
     try:
@@ -486,6 +498,14 @@ async def generate_cover_letter_docx(
         doc.save(buf)
         buf.seek(0)
         docx_bytes = buf.getvalue()
+        # Parse job_title and company_name from payload (from assistant)
+        job_title = payload.get("job_title")
+        company_name = payload.get("company_name")
+        personal_info = {}
+        if job_title:
+            personal_info["job_title"] = job_title
+        if company_name:
+            personal_info["company"] = company_name
         # Persist to DB (as a separate CV record for now)
         from .models import CV
         new_cv = CV(
@@ -498,7 +518,8 @@ async def generate_cover_letter_docx(
             template_id="default",
             summary=None,
             docx_file=docx_bytes,
-            type="cover_letter"
+            type="cover_letter",
+            personal_info=json.dumps(personal_info) if personal_info else None
         )
         db.add(new_cv)
         db.commit()
@@ -512,7 +533,7 @@ async def generate_cover_letter_docx(
         return {
             "filename": f"cover_letter_{new_cv.id}.docx",
             "filedata": docx_b64,
-            "cv_id": str(new_cv.id)
+            "cv_id": str(new_cv.id)  # This is the cover letter's ID
         }
     except Exception as e:
         logger.error(f"Error generating Cover Letter DOCX: {e}", exc_info=True)
