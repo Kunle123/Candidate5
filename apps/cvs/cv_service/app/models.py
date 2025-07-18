@@ -59,6 +59,11 @@ class CV(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     docx_file = Column(LargeBinary, nullable=True)
+    # Add direct link to cover letter
+    cover_letter_id = Column(String(36), ForeignKey("cvs.id", ondelete="SET NULL"), nullable=True)
+    # Relationship for ORM (PostgreSQL only)
+    if not is_sqlite:
+        cover_letter = relationship("CV", remote_side=[id], uselist=False, post_update=True)
 
 # CV sections as separate tables for normalization and better querying
 class Experience(Base):
