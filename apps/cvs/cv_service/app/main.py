@@ -301,20 +301,16 @@ async def generate_cv_docx(
     request: Request = None,
     db: Session = Depends(get_db_session)
 ):
-    """
-    Generate a CV DOCX from provided text and return as base64-encoded string in JSON.
-    Accepts optional cover_letter and links it to the CV if present.
-    Stores job_title and company_name in personal_info if provided.
-    """
     import base64
+    import traceback
     try:
-        logger.info(f"Received {request.method} to {request.url} from {request.client.host if request.client else 'unknown'} (CV only)")
-        logger.info("[DEBUG] generate_docx called: Refining to match user's CV structure and style.")
+        logger.info(f"[DEBUG] Received payload: {payload}")
+        logger.info(f"[DEBUG] User: {auth}")
+        logger.info(f"[DEBUG] Starting CV DOCX generation")
         from docx.shared import Pt, Inches
         from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
         from docx.oxml.ns import qn
         doc = Document()
-        # Set page size and margins (A4, 1" margins)
         section = doc.sections[0]
         section.page_height = Inches(11.69)
         section.page_width = Inches(8.27)
@@ -322,7 +318,6 @@ async def generate_cv_docx(
         section.bottom_margin = Inches(1)
         section.left_margin = Inches(1)
         section.right_margin = Inches(1)
-        # Helper: Set font for all runs in a paragraph
         def set_font(paragraph, size, bold=False):
             for run in paragraph.runs:
                 run.font.name = 'Arial'
@@ -330,7 +325,6 @@ async def generate_cv_docx(
                 run.font.size = Pt(size)
                 run.bold = bold
             paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
-        # Helper: Add section heading (Title Case, bold)
         def add_section_heading(text):
             para = doc.add_paragraph()
             run = para.add_run(text.title())
@@ -338,7 +332,6 @@ async def generate_cv_docx(
             para.paragraph_format.space_before = Pt(18)
             para.paragraph_format.space_after = Pt(12)
             return para
-        # Helper: Add job block (Job Title, Company, Dates)
         def add_job_block(title, company, dates):
             para_title = doc.add_paragraph(title)
             set_font(para_title, 12, bold=True)
@@ -350,7 +343,6 @@ async def generate_cv_docx(
             para_dates = doc.add_paragraph(dates)
             set_font(para_dates, 11, bold=False)
             para_dates.paragraph_format.space_after = Pt(6)
-        # Helper: Add bullet point (all regular weight, consistent, real bullet)
         def add_bullet(text, indent=0.25):
             para = doc.add_paragraph()
             para.style = doc.styles['List Bullet']
@@ -361,80 +353,70 @@ async def generate_cv_docx(
             set_font(para, 11, bold=False)
             para.text = text
             return para
-        # Helper: Add sub-bullet (further indented, regular weight)
         def add_sub_bullet(text):
             return add_bullet(text, indent=0.5)
-        # Helper: Add contact info (centered, smaller)
         def add_contact_info(text):
             para = doc.add_paragraph(text)
             set_font(para, 10, bold=False)
             para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
             para.paragraph_format.space_after = Pt(6)
             return para
-        # Parse cv_text
         cv_text = payload.get("cv")
         if not cv_text:
             logger.warning("Missing 'cv' field in request body")
             raise HTTPException(status_code=400, detail="'cv' field is required in the request body.")
+        logger.info(f"[DEBUG] CV text received, length: {len(cv_text)}")
         lines = [l.strip() for l in cv_text.splitlines() if l.strip()]
-        # Candidate name (first non-empty line)
         if lines:
             para = doc.add_paragraph(lines[0])
             set_font(para, 20, bold=True)
             para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
             para.paragraph_format.space_after = Pt(6)
             lines = lines[1:]
-        # Contact info (next line if present)
         if lines and ("@" in lines[0] or any(c.isdigit() for c in lines[0])):
             add_contact_info(lines[0])
             lines = lines[1:]
-        # Section parsing
         section_headers = [
             "Summary", "Professional Summary", "Core Competencies", "Experience", "Professional Experience", "Education", "Skills", "Certifications", "Projects", "References"
         ]
         i = 0
         while i < len(lines):
             line = lines[i]
-            # Section heading
             if line.title() in section_headers:
                 add_section_heading(line)
                 i += 1
                 continue
-            # Job block (Job Title, Company, Dates)
             if i+2 < len(lines) and not any(lines[i].startswith(b) for b in ["•", "-"]) and not any(lines[i+1].startswith(b) for b in ["•", "-"]) and not any(lines[i+2].startswith(b) for b in ["•", "-"]):
                 add_job_block(lines[i], lines[i+1], lines[i+2])
                 i += 3
                 continue
-            # Bullet point or sub-bullet
             if line.startswith("•") or line.startswith("-"):
-                # Sub-bullet if indented (starts with two spaces or tab)
                 if line.startswith("    ") or line.startswith("\t"):
                     add_sub_bullet(line.lstrip("•- \t"))
                 else:
                     add_bullet(line[1:].strip())
                 i += 1
                 continue
-            # Default: body text
             para = doc.add_paragraph(line)
             set_font(para, 11)
             para.paragraph_format.space_after = Pt(6)
             i += 1
+        logger.info("[DEBUG] Finished parsing CV text, saving DOCX to buffer")
         buf = BytesIO()
         doc.save(buf)
         buf.seek(0)
         docx_bytes = buf.getvalue()
-        # Parse job_title and company_name from payload (from assistant)
+        logger.info(f"[DEBUG] DOCX bytes length: {len(docx_bytes)}")
         job_title = payload.get("job_title")
         company_name = payload.get("company_name")
-        # Prepare personal_info JSON
         personal_info = {}
         if job_title:
             personal_info["job_title"] = job_title
         if company_name:
             personal_info["company"] = company_name
-        # --- Handle cover_letter if present ---
         cover_letter_id = None
         if payload.get("cover_letter"):
+            logger.info("[DEBUG] Cover letter detected in payload, generating cover letter DOCX")
             cover_letter_text = payload["cover_letter"]
             cover_doc = Document()
             cover_doc.add_heading("Cover Letter", 0)
@@ -451,7 +433,7 @@ async def generate_cv_docx(
             cover_doc.save(cover_buf)
             cover_buf.seek(0)
             cover_docx_bytes = cover_buf.getvalue()
-            # Store job_title/company in cover letter personal_info too
+            logger.info(f"[DEBUG] Cover letter DOCX bytes length: {len(cover_docx_bytes)}")
             cover_personal_info = {}
             if job_title:
                 cover_personal_info["job_title"] = job_title
@@ -476,8 +458,9 @@ async def generate_cv_docx(
             db.commit()
             db.refresh(cover_letter_obj)
             cover_letter_id = str(cover_letter_obj.id)
-        # Persist CV to DB
+            logger.info(f"[DEBUG] Cover letter persisted with id: {cover_letter_id}")
         from .models import CV
+        logger.info("[DEBUG] Persisting CV to DB")
         new_cv = CV(
             id=uuid.uuid4(),
             user_id=auth["user_id"],
@@ -495,7 +478,7 @@ async def generate_cv_docx(
         db.add(new_cv)
         db.commit()
         db.refresh(new_cv)
-        logger.info(f"CV DOCX generated and persisted in DB for user_id={auth.get('user_id')}, cv_id={new_cv.id}")
+        logger.info(f"[DEBUG] CV DOCX generated and persisted in DB for user_id={auth.get('user_id')}, cv_id={new_cv.id}")
         try:
             docx_b64 = base64.b64encode(docx_bytes).decode('utf-8')
         except Exception as e:
@@ -508,7 +491,8 @@ async def generate_cv_docx(
             "cover_letter_id": cover_letter_id
         }
     except Exception as e:
-        logger.error(f"Error generating CV DOCX: {e}", exc_info=True)
+        logger.error(f"Error generating CV DOCX: {e}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Failed to generate CV DOCX")
 
 @app.post("/api/cover-letter")
