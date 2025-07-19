@@ -171,34 +171,49 @@ async def create_checkout_session(
             detail="An unexpected error occurred"
         )
 
+# Helper function to get user email from user_id (placeholder, to be replaced with real implementation)
+def get_user_email_from_id(user_id: str) -> str:
+    # TODO: Replace this with a real lookup (e.g., call user service or query DB)
+    if user_id == "8a0fae8b-77a8-4735-b83c-01130eb60cb5":
+        return "kunle2000@gmail.com"
+    return ""
+
 @router.get("/user/{user_id}", response_model=Optional[UserSubscription])
 async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme)):
     """Get the current subscription for a user"""
     try:
-        # Get subscriptions for the user from Stripe
+        # 1. Find the Stripe customer by user_id (or by email if you have it)
+        user_email = get_user_email_from_id(user_id)
+        if not user_email:
+            raise HTTPException(status_code=404, detail="User email not found for user_id")
+        customers = stripe.Customer.list(email=user_email, limit=1)
+        if not customers.data:
+            return None
+        customer_id = customers.data[0].id
+
+        # 2. List subscriptions for the customer
         subscriptions = stripe.Subscription.list(
-            limit=1,  # Typically a user would have only one active subscription
+            customer=customer_id,
             status="active",
-            expand=["data.default_payment_method"],
-            metadata={"user_id": user_id}
+            limit=1,
+            expand=["data.default_payment_method"]
         )
-        
+
         if not subscriptions.data:
             return None
-        
+
         subscription = subscriptions.data[0]
-        
-        # Get the plan details
-        plan_id = subscription.metadata.get("plan_id", "basic")  # Default to basic if not specified
+
+        # 3. Get the plan details (as before)
+        plan_id = subscription.metadata.get("plan_id", "basic")
         plan = None
         for p in SUBSCRIPTION_PLANS:
             if p.id == plan_id:
                 plan = p
                 break
-        
         if not plan:
             plan = SUBSCRIPTION_PLANS[0]  # Default to first plan
-        
+
         # Create the response
         return UserSubscription(
             id=subscription.id,
@@ -207,7 +222,7 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
             plan=plan,
             is_active=subscription.status == "active"
         )
-        
+
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in get_user_subscription: {str(e)}")
         raise HTTPException(
