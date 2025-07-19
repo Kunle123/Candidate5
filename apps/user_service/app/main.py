@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="User Service", description="User profile, settings, jobs, applications, and feedback endpoints.")
 
 # Add CORS middleware with updated origins
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,https://c5-frontend-pied.vercel.app,https://c5-api-gateway-production.up.railway.app").split(",")
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,https://c5-frontend-pied.vercel.app,https://c5-api-gateway-production.up.railway.app,https://candidate5.co.uk,https://www.candidate5.co.uk").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
