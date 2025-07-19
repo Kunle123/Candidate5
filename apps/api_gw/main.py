@@ -19,10 +19,15 @@ from fastapi.exception_handlers import http_exception_handler
 
 app = FastAPI()
 
-# Add CORSMiddleware globally for robust CORS handling
+allowed_origins = [
+    "https://c5-frontend-pied.vercel.app",
+    "https://candidate5.co.uk",
+    "https://www.candidate5.co.uk"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://c5-frontend-pied.vercel.app"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -102,7 +107,11 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
                 headers=dict(resp.headers)
             )
             # Always add CORS headers
-            response.headers["Access-Control-Allow-Origin"] = "https://c5-frontend-pied.vercel.app"
+            origin = request.headers.get("origin")
+            if origin in allowed_origins:
+                response.headers["Access-Control-Allow-Origin"] = origin
+            else:
+                response.headers["Access-Control-Allow-Origin"] = allowed_origins[0]
             response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
             response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
@@ -114,7 +123,7 @@ async def proxy(request: StarletteRequest, base_url: str, path: str):
                 status_code=500,
                 headers={
                     "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": request.headers.get("origin", cors_origins[0]),
+                    "Access-Control-Allow-Origin": request.headers.get("origin", allowed_origins[0]),
                     "Access-Control-Allow-Credentials": "true",
                     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
                     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With"
