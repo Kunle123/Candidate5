@@ -37,6 +37,9 @@ class UserProfileResponse(BaseModel):
     id: str
     email: EmailStr
     name: str
+    address_line1: Optional[str] = None
+    city_state_postal: Optional[str] = None
+    linkedin: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     model_config = {
@@ -44,8 +47,11 @@ class UserProfileResponse(BaseModel):
     }
 
 class UpdateUserProfileRequest(BaseModel):
-    name: str
-    email: EmailStr
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    address_line1: Optional[str] = None
+    city_state_postal: Optional[str] = None
+    linkedin: Optional[str] = None
 
 class ChangePasswordRequest(BaseModel):
     currentPassword: str
@@ -215,6 +221,12 @@ def patch_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get
             user.name = req.name
         if req.email is not None:
             user.email = req.email
+        if req.address_line1 is not None:
+            user.address_line1 = req.address_line1
+        if req.city_state_postal is not None:
+            user.city_state_postal = req.city_state_postal
+        if req.linkedin is not None:
+            user.linkedin = req.linkedin
         user.updated_at = now
         db.commit()
         db.refresh(user)
@@ -283,6 +295,13 @@ def create_user_profile(
 
 @router.get("/user/{user_id}", response_model=UserProfileResponse)
 def get_user_profile_by_id(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
+    if user:
+        return user
+    raise HTTPException(status_code=404, detail="User not found")
+
+@router.get("/users/me", response_model=UserProfileResponse)
+def get_my_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
     if user:
         return user

@@ -9,5 +9,8 @@ class UserProfile(Base):
     id = Column(String, primary_key=True)
     email = Column(String, unique=True, nullable=False)
     name = Column(String)
+    address_line1 = Column(String, nullable=True)
+    city_state_postal = Column(String, nullable=True)
+    linkedin = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow) 
