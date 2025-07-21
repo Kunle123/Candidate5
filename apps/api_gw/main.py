@@ -329,19 +329,19 @@ async def proxy_cover_letter(request: StarletteRequest, full_path: str):
 
 @app.api_route("/auth/google", methods=["GET"])
 async def proxy_auth_google(request: Request):
-    return await proxy(request, USER_SERVICE_URL, "/auth/google")
+    return await proxy(request, AUTH_SERVICE_URL, "/auth/google")
 
 @app.api_route("/auth/google/callback", methods=["GET"])
 async def proxy_auth_google_callback(request: Request):
-    return await proxy(request, USER_SERVICE_URL, "/auth/google/callback")
+    return await proxy(request, AUTH_SERVICE_URL, "/auth/google/callback")
 
 @app.api_route("/auth/linkedin", methods=["GET"])
 async def proxy_auth_linkedin(request: Request):
-    return await proxy(request, USER_SERVICE_URL, "/auth/linkedin")
+    return await proxy(request, AUTH_SERVICE_URL, "/auth/linkedin")
 
 @app.api_route("/auth/linkedin/callback", methods=["GET"])
 async def proxy_auth_linkedin_callback(request: Request):
-    return await proxy(request, USER_SERVICE_URL, "/auth/linkedin/callback")
+    return await proxy(request, AUTH_SERVICE_URL, "/auth/linkedin/callback")
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def catch_all(request: StarletteRequest, full_path: str):
