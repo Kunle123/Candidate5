@@ -12,9 +12,6 @@ from .db import get_db
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 import requests
-from authlib.integrations.starlette_client import OAuth
-from starlette.config import Config
-from starlette.responses import RedirectResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -129,37 +126,6 @@ INTER_SERVICE_SECRET = os.getenv("INTER_SERVICE_SECRET", "")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 JWT_SECRET = os.getenv("JWT_SECRET", "development_secret_key")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-
-# OAuth config
-config = Config(environ=os.environ)
-oauth = OAuth(config)
-
-# Register Google OAuth
-oauth.register(
-    name='google',
-    client_id=os.getenv('GOOGLE_CLIENT_ID'),
-    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
-    access_token_url='https://oauth2.googleapis.com/token',
-    access_token_params=None,
-    authorize_url='https://accounts.google.com/o/oauth2/v2/auth',
-    authorize_params=None,
-    api_base_url='https://www.googleapis.com/oauth2/v2/',
-    userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',
-    client_kwargs={'scope': 'openid email profile'},
-)
-
-# Register LinkedIn OAuth
-oauth.register(
-    name='linkedin',
-    client_id=os.getenv('LINKEDIN_CLIENT_ID'),
-    client_secret=os.getenv('LINKEDIN_CLIENT_SECRET'),
-    access_token_url='https://www.linkedin.com/oauth/v2/accessToken',
-    access_token_params=None,
-    authorize_url='https://www.linkedin.com/oauth/v2/authorization',
-    authorize_params=None,
-    api_base_url='https://api.linkedin.com/v2/',
-    client_kwargs={'scope': 'r_liteprofile r_emailaddress'},
-)
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
@@ -414,76 +380,6 @@ def delete_job(job_id: str, user_id: str = Depends(get_current_user)):
 def submit_feedback(req: FeedbackRequest, user_id: Optional[str] = Depends(get_current_user)):
     feedbacks.append({"user_id": user_id, **req.dict()})
     return {"success": True}
-
-@router.get('/auth/google')
-async def auth_google(request: Request):
-    redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')  # e.g., https://yourdomain.com/auth/google/callback
-    return await oauth.google.authorize_redirect(request, redirect_uri)
-
-@router.get('/auth/google/callback')
-async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
-    token = await oauth.google.authorize_access_token(request)
-    user_info = await oauth.google.parse_id_token(request, token)
-    email = user_info.get('email')
-    name = user_info.get('name')
-    # Create or update user in DB
-    user = db.query(UserProfileORM).filter(UserProfileORM.email == email).first()
-    now = datetime.utcnow()
-    if not user:
-        user = UserProfileORM(
-            id=str(uuid4()),
-            email=email,
-            name=name,
-            created_at=now,
-            updated_at=now
-        )
-        db.add(user)
-    else:
-        user.name = name
-        user.updated_at = now
-    db.commit()
-    db.refresh(user)
-    # Issue JWT (reuse your existing logic)
-    jwt_token = jwt.encode({"id": user.id, "email": user.email, "exp": datetime.utcnow() + timedelta(days=1)}, JWT_SECRET, algorithm=JWT_ALGORITHM)
-    # Redirect to frontend with token (customize as needed)
-    frontend_url = os.getenv('FRONTEND_URL', 'https://candidate5.co.uk')
-    return RedirectResponse(f"{frontend_url}/auth/callback?token={jwt_token}")
-
-@router.get('/auth/linkedin')
-async def auth_linkedin(request: Request):
-    redirect_uri = os.getenv('LINKEDIN_REDIRECT_URI')  # e.g., https://yourdomain.com/auth/linkedin/callback
-    return await oauth.linkedin.authorize_redirect(request, redirect_uri)
-
-@router.get('/auth/linkedin/callback')
-async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
-    token = await oauth.linkedin.authorize_access_token(request)
-    resp = await oauth.linkedin.get('me', token=token)
-    profile = resp.json()
-    email_resp = await oauth.linkedin.get('emailAddress?q=members&projection=(elements*(handle~))', token=token)
-    email = email_resp.json()['elements'][0]['handle~']['emailAddress']
-    name = profile.get('localizedFirstName', '') + ' ' + profile.get('localizedLastName', '')
-    # Create or update user in DB
-    user = db.query(UserProfileORM).filter(UserProfileORM.email == email).first()
-    now = datetime.utcnow()
-    if not user:
-        user = UserProfileORM(
-            id=str(uuid4()),
-            email=email,
-            name=name,
-            created_at=now,
-            updated_at=now
-        )
-        db.add(user)
-    else:
-        user.name = name
-        user.updated_at = now
-    db.commit()
-    db.refresh(user)
-    # Issue JWT (reuse your existing logic)
-    jwt_token = jwt.encode({"id": user.id, "email": user.email, "exp": datetime.utcnow() + timedelta(days=1)}, JWT_SECRET, algorithm=JWT_ALGORITHM)
-    # Redirect to frontend with token (customize as needed)
-    frontend_url = os.getenv('FRONTEND_URL', 'https://candidate5.co.uk')
-    return RedirectResponse(f"{frontend_url}/auth/callback?token={jwt_token}")
 
 @app.get("/health")
 def health():
