@@ -46,6 +46,7 @@ async def proxy_openapi(request: Request):
         return Response(content=resp.content, status_code=resp.status_code, media_type=resp.headers.get("content-type"))
 
 auth_service_url = os.environ.get("AUTH_SERVICE_URL")
+AUTH_SERVICE_URL = os.environ.get("AUTH_SERVICE_URL")
 security = HTTPBearer()
 
 cv_service_url = os.environ.get("CV_SERVICE_URL")
