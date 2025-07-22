@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import Column, String, DateTime, JSON, Enum, ForeignKey, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from .db import Base
 import enum
@@ -47,7 +47,8 @@ class WorkExperience(Base):
     title = Column(String, nullable=False)
     start_date = Column(String, nullable=False)
     end_date = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
+    description = Column(JSONB, nullable=True)  # Now stores array of strings
+    skills = Column(JSONB, nullable=True)       # New: array of strings per role
     order_index = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -61,7 +62,7 @@ class Education(Base):
     field = Column(String, nullable=True)
     start_date = Column(String, nullable=True)
     end_date = Column(String, nullable=True)
-    description = Column(Text, nullable=True)
+    description = Column(JSONB, nullable=True)  # Now stores array of strings
     order_index = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -79,7 +80,7 @@ class Project(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     cv_profile_id = Column(UUID(as_uuid=True), ForeignKey("cv_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
+    description = Column(JSONB, nullable=True)  # Now stores array of strings
     order_index = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

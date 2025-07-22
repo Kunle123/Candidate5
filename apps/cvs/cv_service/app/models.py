@@ -81,11 +81,12 @@ class Experience(Base):
     position = Column(String(255), nullable=False)
     start_date = Column(String(7), nullable=False)  # YYYY-MM format
     end_date = Column(String(7), nullable=True)  # YYYY-MM format or null for current
-    description = Column(Text, nullable=True)
-    included = Column(Boolean, default=True)
-    order = Column(Integer, default=0)  # For custom ordering
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    description = Column(JSONB, nullable=True)  # Now stores array of strings
+    skills = Column(JSONB, nullable=True)       # New: array of strings per role
+    included = Column(Boolean, nullable=True)
+    order = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 class Education(Base):
     __tablename__ = "education"

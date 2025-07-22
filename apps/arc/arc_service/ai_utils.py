@@ -35,7 +35,72 @@ def parse_cv_with_ai_chunk(text):
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
     prompt_instructions = (
-        """You are a professional CV/resume parser specialized in extracting structured information from various CV formats. Your task is to extract key information from the provided CV and organize it into a standardized JSON format.\n\nFollow these specific guidelines:\n\n1. WORK EXPERIENCE EXTRACTION:\n   - Identify all work experiences throughout the document\n   - Group experiences by company and date range\n   - When the same role appears in multiple sections (summary and detailed sections):\n     * Combine all descriptions into one comprehensive entry\n     * Be flexible with job titles - if titles vary slightly but date ranges and company match, treat as the same role\n     * If a role has multiple titles at the same company during the same period, include all titles separated by \" / \"\n   - For roles with overlapping date ranges at different companies, create separate entries\n   - Format each point in the description to start on a new line\n   - Ensure all experiences are listed in reverse chronological order (most recent first)\n   - Standardize date formats to \"MMM YYYY\" (e.g., \"Jan 2021\") or \"Present\" for current roles\n   - Preserve full company names including divisions or departments (e.g., \"Test Supply Chain DHSC/UKHSA\" not just \"UKHSA\")\n   - Only include information explicitly stated in the CV, do not add inferred or generic descriptions\n\n2. EDUCATION EXTRACTION:\n   - Extract all education entries with institution, degree, field, dates, and descriptions\n   - Format consistently even if original CV has varying levels of detail\n   - If field is not explicitly stated but can be inferred from degree name, extract it\n\n3. SKILLS EXTRACTION:\n   - Extract ALL skills mentioned throughout the document, including those embedded in work experience descriptions\n   - Be thorough in identifying technical skills (e.g., Azure, Mulesoft, Power Apps, Power BI)\n   - Include methodologies (e.g., Agile, PRINCE2, Scrum)\n   - Include domain expertise (e.g., project management, integration, digital transformation)\n   - Include certifications as skills AND as separate certification entries\n   - Deduplicate skills that appear multiple times\n   - Aim to extract at least 15-20 skills if they are present in the document\n\n4. PROJECTS EXTRACTION:\n   - Extract all projects mentioned throughout the document\n   - Include project name and comprehensive description\n   - Distinguish between regular job responsibilities and distinct projects\n   - If project names are not explicitly stated, create descriptive names based on the content\n\n5. CERTIFICATIONS EXTRACTION:\n   - Extract all certifications with name, issuer, and year when available\n   - Include certifications even if they also appear in the skills section\n   - For certification issuers:\n     * PRINCE2 Practitioner is issued by AXELOS (formerly OGC)\n     * Certified Scrum Master is issued by Scrum Alliance\n     * If not explicitly stated, research standard issuers for common certifications\n   - For certification years:\n     * If explicitly stated, use the stated year\n     * If not stated, make a reasonable estimate based on career progression:\n       - For PRINCE2: Estimate 2017-2018 (before the Npower Digital role where project management was heavily featured)\n       - For Scrum Master: Estimate 2016-2017 (before the role at Npower Digital where Scrum Master duties were mentioned)\n     * NEVER use \"Unknown\" for certification years or issuers - always provide a reasonable estimate based on career timeline\n\nOutput the extracted information in the following JSON format:\n{...}\n\nEnsure your extraction is thorough and captures all relevant information from the CV, even if it appears in different sections or formats. The goal is to create a comprehensive career chronicle that can be used to generate future CVs."""
+        """You are a professional CV/resume parser specialized in extracting structured information from various CV formats. Your task is to extract key information from the provided CV and organize it into a standardized JSON format.\n\n"
+        "Follow these specific guidelines:\n\n"
+        "1. WORK EXPERIENCE EXTRACTION:\n"
+        "   - Identify all work experiences throughout the document\n"
+        "   - Group experiences by company and date range\n"
+        "   - When the same role appears in multiple sections (summary and detailed sections):\n"
+        "     * Combine all descriptions into one comprehensive entry\n"
+        "     * Be flexible with job titles - if titles vary slightly but date ranges and company match, treat as the same role\n"
+        "     * If a role has multiple titles at the same company during the same period, include all titles separated by \" / \"\n"
+        "   - For roles with overlapping date ranges at different companies, create separate entries\n"
+        "   - Extract and format descriptions as individual bullet points in an array\n"
+        "   - Extract skills mentioned or implied for each role and list them separately\n"
+        "   - Ensure all experiences are listed in reverse chronological order (most recent first)\n"
+        "   - Standardize date formats to \"MMM YYYY\" (e.g., \"Jan 2021\") or \"Present\" for current roles\n"
+        "   - Preserve full company names including divisions or departments (e.g., \"Test Supply Chain DHSC/UKHSA\" not just \"UKHSA\")\n"
+        "   - Only include information explicitly stated in the CV, do not add inferred or generic descriptions\n\n"
+        "2. EDUCATION EXTRACTION:\n"
+        "   - Extract all education entries with institution, degree, field, dates, and descriptions\n"
+        "   - Format descriptions as individual bullet points in an array\n"
+        "   - Format consistently even if original CV has varying levels of detail\n\n"
+        "3. SKILLS, PROJECTS, CERTIFICATIONS:\n"
+        "   - Extract all skills, projects, and certifications as separate lists\n"
+        "   - For certifications, include name, issuer, and year\n"
+        "   - Format project descriptions as individual bullet points in an array\n\n"
+        "OUTPUT FORMAT:\n"
+        "Return ONLY a valid JSON object in the following schema:\n"
+        "{\n"
+        "  \"work_experience\": [\n"
+        "    {\n"
+        "      \"id\": \"string\",\n"
+        "      \"company\": \"string\",\n"
+        "      \"title\": \"string\",\n"
+        "      \"start_date\": \"string\",\n"
+        "      \"end_date\": \"string\",\n"
+        "      \"description\": [\"bullet 1\", \"bullet 2\"],\n"
+        "      \"skills\": [\"Python\", \"AWS\"]\n"
+        "    }\n"
+        "  ],\n"
+        "  \"education\": [\n"
+        "    {\n"
+        "      \"id\": \"string\",\n"
+        "      \"institution\": \"string\",\n"
+        "      \"degree\": \"string\",\n"
+        "      \"field\": \"string\",\n"
+        "      \"start_date\": \"string\",\n"
+        "      \"end_date\": \"string\",\n"
+        "      \"description\": [\"bullet 1\", \"bullet 2\"]\n"
+        "    }\n"
+        "  ],\n"
+        "  \"skills\": [\"Python\", \"AWS\"],\n"
+        "  \"projects\": [\n"
+        "    {\n"
+        "      \"id\": \"string\",\n"
+        "      \"name\": \"string\",\n"
+        "      \"description\": [\"bullet 1\", \"bullet 2\"]\n"
+        "    }\n"
+        "  ],\n"
+        "  \"certifications\": [\n"
+        "    {\n"
+        "      \"id\": \"string\",\n"
+        "      \"name\": \"string\",\n"
+        "      \"issuer\": \"string\",\n"
+        "      \"year\": \"string\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
     )
     prompt = prompt_instructions + text
     logger.info(f"[AI CHUNK] Raw text sent to OpenAI for this chunk:\n{text[:500]} ... (truncated)")
@@ -53,9 +118,10 @@ def parse_cv_with_ai_chunk(text):
                         "title": {"type": "string"},
                         "start_date": {"type": "string"},
                         "end_date": {"type": "string"},
-                        "description": {"type": "string"}
+                        "description": {"type": "array", "items": {"type": "string"}},
+                        "skills": {"type": "array", "items": {"type": "string"}}
                     },
-                    "required": ["id", "company", "title", "start_date", "end_date", "description"],
+                    "required": ["id", "company", "title", "start_date", "end_date", "description", "skills"],
                     "additionalProperties": False
                 }
             },
@@ -70,7 +136,7 @@ def parse_cv_with_ai_chunk(text):
                         "field": {"type": "string"},
                         "start_date": {"type": "string"},
                         "end_date": {"type": "string"},
-                        "description": {"type": "string"}
+                        "description": {"type": "array", "items": {"type": "string"}}
                     },
                     "required": ["id", "institution", "degree", "field", "start_date", "end_date", "description"],
                     "additionalProperties": False
@@ -87,7 +153,7 @@ def parse_cv_with_ai_chunk(text):
                     "properties": {
                         "id": {"type": "string"},
                         "name": {"type": "string"},
-                        "description": {"type": "string"}
+                        "description": {"type": "array", "items": {"type": "string"}}
                     },
                     "required": ["id", "name", "description"],
                     "additionalProperties": False
