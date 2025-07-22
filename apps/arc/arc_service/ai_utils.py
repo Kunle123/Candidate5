@@ -35,72 +35,78 @@ def parse_cv_with_ai_chunk(text):
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
     prompt_instructions = (
-        """You are a professional CV/resume parser specialized in extracting structured information from various CV formats. Your task is to extract key information from the provided CV and organize it into a standardized JSON format.\n\n"
-        "Follow these specific guidelines:\n\n"
-        "1. WORK EXPERIENCE EXTRACTION:\n"
-        "   - Identify all work experiences throughout the document\n"
-        "   - Group experiences by company and date range\n"
-        "   - When the same role appears in multiple sections (summary and detailed sections):\n"
-        "     * Combine all descriptions into one comprehensive entry\n"
-        "     * Be flexible with job titles - if titles vary slightly but date ranges and company match, treat as the same role\n"
-        "     * If a role has multiple titles at the same company during the same period, include all titles separated by \" / \"\n"
-        "   - For roles with overlapping date ranges at different companies, create separate entries\n"
-        "   - Extract and format descriptions as individual bullet points in an array\n"
-        "   - Extract skills mentioned or implied for each role and list them separately\n"
-        "   - Ensure all experiences are listed in reverse chronological order (most recent first)\n"
-        "   - Standardize date formats to \"MMM YYYY\" (e.g., \"Jan 2021\") or \"Present\" for current roles\n"
-        "   - Preserve full company names including divisions or departments (e.g., \"Test Supply Chain DHSC/UKHSA\" not just \"UKHSA\")\n"
-        "   - Only include information explicitly stated in the CV, do not add inferred or generic descriptions\n\n"
-        "2. EDUCATION EXTRACTION:\n"
-        "   - Extract all education entries with institution, degree, field, dates, and descriptions\n"
-        "   - Format descriptions as individual bullet points in an array\n"
-        "   - Format consistently even if original CV has varying levels of detail\n\n"
-        "3. SKILLS, PROJECTS, CERTIFICATIONS:\n"
-        "   - Extract all skills, projects, and certifications as separate lists\n"
-        "   - For certifications, include name, issuer, and year\n"
-        "   - Format project descriptions as individual bullet points in an array\n\n"
-        "OUTPUT FORMAT:\n"
-        "Return ONLY a valid JSON object in the following schema:\n"
-        "{\n"
-        "  \"work_experience\": [\n"
-        "    {\n"
-        "      \"id\": \"string\",\n"
-        "      \"company\": \"string\",\n"
-        "      \"title\": \"string\",\n"
-        "      \"start_date\": \"string\",\n"
-        "      \"end_date\": \"string\",\n"
-        "      \"description\": [\"bullet 1\", \"bullet 2\"],\n"
-        "      \"skills\": [\"Python\", \"AWS\"]\n"
-        "    }\n"
-        "  ],\n"
-        "  \"education\": [\n"
-        "    {\n"
-        "      \"id\": \"string\",\n"
-        "      \"institution\": \"string\",\n"
-        "      \"degree\": \"string\",\n"
-        "      \"field\": \"string\",\n"
-        "      \"start_date\": \"string\",\n"
-        "      \"end_date\": \"string\",\n"
-        "      \"description\": [\"bullet 1\", \"bullet 2\"]\n"
-        "    }\n"
-        "  ],\n"
-        "  \"skills\": [\"Python\", \"AWS\"],\n"
-        "  \"projects\": [\n"
-        "    {\n"
-        "      \"id\": \"string\",\n"
-        "      \"name\": \"string\",\n"
-        "      \"description\": [\"bullet 1\", \"bullet 2\"]\n"
-        "    }\n"
-        "  ],\n"
-        "  \"certifications\": [\n"
-        "    {\n"
-        "      \"id\": \"string\",\n"
-        "      \"name\": \"string\",\n"
-        "      \"issuer\": \"string\",\n"
-        "      \"year\": \"string\"\n"
-        "    }\n"
-        "  ]\n"
-        "}\n"
+        """You are a professional CV/resume parser specialized in extracting structured information from various CV formats. Your task is to extract key information from the provided CV and organize it into a standardized JSON format.
+
+Follow these specific guidelines:
+
+1. WORK EXPERIENCE EXTRACTION:
+   - Identify all work experiences throughout the document
+   - Group experiences by company and date range
+   - When the same role appears in multiple sections (summary and detailed sections):
+     * Combine all descriptions into one comprehensive entry
+     * Be flexible with job titles - if titles vary slightly but date ranges and company match, treat as the same role
+     * If a role has multiple titles at the same company during the same period, include all titles separated by " / "
+   - For roles with overlapping date ranges at different companies, create separate entries
+   - Extract and format descriptions as individual bullet points in an array
+   - Extract skills mentioned or implied for each role and list them separately
+   - Ensure all experiences are listed in reverse chronological order (most recent first)
+   - Standardize date formats to "MMM YYYY" (e.g., "Jan 2021") or "Present" for current roles
+   - Preserve full company names including divisions or departments (e.g., "Test Supply Chain DHSC/UKHSA" not just "UKHSA")
+   - Only include information explicitly stated in the CV, do not add inferred or generic descriptions
+
+2. EDUCATION EXTRACTION:
+   - Extract all education entries with institution, degree, field, dates, and descriptions
+   - Format descriptions as individual bullet points in an array
+   - Format consistently even if original CV has varying levels of detail
+
+3. SKILLS, PROJECTS, CERTIFICATIONS:
+   - Extract all skills, projects, and certifications as separate lists
+   - For certifications, include name, issuer, and year
+   - Format project descriptions as individual bullet points in an array
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object in the following schema:
+{
+  "work_experience": [
+    {
+      "id": "string",
+      "company": "string",
+      "title": "string",
+      "start_date": "string",
+      "end_date": "string",
+      "description": ["bullet 1", "bullet 2"],
+      "skills": ["Python", "AWS"]
+    }
+  ],
+  "education": [
+    {
+      "id": "string",
+      "institution": "string",
+      "degree": "string",
+      "field": "string",
+      "start_date": "string",
+      "end_date": "string",
+      "description": ["bullet 1", "bullet 2"]
+    }
+  ],
+  "skills": ["Python", "AWS"],
+  "projects": [
+    {
+      "id": "string",
+      "name": "string",
+      "description": ["bullet 1", "bullet 2"]
+    }
+  ],
+  "certifications": [
+    {
+      "id": "string",
+      "name": "string",
+      "issuer": "string",
+      "year": "string"
+    }
+  ]
+}
+"""
     )
     prompt = prompt_instructions + text
     logger.info(f"[AI CHUNK] Raw text sent to OpenAI for this chunk:\n{text[:500]} ... (truncated)")
