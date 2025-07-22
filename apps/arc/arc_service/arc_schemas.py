@@ -7,10 +7,8 @@ class Role(BaseModel):
     title: str
     start_date: Optional[str] = None
     end_date: Optional[str] = None
-    description: Optional[str] = None
-    successes: Optional[List[str]] = None
+    description: Optional[List[str]] = None
     skills: Optional[List[str]] = None
-    training: Optional[List[str]] = None
 
 class ArcData(BaseModel):
     work_experience: Optional[List[Role]] = None
