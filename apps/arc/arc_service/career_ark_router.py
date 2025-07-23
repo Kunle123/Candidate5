@@ -2,7 +2,7 @@
 # Dummy change to trigger CI/CD redeployment
 from fastapi import APIRouter, HTTPException, Path, Body, Depends, UploadFile, File, Request
 from sqlalchemy.orm import Session
-from .models import CVProfile, WorkExperience, Education, Skill, Project, Certification, Training, UserArcData, CVTask
+from .models import WorkExperience, Education, Skill, Project, Certification, Training, UserArcData, CVTask
 from .db import get_db
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -22,6 +22,20 @@ from fastapi.routing import APIRoute
 
 # --- Add OpenAI Assistants API imports ---
 import openai
+
+# Utility function to fetch user profile from user service
+import httpx
+
+async def get_user_profile(user_id: str, token: str) -> dict:
+    url = f"https://api-gw-production.up.railway.app/api/user/profile/{user_id}"
+    headers = {"Authorization": f"Bearer {token}"}
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, headers=headers)
+        resp.raise_for_status()
+        return resp.json()
+
+# Example usage (in an endpoint):
+# profile = await get_user_profile(user_id, token)
 
 router = APIRouter()
 
@@ -72,66 +86,16 @@ class AssistantActionRequest(BaseModel):
     thread_id: Optional[str] = None
 
 # --- Profile Endpoints ---
-@router.post("/profiles", response_model=ProfileOut)
-def create_profile(data: ProfileCreate, db: Session = Depends(get_db)):
-    entry = CVProfile(user_id=data.user_id, name=data.name, email=data.email)
-    db.add(entry)
-    db.commit()
-    db.refresh(entry)
-    return entry
-
-@router.get("/profiles/me", response_model=ProfileOut)
-def get_my_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    logger = logging.getLogger("arc")
-    logger.setLevel(logging.DEBUG)
-    logger.info(f"[DEBUG] /profiles/me endpoint hit for user_id={user_id}")
-    try:
-        entry = db.query(CVProfile).filter_by(user_id=user_id).first()
-        logger.debug(f"[DEBUG] DB query result for user_id={user_id}: {entry}")
-        if not entry:
-            logger.warning(f"[DEBUG] No profile found for user_id={user_id}")
-            raise HTTPException(status_code=404, detail="Profile not found for current user")
-        logger.info(f"[DEBUG] Returning profile for user_id={user_id}: {entry}")
-        return entry
-    except Exception as e:
-        logger.error(f"[DEBUG] Exception in /profiles/me for user_id={user_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error in /profiles/me")
-
-@router.get("/profiles/{user_id}", response_model=ProfileOut)
-def get_profile(user_id: str, db: Session = Depends(get_db)):
-    entry = db.query(CVProfile).filter_by(user_id=user_id).first()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    return entry
-
-@router.put("/profiles/{user_id}", response_model=ProfileOut)
-def update_profile(user_id: str, data: ProfileUpdate, db: Session = Depends(get_db)):
-    entry = db.query(CVProfile).filter_by(user_id=user_id).first()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Not found")
-    for field, value in data.dict(exclude_unset=True).items():
-        setattr(entry, field, value)
-    db.commit()
-    db.refresh(entry)
-    return entry
-
-@router.delete("/profiles/{user_id}")
-def delete_profile(user_id: str, db: Session = Depends(get_db)):
-    entry = db.query(CVProfile).filter_by(user_id=user_id).first()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Not found")
-    db.delete(entry)
-    db.commit()
-    return {"success": True}
+# [REMOVED: All /profiles* endpoints and CVProfile usage as part of refactor]
 
 # --- Work Experience Endpoints ---
-@router.post("/profiles/{profile_id}/work_experience", response_model=WorkExperienceOut)
-def add_work_experience(profile_id: UUID, data: WorkExperienceCreate, db: Session = Depends(get_db)):
-    max_index = db.query(WorkExperience).filter_by(cv_profile_id=profile_id).order_by(WorkExperience.order_index.desc()).first()
+@router.post("/users/{user_id}/work_experience", response_model=WorkExperienceOut)
+def add_work_experience(user_id: str, data: WorkExperienceCreate, db: Session = Depends(get_db)):
+    max_index = db.query(WorkExperience).filter_by(user_id=user_id).order_by(WorkExperience.order_index.desc()).first()
     next_index = (max_index.order_index + 1) if max_index else 0
     order_index = data.order_index if data.order_index is not None else next_index
     entry = WorkExperience(
-        cv_profile_id=profile_id,
+        user_id=user_id,
         company=data.company,
         title=data.title,
         start_date=data.start_date,
@@ -144,9 +108,9 @@ def add_work_experience(profile_id: UUID, data: WorkExperienceCreate, db: Sessio
     db.refresh(entry)
     return entry
 
-@router.get("/profiles/{profile_id}/work_experience", response_model=List[WorkExperienceOut])
-def list_work_experience(profile_id: UUID, db: Session = Depends(get_db)):
-    return db.query(WorkExperience).filter_by(cv_profile_id=profile_id).order_by(WorkExperience.order_index).all()
+@router.get("/users/{user_id}/work_experience", response_model=List[WorkExperienceOut])
+def list_work_experience(user_id: str, db: Session = Depends(get_db)):
+    return db.query(WorkExperience).filter_by(user_id=user_id).order_by(WorkExperience.order_index).all()
 
 @router.get("/work_experience/{id}", response_model=WorkExperienceOut)
 def get_work_experience(id: UUID, db: Session = Depends(get_db)):
@@ -171,13 +135,13 @@ def delete_work_experience(id: UUID, db: Session = Depends(get_db)):
     entry = db.query(WorkExperience).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
-    profile_id = entry.cv_profile_id
+    user_id = entry.user_id
     order_index = entry.order_index
     db.delete(entry)
     db.commit()
     # Reindex remaining entries
     entries = db.query(WorkExperience).filter(
-        WorkExperience.cv_profile_id == profile_id,
+        WorkExperience.user_id == user_id,
         WorkExperience.order_index > order_index
     ).order_by(WorkExperience.order_index).all()
     for e in entries:
@@ -190,14 +154,14 @@ def reorder_work_experience(id: UUID, new_order_index: int = Body(...), db: Sess
     entry = db.query(WorkExperience).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
-    profile_id = entry.cv_profile_id
+    user_id = entry.user_id
     old_index = entry.order_index
     if new_order_index == old_index:
         return entry
     # Shift other entries
     if new_order_index > old_index:
         affected = db.query(WorkExperience).filter(
-            WorkExperience.cv_profile_id == profile_id,
+            WorkExperience.user_id == user_id,
             WorkExperience.order_index > old_index,
             WorkExperience.order_index <= new_order_index
         ).all()
@@ -205,7 +169,7 @@ def reorder_work_experience(id: UUID, new_order_index: int = Body(...), db: Sess
             e.order_index -= 1
     else:
         affected = db.query(WorkExperience).filter(
-            WorkExperience.cv_profile_id == profile_id,
+            WorkExperience.user_id == user_id,
             WorkExperience.order_index < old_index,
             WorkExperience.order_index >= new_order_index
         ).all()
@@ -228,13 +192,13 @@ def partial_update_work_experience(id: UUID, update: WorkExperienceUpdate, db: S
     return entry
 
 # --- Education Endpoints ---
-@router.post("/profiles/{profile_id}/education", response_model=EducationOut)
-def add_education(profile_id: UUID, data: EducationCreate, db: Session = Depends(get_db)):
-    max_index = db.query(Education).filter_by(cv_profile_id=profile_id).order_by(Education.order_index.desc()).first()
+@router.post("/users/{user_id}/education", response_model=EducationOut)
+def add_education(user_id: str, data: EducationCreate, db: Session = Depends(get_db)):
+    max_index = db.query(Education).filter_by(user_id=user_id).order_by(Education.order_index.desc()).first()
     next_index = (max_index.order_index + 1) if max_index else 0
     order_index = data.order_index if data.order_index is not None else next_index
     entry = Education(
-        cv_profile_id=profile_id,
+        user_id=user_id,
         institution=data.institution,
         degree=data.degree,
         field=data.field,
@@ -248,9 +212,9 @@ def add_education(profile_id: UUID, data: EducationCreate, db: Session = Depends
     db.refresh(entry)
     return entry
 
-@router.get("/profiles/{profile_id}/education", response_model=List[EducationOut])
-def list_education(profile_id: UUID, db: Session = Depends(get_db)):
-    return db.query(Education).filter_by(cv_profile_id=profile_id).order_by(Education.order_index).all()
+@router.get("/users/{user_id}/education", response_model=List[EducationOut])
+def list_education(user_id: str, db: Session = Depends(get_db)):
+    return db.query(Education).filter_by(user_id=user_id).order_by(Education.order_index).all()
 
 @router.get("/education/{id}", response_model=EducationOut)
 def get_education(id: int, db: Session = Depends(get_db)):
@@ -332,9 +296,9 @@ def partial_update_education(id: int, update: EducationUpdate, db: Session = Dep
     return entry
 
 # --- Skills Endpoints ---
-@router.post("/profiles/{profile_id}/skills", response_model=SkillOut)
-def add_skill(profile_id: UUID, data: SkillCreate, db: Session = Depends(get_db)):
-    entry = Skill(cv_profile_id=profile_id, skill=data.skill)
+@router.post("/users/{user_id}/skills", response_model=SkillOut)
+def add_skill(user_id: str, data: SkillCreate, db: Session = Depends(get_db)):
+    entry = Skill(user_id=user_id, skill=data.skill)
     db.add(entry)
     try:
         db.commit()
@@ -344,9 +308,9 @@ def add_skill(profile_id: UUID, data: SkillCreate, db: Session = Depends(get_db)
     db.refresh(entry)
     return entry
 
-@router.get("/profiles/{profile_id}/skills", response_model=List[SkillOut])
-def list_skills(profile_id: UUID, db: Session = Depends(get_db)):
-    return db.query(Skill).filter_by(cv_profile_id=profile_id).all()
+@router.get("/users/{user_id}/skills", response_model=List[SkillOut])
+def list_skills(user_id: str, db: Session = Depends(get_db)):
+    return db.query(Skill).filter_by(user_id=user_id).all()
 
 @router.delete("/skills/{id}")
 def delete_skill(id: int, db: Session = Depends(get_db)):
@@ -379,13 +343,13 @@ def partial_update_skill(id: int, update: SkillCreate, db: Session = Depends(get
     return entry
 
 # --- Projects Endpoints ---
-@router.post("/profiles/{profile_id}/projects", response_model=ProjectOut)
-def add_project(profile_id: UUID, data: ProjectCreate, db: Session = Depends(get_db)):
-    max_index = db.query(Project).filter_by(cv_profile_id=profile_id).order_by(Project.order_index.desc()).first()
+@router.post("/users/{user_id}/projects", response_model=ProjectOut)
+def add_project(user_id: str, data: ProjectCreate, db: Session = Depends(get_db)):
+    max_index = db.query(Project).filter_by(user_id=user_id).order_by(Project.order_index.desc()).first()
     next_index = (max_index.order_index + 1) if max_index else 0
     order_index = data.order_index if data.order_index is not None else next_index
     entry = Project(
-        cv_profile_id=profile_id,
+        user_id=user_id,
         name=data.name,
         description=data.description,
         order_index=order_index
@@ -395,9 +359,9 @@ def add_project(profile_id: UUID, data: ProjectCreate, db: Session = Depends(get
     db.refresh(entry)
     return entry
 
-@router.get("/profiles/{profile_id}/projects", response_model=List[ProjectOut])
-def list_projects(profile_id: UUID, db: Session = Depends(get_db)):
-    return db.query(Project).filter_by(cv_profile_id=profile_id).order_by(Project.order_index).all()
+@router.get("/users/{user_id}/projects", response_model=List[ProjectOut])
+def list_projects(user_id: str, db: Session = Depends(get_db)):
+    return db.query(Project).filter_by(user_id=user_id).order_by(Project.order_index).all()
 
 @router.get("/projects/{id}", response_model=ProjectOut)
 def get_project(id: int, db: Session = Depends(get_db)):
@@ -479,13 +443,13 @@ def partial_update_project(id: int, update: ProjectUpdate, db: Session = Depends
     return entry
 
 # --- Certifications Endpoints ---
-@router.post("/profiles/{profile_id}/certifications", response_model=CertificationOut)
-def add_certification(profile_id: UUID, data: CertificationCreate, db: Session = Depends(get_db)):
-    max_index = db.query(Certification).filter_by(cv_profile_id=profile_id).order_by(Certification.order_index.desc()).first()
+@router.post("/users/{user_id}/certifications", response_model=CertificationOut)
+def add_certification(user_id: str, data: CertificationCreate, db: Session = Depends(get_db)):
+    max_index = db.query(Certification).filter_by(user_id=user_id).order_by(Certification.order_index.desc()).first()
     next_index = (max_index.order_index + 1) if max_index else 0
     order_index = data.order_index if data.order_index is not None else next_index
     entry = Certification(
-        cv_profile_id=profile_id,
+        user_id=user_id,
         name=data.name,
         issuer=data.issuer,
         year=data.year,
@@ -496,9 +460,9 @@ def add_certification(profile_id: UUID, data: CertificationCreate, db: Session =
     db.refresh(entry)
     return entry
 
-@router.get("/profiles/{profile_id}/certifications", response_model=List[CertificationOut])
-def list_certifications(profile_id: UUID, db: Session = Depends(get_db)):
-    return db.query(Certification).filter_by(cv_profile_id=profile_id).order_by(Certification.order_index).all()
+@router.get("/users/{user_id}/certifications", response_model=List[CertificationOut])
+def list_certifications(user_id: str, db: Session = Depends(get_db)):
+    return db.query(Certification).filter_by(user_id=user_id).order_by(Certification.order_index).all()
 
 @router.get("/certifications/{id}", response_model=CertificationOut)
 def get_certification(id: int, db: Session = Depends(get_db)):
@@ -593,17 +557,17 @@ def get_all_sections(profile_id: UUID, db: Session = Depends(get_db)):
             except Exception:
                 continue
         return 0
-    work_experience = db.query(WorkExperience).filter_by(cv_profile_id=profile_id).all()
+    work_experience = db.query(WorkExperience).filter_by(user_id=profile_id).all()
     # Sort work_experience by end_date descending ("Present" most recent)
     work_experience_sorted = sorted(
         work_experience,
         key=lambda x: parse_date(x.end_date),
         reverse=True
     )
-    education = db.query(Education).filter_by(cv_profile_id=profile_id).order_by(Education.order_index).all()
-    skills = db.query(Skill).filter_by(cv_profile_id=profile_id).order_by(Skill.id).all()
-    projects = db.query(Project).filter_by(cv_profile_id=profile_id).order_by(Project.order_index).all()
-    certifications = db.query(Certification).filter_by(cv_profile_id=profile_id).order_by(Certification.order_index).all()
+    education = db.query(Education).filter_by(user_id=profile_id).order_by(Education.order_index).all()
+    skills = db.query(Skill).filter_by(user_id=profile_id).order_by(Skill.id).all()
+    projects = db.query(Project).filter_by(user_id=profile_id).order_by(Project.order_index).all()
+    certifications = db.query(Certification).filter_by(user_id=profile_id).order_by(Certification.order_index).all()
     return {
         "work_experience": [
             {
@@ -654,17 +618,17 @@ def get_all_sections(profile_id: UUID, db: Session = Depends(get_db)):
     }
 
 # --- Training Endpoints ---
-@router.get("/profiles/{profile_id}/training")
-def list_training(profile_id: UUID, db: Session = Depends(get_db)):
-    return db.query(Training).filter_by(cv_profile_id=profile_id).all()
+@router.get("/users/{user_id}/training")
+def list_training(user_id: str, db: Session = Depends(get_db)):
+    return db.query(Training).filter_by(user_id=user_id).all()
 
-@router.post("/profiles/{profile_id}/training")
-def add_training(profile_id: UUID, data: TrainingCreate, db: Session = Depends(get_db)):
-    max_index = db.query(Training).filter_by(cv_profile_id=profile_id).order_by(Training.order_index.desc()).first()
+@router.post("/users/{user_id}/training")
+def add_training(user_id: str, data: TrainingCreate, db: Session = Depends(get_db)):
+    max_index = db.query(Training).filter_by(user_id=user_id).order_by(Training.order_index.desc()).first()
     next_index = (max_index.order_index + 1) if max_index else 0
     order_index = data.order_index if data.order_index is not None else next_index
     entry = Training(
-        cv_profile_id=profile_id,
+        user_id=user_id,
         name=data.name,
         institution=data.institution,
         start_date=data.start_date,
