@@ -37,7 +37,7 @@ class ProfileOut(BaseModel):
 # --- Skills Endpoints ---
 @router.post("/profiles/{profile_id}/skills", response_model=SkillOut)
 def add_skill(profile_id: int, data: SkillCreate, db: Session = Depends(get_db)):
-    entry = Skill(cv_profile_id=profile_id, skill=data.skill)
+    entry = Skill(user_id=profile_id, skill=data.skill)
     db.add(entry)
     try:
         db.commit()
@@ -49,7 +49,7 @@ def add_skill(profile_id: int, data: SkillCreate, db: Session = Depends(get_db))
 
 @router.get("/profiles/{profile_id}/skills", response_model=List[SkillOut])
 def list_skills(profile_id: int, db: Session = Depends(get_db)):
-    return db.query(Skill).filter_by(cv_profile_id=profile_id).all()
+    return db.query(Skill).filter_by(user_id=profile_id).all()
 
 @router.delete("/skills/{id}")
 def delete_skill(id: int, db: Session = Depends(get_db)):

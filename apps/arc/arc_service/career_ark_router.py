@@ -239,13 +239,12 @@ def delete_education(id: int, db: Session = Depends(get_db)):
     entry = db.query(Education).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
-    profile_id = entry.cv_profile_id
     order_index = entry.order_index
     db.delete(entry)
     db.commit()
     # Reindex remaining entries
     entries = db.query(Education).filter(
-        Education.cv_profile_id == profile_id,
+        Education.user_id == entry.user_id,
         Education.order_index > order_index
     ).order_by(Education.order_index).all()
     for e in entries:
@@ -258,14 +257,14 @@ def reorder_education(id: int, new_order_index: int = Body(...), db: Session = D
     entry = db.query(Education).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
-    profile_id = entry.cv_profile_id
+    user_id = entry.user_id
     old_index = entry.order_index
     if new_order_index == old_index:
         return entry
     # Shift other entries
     if new_order_index > old_index:
         affected = db.query(Education).filter(
-            Education.cv_profile_id == profile_id,
+            Education.user_id == user_id,
             Education.order_index > old_index,
             Education.order_index <= new_order_index
         ).all()
@@ -273,7 +272,7 @@ def reorder_education(id: int, new_order_index: int = Body(...), db: Session = D
             e.order_index -= 1
     else:
         affected = db.query(Education).filter(
-            Education.cv_profile_id == profile_id,
+            Education.user_id == user_id,
             Education.order_index < old_index,
             Education.order_index >= new_order_index
         ).all()
@@ -386,13 +385,12 @@ def delete_project(id: int, db: Session = Depends(get_db)):
     entry = db.query(Project).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
-    profile_id = entry.cv_profile_id
     order_index = entry.order_index
     db.delete(entry)
     db.commit()
     # Reindex remaining entries
     entries = db.query(Project).filter(
-        Project.cv_profile_id == profile_id,
+        Project.user_id == entry.user_id,
         Project.order_index > order_index
     ).order_by(Project.order_index).all()
     for e in entries:
@@ -405,14 +403,14 @@ def reorder_project(id: int, new_order_index: int = Body(...), db: Session = Dep
     entry = db.query(Project).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
-    profile_id = entry.cv_profile_id
+    user_id = entry.user_id
     old_index = entry.order_index
     if new_order_index == old_index:
         return entry
     # Shift other entries
     if new_order_index > old_index:
         affected = db.query(Project).filter(
-            Project.cv_profile_id == profile_id,
+            Project.user_id == user_id,
             Project.order_index > old_index,
             Project.order_index <= new_order_index
         ).all()
@@ -420,7 +418,7 @@ def reorder_project(id: int, new_order_index: int = Body(...), db: Session = Dep
             e.order_index -= 1
     else:
         affected = db.query(Project).filter(
-            Project.cv_profile_id == profile_id,
+            Project.user_id == user_id,
             Project.order_index < old_index,
             Project.order_index >= new_order_index
         ).all()
@@ -487,13 +485,12 @@ def delete_certification(id: int, db: Session = Depends(get_db)):
     entry = db.query(Certification).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
-    profile_id = entry.cv_profile_id
     order_index = entry.order_index
     db.delete(entry)
     db.commit()
     # Reindex remaining entries
     entries = db.query(Certification).filter(
-        Certification.cv_profile_id == profile_id,
+        Certification.user_id == entry.user_id,
         Certification.order_index > order_index
     ).order_by(Certification.order_index).all()
     for e in entries:
@@ -506,14 +503,14 @@ def reorder_certification(id: int, new_order_index: int = Body(...), db: Session
     entry = db.query(Certification).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
-    profile_id = entry.cv_profile_id
+    user_id = entry.user_id
     old_index = entry.order_index
     if new_order_index == old_index:
         return entry
     # Shift other entries
     if new_order_index > old_index:
         affected = db.query(Certification).filter(
-            Certification.cv_profile_id == profile_id,
+            Certification.user_id == user_id,
             Certification.order_index > old_index,
             Certification.order_index <= new_order_index
         ).all()
@@ -521,7 +518,7 @@ def reorder_certification(id: int, new_order_index: int = Body(...), db: Session
             e.order_index -= 1
     else:
         affected = db.query(Certification).filter(
-            Certification.cv_profile_id == profile_id,
+            Certification.user_id == user_id,
             Certification.order_index < old_index,
             Certification.order_index >= new_order_index
         ).all()
@@ -675,18 +672,18 @@ def partial_update_training(id: int, update: TrainingUpdate, db: Session = Depen
 # --- Per-Profile CV Upload Endpoint ---
 @router.post("/profiles/{profile_id}/cv")
 def upload_cv_for_profile(profile_id: UUID, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    profile = db.query(CVProfile).filter(CVProfile.id == profile_id).first()
+    profile = db.query(UserArcData).filter(UserArcData.user_id == profile_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     # Ensure user_arc_data row exists for this user
-    user_arc = db.query(UserArcData).filter(UserArcData.user_id == profile.user_id).first()
+    user_arc = db.query(UserArcData).filter(UserArcData.user_id == profile_id).first()
     if not user_arc:
-        user_arc = UserArcData(user_id=profile.user_id, arc_data={})
+        user_arc = UserArcData(user_id=profile_id, arc_data={})
         db.add(user_arc)
         db.commit()
         db.refresh(user_arc)
     task_id = str(uuid4())
-    new_task = CVTask(id=task_id, user_id=profile.user_id, status="pending")
+    new_task = CVTask(id=task_id, user_id=profile_id, status="pending")
     db.add(new_task)
     db.commit()
     db.refresh(new_task)

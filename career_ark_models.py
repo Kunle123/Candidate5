@@ -22,20 +22,20 @@ class CVProfile(Base):
 class WorkExperience(Base):
     __tablename__ = 'work_experiences'
     id = Column(Integer, primary_key=True)
-    cv_profile_id = Column(Integer, ForeignKey('cv_profiles.id', ondelete='CASCADE'))
+    user_id = Column(String, ForeignKey('cv_profiles.user_id', ondelete='CASCADE'))
     company = Column(Text, nullable=False)
     title = Column(Text, nullable=False)
     start_date = Column(Text, nullable=False)
     end_date = Column(Text, nullable=False)
     description = Column(Text)
     order_index = Column(Integer, nullable=False)
-    __table_args__ = (UniqueConstraint('cv_profile_id', 'order_index'),)
+    __table_args__ = (UniqueConstraint('user_id', 'order_index'),)
     profile = relationship('CVProfile', back_populates='work_experiences')
 
 class Education(Base):
     __tablename__ = 'education'
     id = Column(Integer, primary_key=True)
-    cv_profile_id = Column(Integer, ForeignKey('cv_profiles.id', ondelete='CASCADE'))
+    user_id = Column(String, ForeignKey('cv_profiles.user_id', ondelete='CASCADE'))
     institution = Column(Text, nullable=False)
     degree = Column(Text, nullable=False)
     field = Column(Text)
@@ -43,34 +43,34 @@ class Education(Base):
     end_date = Column(Text)
     description = Column(Text)
     order_index = Column(Integer, nullable=False)
-    __table_args__ = (UniqueConstraint('cv_profile_id', 'order_index'),)
+    __table_args__ = (UniqueConstraint('user_id', 'order_index'),)
     profile = relationship('CVProfile', back_populates='education')
 
 class Skill(Base):
     __tablename__ = 'skills'
     id = Column(Integer, primary_key=True)
-    cv_profile_id = Column(Integer, ForeignKey('cv_profiles.id', ondelete='CASCADE'))
+    user_id = Column(String, ForeignKey('cv_profiles.user_id', ondelete='CASCADE'))
     skill = Column(Text, nullable=False)
-    __table_args__ = (UniqueConstraint('cv_profile_id', 'skill'),)
+    __table_args__ = (UniqueConstraint('user_id', 'skill'),)
     profile = relationship('CVProfile', back_populates='skills')
 
 class Project(Base):
     __tablename__ = 'projects'
     id = Column(Integer, primary_key=True)
-    cv_profile_id = Column(Integer, ForeignKey('cv_profiles.id', ondelete='CASCADE'))
+    user_id = Column(String, ForeignKey('cv_profiles.user_id', ondelete='CASCADE'))
     name = Column(Text, nullable=False)
     description = Column(Text)
     order_index = Column(Integer, nullable=False)
-    __table_args__ = (UniqueConstraint('cv_profile_id', 'order_index'),)
+    __table_args__ = (UniqueConstraint('user_id', 'order_index'),)
     profile = relationship('CVProfile', back_populates='projects')
 
 class Certification(Base):
     __tablename__ = 'certifications'
     id = Column(Integer, primary_key=True)
-    cv_profile_id = Column(Integer, ForeignKey('cv_profiles.id', ondelete='CASCADE'))
+    user_id = Column(String, ForeignKey('cv_profiles.user_id', ondelete='CASCADE'))
     name = Column(Text, nullable=False)
     issuer = Column(Text)
     year = Column(Text)
     order_index = Column(Integer, nullable=False)
-    __table_args__ = (UniqueConstraint('cv_profile_id', 'order_index'),)
+    __table_args__ = (UniqueConstraint('user_id', 'order_index'),)
     profile = relationship('CVProfile', back_populates='certifications') 
