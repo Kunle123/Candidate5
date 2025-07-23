@@ -48,6 +48,10 @@ Follow these specific guidelines:
      * If a role has multiple titles at the same company during the same period, include all titles separated by " / "
    - For roles with overlapping date ranges at different companies, create separate entries
    - Extract and format descriptions as individual bullet points in an array
+   - Break down long paragraphs or sentences into separate, meaningful bullet points based on distinct accomplishments, responsibilities, or activities
+   - Each bullet point should represent a single key achievement, responsibility, or task
+   - Look for natural breakpoints like periods, semicolons, or logical topic changes to separate bullet points
+   - Ensure each bullet point is concise and focuses on one main idea
    - Extract skills mentioned or implied for each role and list them separately
    - Ensure all experiences are listed in reverse chronological order (most recent first)
    - Standardize date formats to "MMM YYYY" (e.g., "Jan 2021") or "Present" for current roles
@@ -57,12 +61,16 @@ Follow these specific guidelines:
 2. EDUCATION EXTRACTION:
    - Extract all education entries with institution, degree, field, dates, and descriptions
    - Format descriptions as individual bullet points in an array
+   - Break down long paragraphs into separate, meaningful bullet points for better readability
+   - Each bullet point should focus on a single achievement, coursework area, or relevant detail
    - Format consistently even if original CV has varying levels of detail
 
 3. SKILLS, PROJECTS, CERTIFICATIONS:
    - Extract all skills, projects, and certifications as separate lists
    - For certifications, include name, issuer, and year
    - Format project descriptions as individual bullet points in an array
+   - Break down project descriptions into separate bullet points covering different aspects like objectives, technologies used, outcomes, etc.
+   - Each bullet point should represent a distinct aspect or achievement of the project
 
 OUTPUT FORMAT:
 Return ONLY a valid JSON object in the following schema:
