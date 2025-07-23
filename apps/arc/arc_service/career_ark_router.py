@@ -818,4 +818,120 @@ USER CV DATA (JSON):\n{profile}\n\nJOB ADVERT (FOR STRATEGIC TAILORING REFERENCE
             raise HTTPException(status_code=500, detail=f"OpenAI /update-cv failed: {e}")
     except Exception as e:
         logger.error(f"Error updating CV: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error updating CV: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error updating CV: {str(e)}")
+
+@router.post("/generate-assistant")
+async def generate_assistant_action(data: AssistantActionRequest):
+    import json
+    logger = logging.getLogger("arc")
+    action = data.action
+    profile = data.profile
+    job_description = data.job_description
+    keywords = data.keywords
+    additional_keypoints = data.additional_keypoints
+    previous_cv = data.previous_cv
+    thread_id = data.thread_id
+
+    # --- OpenAI Assistants API setup ---
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        logger.error("OpenAI API key not set in environment variables.")
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = openai.OpenAI(api_key=openai_api_key)
+
+    # --- Use a single assistant for all actions (create if not exists) ---
+    ASSISTANT_NAME = "Career Ark Assistant"
+    ASSISTANT_INSTRUCTIONS = "You are a career assistant for CV and cover letter generation, keyword extraction, and CV updating. Always return valid JSON as specified."
+    ASSISTANT_TOOLS = []
+    assistant_id = os.getenv("OPENAI_ASSISTANT_ID")
+    if not assistant_id:
+        assistant = client.beta.assistants.create(
+            name=ASSISTANT_NAME,
+            instructions=ASSISTANT_INSTRUCTIONS,
+            tools=ASSISTANT_TOOLS,
+            model="gpt-4o-2024-08-06"
+        )
+        assistant_id = assistant.id
+
+    # --- Thread management ---
+    if thread_id:
+        thread = client.beta.threads.retrieve(thread_id)
+    else:
+        # On first call, require profile and job_description
+        if not profile or not job_description:
+            raise HTTPException(status_code=400, detail="'profile' and 'job_description' are required on the first call (when no thread_id is provided). Subsequent calls can omit them.")
+        thread = client.beta.threads.create()
+        thread_id = thread.id
+        logger.info(f"[DEBUG] Created new OpenAI thread with thread_id: {thread_id}")
+
+    # --- Compose the user message for the thread ---
+    if action == "extract_keywords":
+        user_message = (
+            "ACTION: extract_keywords\n\n"
+            f"PROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\n"
+            f"JOB DESCRIPTION:\n{job_description if job_description else ''}\n\n"
+            "Return ONLY a valid JSON object in the format: {\"keywords\": [\"keyword1\", ...], \"match_percentage\": 87}\n"
+        )
+    elif action == "generate_cv":
+        user_message = (
+            "ACTION: generate_cv\n\n"
+            f"PROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\n"
+            f"JOB DESCRIPTION:\n{job_description if job_description else ''}\n"
+        )
+        if keywords:
+            user_message += f"\nKEYWORDS TO EMPHASIZE: {', '.join(keywords)}"
+        user_message += "\nReturn ONLY a valid JSON object in the format: {\n  \"cv\": \"...\", \"cover_letter\": \"...\"\n}"
+    elif action == "update_cv":
+        user_message = (
+            "ACTION: update_cv\n\n"
+            f"PROFILE:\n{json.dumps(profile, indent=2) if profile else ''}\n\n"
+            f"JOB DESCRIPTION:\n{job_description if job_description else ''}\n\n"
+            f"PREVIOUS CV:\n{previous_cv}\n"
+        )
+        if additional_keypoints:
+            user_message += f"\nADDITIONAL KEY POINTS TO INTEGRATE:\n{json.dumps(additional_keypoints, indent=2)}"
+        user_message += "\nReturn ONLY a valid JSON object in the format: {\n  \"cv\": \"...updated...\", \"cover_letter\": \"...\"\n}"
+    else:
+        return {"error": "Unrecognized action. Must be one of: extract_keywords, generate_cv, update_cv"}
+
+    # --- Add the message to the thread ---
+    client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content=user_message
+    )
+
+    # --- Run the assistant on the thread ---
+    run = client.beta.threads.runs.create(
+        thread_id=thread_id,
+        assistant_id=assistant_id,
+        instructions=None
+    )
+
+    # --- Wait for the run to complete (polling) ---
+    import time
+    while True:
+        run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+        if run_status.status in ["completed", "failed", "cancelled"]:
+            break
+        time.sleep(1)
+
+    if run_status.status != "completed":
+        logger.error(f"OpenAI Assistant run failed: {run_status.status}")
+        raise HTTPException(status_code=500, detail=f"OpenAI Assistant run failed: {run_status.status}")
+
+    # --- Get the latest assistant message ---
+    messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
+    if not messages.data:
+        logger.error("No assistant message returned.")
+        raise HTTPException(status_code=500, detail="No assistant message returned.")
+    content = messages.data[0].content[0].text.value
+    try:
+        result = json.loads(content)
+    except Exception as e:
+        logger.error(f"Failed to parse assistant response as JSON: {e}\nRaw content: {content}")
+        raise HTTPException(status_code=500, detail="Failed to parse assistant response as JSON.")
+
+    # --- Always return the thread_id in the response ---
+    result["thread_id"] = thread_id
+    return result 
