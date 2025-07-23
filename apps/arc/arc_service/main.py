@@ -200,13 +200,6 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
     except Exception as e:
         logger.error(f"[CV UPLOAD] Metadata extraction failed: {e}")
         raise HTTPException(status_code=500, detail="Metadata extraction failed")
-    # 3. Create or get CVProfile
-    profile = db.query(CVProfile).filter_by(user_id=user_id).first()
-    if not profile:
-        profile = CVProfile(id=uuid.uuid4(), user_id=user_id, name="Unnamed", email=None)
-        db.add(profile)
-        db.commit()
-        db.refresh(profile)
     # Ensure user_arc_data exists for this user (legacy support)
     user_arc_data = db.query(UserArcData).filter_by(user_id=user_id).first()
     if not user_arc_data:
@@ -214,22 +207,16 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         db.add(user_arc_data)
         db.commit()
         db.refresh(user_arc_data)
-    # 4. Insert metadata into normalized tables (normalized, not user_arc_data)
-    # --- Improved Deduplication and Merging Logic ---
+    # 3. Insert metadata into normalized tables (normalized, not user_arc_data)
     def norm(s):
         return (s or "").strip().lower()
-    # Build normalized key for existing DB entries
+    # Deduplicate and insert work experience
     existing_work_exps = {
-        (
-            norm(wx.company),
-            norm(wx.title),
-            norm(wx.start_date),
-            norm(wx.end_date)
-        ): wx for wx in db.query(WorkExperience).filter_by(cv_profile_id=profile.id).all()
+        (norm(wx.company), norm(wx.title), norm(wx.start_date), norm(wx.end_date)): wx
+        for wx in db.query(WorkExperience).filter_by(user_id=user_id).all()
     }
     work_exp_ids = []
     for idx, wx in enumerate(metadata.get("work_experiences", [])):
-        # Always use 'title' (fallback to 'job_title')
         company = norm(wx.get("company", ""))
         title = norm(wx.get("title", wx.get("job_title", "")))
         start_date = norm(wx.get("start_date", ""))
@@ -237,41 +224,22 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         key = (company, title, start_date, end_date)
         existing = existing_work_exps.get(key)
         if existing:
-            new_desc = wx.get("description", "")
-            old_desc = existing.description or ""
-            if new_desc and new_desc.strip():
-                old_lines = set([l.strip() for l in (old_desc.split("\n") if old_desc else []) if l.strip()])
-                new_lines = [l.strip() for l in (new_desc.split("\n") if new_desc else []) if l.strip()]
-                merged_lines = list(old_lines)
-                for line in new_lines:
-                    if line and line not in old_lines:
-                        merged_lines.append(line)
-                merged_desc = "\n".join(merged_lines)
-                if merged_desc != old_desc:
-                    existing.description = merged_desc
-                    db.add(existing)
-                    logger.info(f"[DEDUP] Merged new description into existing work experience: {company}, {title}, {start_date}-{end_date}")
-                else:
-                    logger.info(f"[DEDUP] Duplicate work experience found (no new description): {company}, {title}, {start_date}-{end_date}")
-            else:
-                logger.info(f"[DEDUP] Duplicate work experience found (empty new description): {company}, {title}, {start_date}-{end_date}")
             work_exp_ids.append(existing.id)
         else:
             wx_id = uuid.uuid4()
             work_exp_ids.append(wx_id)
             db.add(WorkExperience(
                 id=wx_id,
-                cv_profile_id=profile.id,
+                user_id=user_id,
                 company=wx.get("company", ""),
                 title=wx.get("job_title", wx.get("title", "")),
                 start_date=wx.get("start_date", ""),
                 end_date=wx.get("end_date", ""),
-                description=None,  # To be filled in Pass 2
+                description=None,
                 order_index=idx
             ))
-            logger.info(f"[DEDUP] New work experience added: {company}, {title}, {start_date}-{end_date}")
     # Education
-    existing_educations = {(e.institution, e.degree, e.start_date, e.end_date): e for e in db.query(Education).filter_by(cv_profile_id=profile.id).all()}
+    existing_educations = {(e.institution, e.degree, e.start_date, e.end_date): e for e in db.query(Education).filter_by(user_id=user_id).all()}
     for idx, edu in enumerate(metadata.get("education", [])):
         key = (
             edu.get("institution", ""),
@@ -280,25 +248,10 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
             edu.get("end_date", None)
         )
         existing = existing_educations.get(key)
-        if existing:
-            new_desc = edu.get("description", "")
-            old_desc = existing.description or ""
-            if new_desc and new_desc.strip():
-                old_lines = set([l.strip() for l in (old_desc.split("\n") if old_desc else []) if l.strip()])
-                new_lines = [l.strip() for l in (new_desc.split("\n") if new_desc else []) if l.strip()]
-                merged_lines = list(old_lines)
-                for line in new_lines:
-                    if line and line not in old_lines:
-                        merged_lines.append(line)
-                merged_desc = "\n".join(merged_lines)
-                if merged_desc != old_desc:
-                    existing.description = merged_desc
-                    db.add(existing)
-            # If new_desc is empty, do NOT overwrite or clear the old description
-        else:
+        if not existing:
             db.add(Education(
                 id=uuid.uuid4(),
-                cv_profile_id=profile.id,
+                user_id=user_id,
                 institution=edu.get("institution", ""),
                 degree=edu.get("degree", ""),
                 field=edu.get("field", None),
@@ -308,7 +261,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                 order_index=idx
             ))
     # Certifications
-    existing_certs = {(c.name, c.issuer, c.year): c for c in db.query(Certification).filter_by(cv_profile_id=profile.id).all()}
+    existing_certs = {(c.name, c.issuer, c.year): c for c in db.query(Certification).filter_by(user_id=user_id).all()}
     for idx, cert in enumerate(metadata.get("certifications", [])):
         key = (
             cert.get("name", ""),
@@ -319,41 +272,40 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         if not existing:
             db.add(Certification(
                 id=uuid.uuid4(),
-                cv_profile_id=profile.id,
+                user_id=user_id,
                 name=cert.get("name", ""),
                 issuer=cert.get("issuer", None),
                 year=cert.get("year", cert.get("date", None)),
                 order_index=idx
             ))
     # Skills (deduplicate by skill name)
-    existing_skills = set(s.skill for s in db.query(Skill).filter_by(cv_profile_id=profile.id).all())
+    existing_skills = set(s.skill for s in db.query(Skill).filter_by(user_id=user_id).all())
     for skill in metadata.get("skills", []):
         if skill not in existing_skills:
             db.add(Skill(
                 id=uuid.uuid4(),
-                cv_profile_id=profile.id,
+                user_id=user_id,
                 skill=skill
             ))
     # Projects (deduplicate by name)
-    existing_projects = set((p.name, p.description) for p in db.query(Project).filter_by(cv_profile_id=profile.id).all())
+    existing_projects = set((p.name, p.description) for p in db.query(Project).filter_by(user_id=user_id).all())
     for idx, proj in enumerate(metadata.get("projects", [])):
         key = (proj.get("name", ""), proj.get("description", None))
         if key not in existing_projects:
             db.add(Project(
                 id=uuid.uuid4(),
-                cv_profile_id=profile.id,
+                user_id=user_id,
                 name=proj.get("name", ""),
                 description=proj.get("description", None),
                 order_index=idx
             ))
     db.commit()
-    db.refresh(profile)
     # 5. Mark task as metadata_extracted
     db_task = CVTask(id=uuid.uuid4(), user_id=user_id, status="metadata_extracted", error=None)
     db.add(db_task)
     db.commit()
-    # 6. Trigger Pass 2 in background
-    def run_pass2_and_update_descriptions(cv_text, work_exp_ids, user_id, profile_id, task_id):
+    # 6. Trigger Pass 2 in background (update to use user_id)
+    def run_pass2_and_update_descriptions(cv_text, work_exp_ids, user_id, task_id):
         from .ai_utils import extract_work_experience_description_with_ai
         from .models import AIExtractionLog, WorkExperience, CVTask, TaskStatusEnum
         from .db import SessionLocal
@@ -362,7 +314,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         errors = []
         try:
             for wx_id in work_exp_ids:
-                wx = session.query(WorkExperience).filter_by(id=wx_id, cv_profile_id=profile_id).first()
+                wx = session.query(WorkExperience).filter_by(id=wx_id, user_id=user_id).first()
                 if not wx:
                     continue
                 wx_metadata = {
@@ -408,7 +360,7 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
         finally:
             session.close()
     if background_tasks is not None:
-        background_tasks.add_task(run_pass2_and_update_descriptions, cv_text, work_exp_ids, user_id, profile.id, db_task.id)
+        background_tasks.add_task(run_pass2_and_update_descriptions, cv_text, work_exp_ids, user_id, db_task.id)
     return CVUploadResponse(taskId=str(db_task.id))
 
 @app.post("/api/career-ark/cv", response_model=CVUploadResponse)
