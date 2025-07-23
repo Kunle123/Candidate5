@@ -12,7 +12,7 @@ import logging
 import jwt
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from .models import UserArcData, CVTask, TaskStatusEnum, CVProfile, WorkExperience, Education, Skill, Project, Certification
+from .models import UserArcData, CVTask, TaskStatusEnum, WorkExperience, Education, Skill, Project, Certification
 from .db import SessionLocal, Base, engine
 import tiktoken
 import re
