@@ -173,25 +173,31 @@ async def create_checkout_session(
 
 # Helper function to get user email from user_id (placeholder, to be replaced with real implementation)
 def get_user_email_from_id(user_id: str) -> str:
-    # TODO: Replace this with a real lookup (e.g., call user service or query DB)
-    if user_id == "8a0fae8b-77a8-4735-b83c-01130eb60cb5":
-        return "kunle2000@gmail.com"
+    USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user_service:8000")
+    try:
+        resp = httpx.get(f"{USER_SERVICE_URL}/api/user/{user_id}", timeout=5)
+        if resp.status_code == 200:
+            user = resp.json()
+            return user.get("email", "")
+        else:
+            logger.error(f"User service returned status {resp.status_code} for user_id {user_id}")
+    except Exception as e:
+        logger.error(f"Error fetching user email from user service: {e}")
     return ""
 
 @router.get("/user/{user_id}", response_model=Optional[UserSubscription])
 async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme)):
-    """Get the current subscription for a user"""
     try:
-        # 1. Find the Stripe customer by user_id (or by email if you have it)
         user_email = get_user_email_from_id(user_id)
         if not user_email:
-            raise HTTPException(status_code=404, detail="User email not found for user_id")
+            logger.info(f"No user email found for user_id {user_id}, returning None.")
+            return None
         customers = stripe.Customer.list(email=user_email, limit=1)
         if not customers.data:
+            logger.info(f"No Stripe customer found for email {user_email}, returning None.")
             return None
         customer_id = customers.data[0].id
 
-        # 2. List subscriptions for the customer
         subscriptions = stripe.Subscription.list(
             customer=customer_id,
             status="active",
@@ -200,12 +206,13 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
         )
 
         if not subscriptions.data:
+            logger.info(f"No active Stripe subscription found for customer {customer_id}, returning None.")
             return None
 
         subscription = subscriptions.data[0]
 
         # 3. Get the plan details (as before)
-        plan_id = subscription.metadata.get("plan_id", "basic")
+        plan_id = subscription.metadata.get("plan_id", "basic") if hasattr(subscription, "metadata") else "basic"
         plan = None
         for p in SUBSCRIPTION_PLANS:
             if p.id == plan_id:
@@ -225,16 +232,10 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
 
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in get_user_subscription: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error retrieving subscription: {str(e)}"
-        )
+        return None
     except Exception as e:
         logger.error(f"Error in get_user_subscription: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred"
-        )
+        return None
 
 @router.post("/cancel/{subscription_id}")
 async def cancel_subscription(
