@@ -625,3 +625,62 @@ def get_all_sections(profile_id: UUID, db: Session = Depends(get_db)):
             } for x in certifications
         ]
     }
+
+# --- Generate Assistant Endpoint ---
+from fastapi import Request
+
+@router.post("/generate-assistant")
+async def generate_assistant(request: Request):
+    """
+    Generate a tailored CV and cover letter using OpenAI Assistant API, following strict output requirements.
+    Accepts: {"action": "generate_cv", "profile": {...}, "job_description": "...", "keywords": [...], "cv_length": "..."}
+    Returns: {"cv": "...", "cover_letter": "...", "job_title": "...", "company_name": "..."}
+    """
+    try:
+        data = await request.json()
+        action = data.get("action", "generate_cv")
+        profile = data.get("profile")
+        job_description = data.get("job_description")
+        keywords = data.get("keywords")
+        cv_length = data.get("cv_length")
+        if not profile or not job_description:
+            return {"error": "Missing required profile or job_description"}
+        # Build the assistant message
+        system_prompt = """
+You are an expert CV and career assistant that supports multiple actions through a unified threaded interface. You operate within OpenAI's thread context system, where profile and job description data are automatically maintained across interactions within the same thread.
+
+CRITICAL OUTPUT REQUIREMENT: You MUST respond with ONLY valid JSON. No explanations, no additional text, no markdown formatting, no code blocks. Your entire response must be parseable as JSON.
+
+Supported actions: extract_keywords, generate_cv, update_cv, update_profile. Always respond with ONLY valid JSON. If action is unrecognized, return error in JSON format. DO NOT include thread_id in responses (handled by backend).
+"""
+        user_message = {
+            "action": action,
+            "profile": profile,
+            "job_description": job_description
+        }
+        if keywords:
+            user_message["keywords"] = keywords
+        if cv_length:
+            user_message["cv_length"] = cv_length
+        # Use OpenAI Assistant API (threaded)
+        if not OPENAI_API_KEY:
+            return {"error": "OpenAI API key not set"}
+        openai_client = OpenAI(api_key=OPENAI_API_KEY)
+        completion = openai_client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": str(user_message)}
+            ],
+            max_tokens=3000,
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        import json
+        content = completion.choices[0].message.content
+        if isinstance(content, str):
+            content = json.loads(content)
+        return content
+    except Exception as e:
+        logger.error(f"[ERROR] Error in generate_assistant: {str(e)}")
+        return {"error": f"Error generating CV: {str(e)}"}
