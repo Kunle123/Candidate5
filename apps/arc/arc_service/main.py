@@ -325,15 +325,15 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                     "location": None
                 }
                 try:
-                    prompt = f"Extract description for: {wx_metadata}"
-                    description = extract_work_experience_description_with_ai(cv_text, wx_metadata)
-                    wx.description = description
+                    result = extract_work_experience_description_with_ai(cv_text, wx_metadata)
+                    wx.description = result.get("description", [])
+                    wx.skills = result.get("skills", [])
                     session.add(AIExtractionLog(
                         task_id=task_id,
                         entry_type="work_experience",
                         entry_id=wx_id,
                         prompt=str(wx_metadata),
-                        response=description,
+                        response=str(result),
                         status="success",
                         error_message=None
                     ))
