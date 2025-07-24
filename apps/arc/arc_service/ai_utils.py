@@ -257,9 +257,9 @@ def extract_cv_metadata_with_ai(cv_text):
 # --- Two-Pass Extraction: Second Pass (Description for Single Work Experience) ---
 def extract_work_experience_description_with_ai(cv_text, work_exp_metadata):
     """
-    Extracts the full description for a single work experience entry from the CV using OpenAI.
+    Extracts the full description and skills for a single work experience entry from the CV using OpenAI.
     work_exp_metadata should be a dict with keys: job_title, company, start_date, end_date, location (optional).
-    Returns the description as a string.
+    Returns a dict with 'description' (array of bullets) and 'skills' (array).
     """
     logger = logging.getLogger("arc")
     openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -267,27 +267,52 @@ def extract_work_experience_description_with_ai(cv_text, work_exp_metadata):
         logger.error("OpenAI API key not set in environment variables.")
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
     client = openai.OpenAI(api_key=openai_api_key)
-    # Build the prompt step by step
-    prompt = "Given the following CV, extract the full description (responsibilities, achievements, bullet points, etc.) for the work experience at:\n\n"
-    prompt += f"Company: {work_exp_metadata.get('company', '')}\n"
-    prompt += f"Job Title: {work_exp_metadata.get('job_title', '')}\n"
-    prompt += f"Start Date: {work_exp_metadata.get('start_date', '')}\n"
-    prompt += f"End Date: {work_exp_metadata.get('end_date', '')}\n"
-    if work_exp_metadata.get('location'):
-        prompt += f"Location: {work_exp_metadata.get('location', '')}\n"
-    prompt += "Return ONLY the description for this job, as plain text.\n\nHere is the CV:\n\n"
-    prompt += cv_text
+    # Use the user's stricter prompt
+    prompt = (
+        "Given the following CV, extract the full description and skills for the work experience at:\n\n"
+        f"Company: {work_exp_metadata.get('company', '')}\n"
+        f"Job Title: {work_exp_metadata.get('job_title', '')}\n"
+        f"Start Date: {work_exp_metadata.get('start_date', '')}\n"
+        f"End Date: {work_exp_metadata.get('end_date', '')}\n"
+        f"Location: {work_exp_metadata.get('location', '') if work_exp_metadata.get('location') else ''}\n\n"
+        "Extract and format the information as follows:\n\n"
+        "1. DESCRIPTION EXTRACTION:\n"
+        "   - Find all responsibilities, achievements, and accomplishments for this specific role\n"
+        "   - Break down long paragraphs or sentences into separate, meaningful bullet points\n"
+        "   - Each bullet point should represent a single key achievement, responsibility, or task\n"
+        "   - Look for natural breakpoints like periods, semicolons, or logical topic changes\n"
+        "   - Ensure each bullet point is concise and focuses on one main idea\n"
+        "   - Include all relevant details mentioned for this position\n\n"
+        "2. SKILLS EXTRACTION:\n"
+        "   - Identify all technical skills, tools, technologies, and competencies mentioned or implied for this role\n"
+        "   - Include programming languages, frameworks, software, methodologies, etc.\n"
+        "   - Extract skills that are explicitly stated or clearly demonstrated through the described work\n\n"
+        "Return ONLY a valid JSON object in the following format:\n"
+        "{\n  \"description\": [\"bullet 1\", \"bullet 2\", \"bullet 3\"],\n  \"skills\": [\"Python\", \"AWS\", \"Docker\"]\n}\n\n"
+        "IMPORTANT OUTPUT REQUIREMENTS:\n"
+        "- Your response must be ONLY the JSON object, nothing else\n"
+        "- Do not include any explanatory text, markdown formatting, or code blocks\n"
+        "- Do not wrap the JSON in ```json``` or any other formatting\n"
+        "- Ensure all strings are properly quoted with double quotes\n"
+        "- Ensure proper comma placement between array elements\n"
+        "- The response must start with { and end with }\n"
+        "- If no skills are found, return an empty array: \"skills\": []\n"
+        "- If no description is found, return an empty array: \"description\": []\n\n"
+        "Here is the CV:\n\n"
+        f"{cv_text}"
+    )
     try:
         response = client.chat.completions.create(
             model="gpt-4o-2024-08-06",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=800,
             temperature=0.2,
-            response_format={"type": "text"}
+            response_format={"type": "json_object"}
         )
-        description = response.choices[0].message.content.strip()
-        logger.info(f"[AI DESCRIPTION] Extracted description for {work_exp_metadata.get('company', '')} - {work_exp_metadata.get('job_title', '')}: {description[:200]}...")
-        return description
+        raw_response = response.choices[0].message.content.strip()
+        logger.info(f"[AI DESCRIPTION] Extracted description for {work_exp_metadata.get('company', '')} - {work_exp_metadata.get('job_title', '')}: {raw_response[:200]}...")
+        import json
+        return json.loads(raw_response)
     except Exception as e:
         logger.error(f"AI description extraction failed: {e}")
         raise HTTPException(status_code=500, detail=f"AI description extraction failed: {e}") 
