@@ -39,7 +39,7 @@ async def get_user_profile(user_id: str, token: str) -> dict:
 router = APIRouter()
 
 @router.get("/cv/status/{task_id}")
-def get_cv_status(task_id: str, db: Session = Depends(get_db)):
+def get_cv_status(task_id: UUID, db: Session = Depends(get_db)):
     task = db.query(CVTask).filter_by(id=task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -608,3 +608,20 @@ def get_all_sections(profile_id: UUID, db: Session = Depends(get_db)):
             } for x in skills
         ],
         "projects": [
+            {
+                "id": str(x.id),
+                "name": x.name,
+                "description": x.description,
+                "order_index": x.order_index
+            } for x in projects
+        ],
+        "certifications": [
+            {
+                "id": str(x.id),
+                "name": x.name,
+                "issuer": x.issuer,
+                "year": x.year,
+                "order_index": x.order_index
+            } for x in certifications
+        ]
+    }
