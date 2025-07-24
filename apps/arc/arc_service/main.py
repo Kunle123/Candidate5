@@ -326,8 +326,11 @@ async def upload_cv(file: UploadFile = File(...), user_id: str = Depends(get_cur
                 }
                 try:
                     result = extract_work_experience_description_with_ai(cv_text, wx_metadata)
-                    wx.description = result.get("description", [])
-                    wx.skills = result.get("skills", [])
+                    desc = result.get("description", [])
+                    if isinstance(desc, str):
+                        desc = [line.strip() for line in desc.splitlines() if line.strip()]
+                    wx.description = desc
+                    wx.skills = result.get("skills", []) if isinstance(result.get("skills", []), list) else []
                     session.add(AIExtractionLog(
                         task_id=task_id,
                         entry_type="work_experience",
