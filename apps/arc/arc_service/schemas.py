@@ -42,7 +42,7 @@ class WorkExperienceOut(BaseModel):
     title: str
     start_date: str
     end_date: str
-    description: Optional[str]
+    description: Optional[Union[str, List[str]]]
     order_index: int
     class Config:
         from_attributes = True
