@@ -122,7 +122,11 @@ def add_work_experience(user_id: str, data: WorkExperienceCreate, db: Session = 
 
 @router.get("/users/{user_id}/work_experience", response_model=List[WorkExperienceOut])
 def list_work_experience(user_id: str, db: Session = Depends(get_db)):
-    return db.query(WorkExperience).filter_by(user_id=user_id).order_by(WorkExperience.order_index).all()
+    entries = db.query(WorkExperience).filter_by(user_id=user_id).order_by(WorkExperience.order_index).all()
+    # Ensure id is always a string
+    return [
+        {**entry.__dict__, "id": str(entry.id)} if not isinstance(entry.id, str) else entry for entry in entries
+    ]
 
 @router.get("/work_experience/{id}", response_model=WorkExperienceOut)
 def get_work_experience(id: UUID, db: Session = Depends(get_db)):
