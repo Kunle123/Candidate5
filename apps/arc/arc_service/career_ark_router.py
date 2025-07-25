@@ -136,7 +136,14 @@ def update_work_experience(id: UUID, data: WorkExperienceUpdate, db: Session = D
     entry = db.query(WorkExperience).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
-    for field, value in data.dict(exclude_unset=True).items():
+    update_data = data.dict(exclude_unset=True)
+    desc = update_data.get("description")
+    if desc is not None:
+        if isinstance(desc, str):
+            desc = [line.strip() for line in desc.splitlines() if line.strip()]
+        entry.description = desc
+        update_data.pop("description")
+    for field, value in update_data.items():
         setattr(entry, field, value)
     db.commit()
     db.refresh(entry)
@@ -197,7 +204,14 @@ def partial_update_work_experience(id: UUID, update: WorkExperienceUpdate, db: S
     entry = db.query(WorkExperience).get(id)
     if not entry:
         raise HTTPException(status_code=404, detail="Not found")
-    for field, value in update.dict(exclude_unset=True).items():
+    update_data = update.dict(exclude_unset=True)
+    desc = update_data.get("description")
+    if desc is not None:
+        if isinstance(desc, str):
+            desc = [line.strip() for line in desc.splitlines() if line.strip()]
+        entry.description = desc
+        update_data.pop("description")
+    for field, value in update_data.items():
         setattr(entry, field, value)
     db.commit()
     db.refresh(entry)

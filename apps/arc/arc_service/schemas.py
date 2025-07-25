@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from uuid import UUID
 
 # --- Profile Schemas ---
@@ -26,7 +26,7 @@ class WorkExperienceCreate(BaseModel):
     title: str
     start_date: str
     end_date: str
-    description: Optional[str] = None
+    description: Optional[Union[str, List[str]]] = None
     order_index: Optional[int] = None
 
 class WorkExperienceUpdate(BaseModel):
@@ -34,7 +34,7 @@ class WorkExperienceUpdate(BaseModel):
     title: Optional[str]
     start_date: Optional[str]
     end_date: Optional[str]
-    description: Optional[str]
+    description: Optional[Union[str, List[str]]]
 
 class WorkExperienceOut(BaseModel):
     id: UUID
