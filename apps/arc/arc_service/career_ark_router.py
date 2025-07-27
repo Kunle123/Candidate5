@@ -661,16 +661,9 @@ async def generate_assistant(request: Request):
         job_description = data.get("job_description")
         keywords = data.get("keywords")
         cv_length = data.get("cv_length")
-        if not profile or not job_description:
-            return {"error": "Missing required profile or job_description"}
-        # Build the assistant message
-        system_prompt = """
-You are an expert CV and career assistant that supports multiple actions through a unified threaded interface. You operate within OpenAI's thread context system, where profile and job description data are automatically maintained across interactions within the same thread.
-
-CRITICAL OUTPUT REQUIREMENT: You MUST respond with ONLY valid JSON. No explanations, no additional text, no markdown formatting, no code blocks. Your entire response must be parseable as JSON.
-
-Supported actions: extract_keywords, generate_cv, update_cv, update_profile. Always respond with ONLY valid JSON. If action is unrecognized, return error in JSON format. DO NOT include thread_id in responses (handled by backend).
-"""
+        additional_keypoints = data.get("additional_keypoints")
+        previous_cv = data.get("previous_cv")
+        # Compose user message for the assistant
         user_message = {
             "action": action,
             "profile": profile,
@@ -680,25 +673,53 @@ Supported actions: extract_keywords, generate_cv, update_cv, update_profile. Alw
             user_message["keywords"] = keywords
         if cv_length:
             user_message["cv_length"] = cv_length
-        # Use OpenAI Assistant API (threaded)
+        if additional_keypoints:
+            user_message["additional_keypoints"] = additional_keypoints
+        if previous_cv:
+            user_message["previous_cv"] = previous_cv
+
+        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
         if not OPENAI_API_KEY:
             return {"error": "OpenAI API key not set"}
-        openai_client = OpenAI(api_key=OPENAI_API_KEY)
-        completion = openai_client.chat.completions.create(
-            model="gpt-4o-2024-08-06",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": str(user_message)}
-            ],
-            max_tokens=3000,
-            temperature=0.3,
-            response_format={"type": "json_object"}
+        if not OPENAI_ASSISTANT_ID:
+            return {"error": "OpenAI Assistant ID not set"}
+
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        # 1. Create a thread
+        thread = client.beta.threads.create()
+        thread_id = thread.id
+        # 2. Add user message to thread
+        client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
+            content=str(user_message)
         )
+        # 3. Run the assistant
+        run = client.beta.threads.runs.create(
+            thread_id=thread_id,
+            assistant_id=OPENAI_ASSISTANT_ID
+        )
+        # 4. Poll for completion
+        import time
+        for _ in range(60):  # up to ~60 seconds
+            run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+            if run_status.status in ("completed", "failed", "cancelled", "expired"):
+                break
+            time.sleep(1)
+        if run_status.status != "completed":
+            return {"error": f"Assistant run did not complete: {run_status.status}"}
+        # 5. Get the latest message from the assistant
+        messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
+        if not messages.data:
+            return {"error": "No response from assistant"}
+        content = messages.data[0].content[0].text.value
         import json
-        content = completion.choices[0].message.content
-        if isinstance(content, str):
-            content = json.loads(content)
-        return content
+        try:
+            content_json = json.loads(content)
+        except Exception as e:
+            return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
+        return content_json
     except Exception as e:
         logger.error(f"[ERROR] Error in generate_assistant: {str(e)}")
         return {"error": f"Error generating CV: {str(e)}"}
