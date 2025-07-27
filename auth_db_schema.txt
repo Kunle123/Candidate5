@@ -1,0 +1,21 @@
+Tables:
+- users
+
+
+
+Table: users
+  updatedAt | timestamp with time zone | nullable: NO
+  tokens | jsonb | nullable: YES
+  profile | jsonb | nullable: YES
+  passwordResetExpires | timestamp with time zone | nullable: YES
+  emailVerified | boolean | nullable: YES
+  emailVerificationExpires | timestamp with time zone | nullable: YES
+  createdAt | timestamp with time zone | nullable: NO
+  id | uuid | nullable: NO
+  email | character varying | nullable: NO
+  password | character varying | nullable: YES
+  facebook | character varying | nullable: YES
+  google | character varying | nullable: YES
+  linkedin | character varying | nullable: YES
+  passwordResetToken | character varying | nullable: YES
+  emailVerificationToken | character varying | nullable: YES
