@@ -690,34 +690,38 @@ async def generate_assistant(request: Request):
         thread = client.beta.threads.create()
         thread_id = thread.id
         # 2. Add user message to thread
-    client.beta.threads.messages.create(
-        thread_id=thread_id,
-        role="user",
-            content=str(user_message)
-    )
+        try:
+            client.beta.threads.messages.create(
+                thread_id=thread_id,
+                role="user",
+                content=str(user_message)
+            )
+        except Exception as e:
+            logger.error(f"[ERROR] Error adding message to thread: {str(e)}")
+            return {"error": f"Error adding message to thread: {str(e)}"}
         # 3. Run the assistant
-    run = client.beta.threads.runs.create(
-        thread_id=thread_id,
+        run = client.beta.threads.runs.create(
+            thread_id=thread_id,
             assistant_id=OPENAI_ASSISTANT_ID
-    )
+        )
         # 4. Poll for completion
-    import time
+        import time
         for _ in range(60):  # up to ~60 seconds
-        run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+            run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
             if run_status.status in ("completed", "failed", "cancelled", "expired"):
-            break
-        time.sleep(1)
-    if run_status.status != "completed":
+                break
+            time.sleep(1)
+        if run_status.status != "completed":
             return {"error": f"Assistant run did not complete: {run_status.status}"}
         # 5. Get the latest message from the assistant
-    messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
-    if not messages.data:
+        messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
+        if not messages.data:
             return {"error": "No response from assistant"}
-    content = messages.data[0].content[0].text.value
-    import json
+        content = messages.data[0].content[0].text.value
+        import json
         try:
             content_json = json.loads(content)
-    except Exception as e:
+        except Exception as e:
             return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
         return content_json
     except Exception as e:
