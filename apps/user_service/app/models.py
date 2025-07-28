@@ -14,5 +14,6 @@ class UserProfile(Base):
     address_line1 = Column(String, nullable=True)
     city_state_postal = Column(String, nullable=True)
     linkedin = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow) 

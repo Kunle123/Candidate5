@@ -40,6 +40,7 @@ class UserProfileResponse(BaseModel):
     address_line1: Optional[str] = None
     city_state_postal: Optional[str] = None
     linkedin: Optional[str] = None
+    phone_number: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     model_config = {
@@ -52,6 +53,7 @@ class UpdateUserProfileRequest(BaseModel):
     address_line1: Optional[str] = None
     city_state_postal: Optional[str] = None
     linkedin: Optional[str] = None
+    phone_number: Optional[str] = None
 
 class ChangePasswordRequest(BaseModel):
     currentPassword: str
@@ -110,6 +112,7 @@ class CreateUserProfileRequest(BaseModel):
     id: str
     email: EmailStr
     name: str
+    phone_number: Optional[str] = None
 
 # --- Dummy in-memory stores for demo ---
 users = {}
@@ -227,6 +230,8 @@ def patch_user_profile(req: UpdateUserProfileRequest, user_id: str = Depends(get
             user.city_state_postal = req.city_state_postal
         if req.linkedin is not None:
             user.linkedin = req.linkedin
+        if req.phone_number is not None:
+            user.phone_number = req.phone_number
         user.updated_at = now
         db.commit()
         db.refresh(user)
