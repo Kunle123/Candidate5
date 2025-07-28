@@ -1,7 +1,7 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Body, status, BackgroundTasks, Security, Header, Request
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List, Literal
-from uuid import uuid4
+from typing import Optional, List, Literal, Union
+from uuid import uuid4, UUID
 from datetime import datetime, timedelta
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -34,7 +34,7 @@ router = APIRouter()
 
 # --- Models ---
 class UserProfileResponse(BaseModel):
-    id: str
+    id: Union[str, UUID]
     email: EmailStr
     name: str
     address_line1: Optional[str] = None
