@@ -18,6 +18,7 @@ from tempfile import NamedTemporaryFile
 from io import BytesIO
 import time
 import base64
+import io
 
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
@@ -748,16 +749,18 @@ async def analyze_cv(cv_id: str, jobDescription: dict = Body(...), auth: dict = 
 
 @app.get("/cvs/{cv_id}/download")
 async def download_cv(cv_id: str, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
-    # Placeholder: return a dummy file response
-    from fastapi.responses import StreamingResponse
-    import io
+    from .models import CV
     user_id = auth["user_id"]
-    cv = db.query(models.CV).filter(models.CV.id == cv_id, models.CV.user_id == user_id).first()
-    if not cv:
-        raise HTTPException(status_code=404, detail="CV not found")
-    # For now, just return the JSON as a file
-    file_content = json.dumps(serialize_cv(cv), indent=2)
-    return StreamingResponse(io.BytesIO(file_content.encode()), media_type="application/json", headers={"Content-Disposition": f"attachment; filename=cv_{cv_id}.json"})
+    cv = db.query(CV).filter(CV.id == cv_id, CV.user_id == user_id).first()
+    if not cv or not cv.docx_file:
+        raise HTTPException(status_code=404, detail="CV or DOCX file not found")
+    return StreamingResponse(
+        io.BytesIO(cv.docx_file),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="cv_{cv_id}.docx"'
+        }
+    )
 
 @app.get("/api/cv/{cv_id}/download")
 async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
@@ -770,16 +773,13 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
     cv = db.query(CV).filter(CV.id == cv_id, CV.user_id == user_id).first()
     if not cv or not cv.docx_file:
         raise HTTPException(status_code=404, detail="CV or DOCX file not found")
-    try:
-        docx_b64 = base64.b64encode(cv.docx_file).decode('utf-8')
-    except Exception as e:
-        logger.error(f"Base64 encoding failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to encode DOCX as base64")
-    return {
-        "filename": f"cv_{cv_id}.docx",
-        "filedata": docx_b64,
-        "cv_id": str(cv_id)
-    }
+    return StreamingResponse(
+        io.BytesIO(cv.docx_file),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="cv_{cv_id}.docx"'
+        }
+    )
 
 @app.post("/api/applications")
 async def create_application(
@@ -860,29 +860,29 @@ async def list_applications(auth: dict = Depends(verify_token), db: Session = De
 @app.get("/api/applications/{id}/cv")
 async def download_application_cv(id: str = Path(...), auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
     from .models import Application
-    import base64
     user_id = auth["user_id"]
     app = db.query(Application).filter(Application.id == id, Application.user_id == user_id).first()
     if not app or not app.cv_docx_file:
-        raise HTTPException(status_code=404, detail="Application or CV not found")
-    docx_b64 = base64.b64encode(app.cv_docx_file).decode('utf-8')
-    return {
-        "filename": f"cv_{id}.docx",
-        "filedata": docx_b64,
-        "application_id": str(id)
-    }
+        raise HTTPException(status_code=404, detail="Application CV or DOCX file not found")
+    return StreamingResponse(
+        io.BytesIO(app.cv_docx_file),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="application_cv_{id}.docx"'
+        }
+    )
 
 @app.get("/api/applications/{id}/cover-letter")
 async def download_application_cover_letter(id: str = Path(...), auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
     from .models import Application
-    import base64
     user_id = auth["user_id"]
     app = db.query(Application).filter(Application.id == id, Application.user_id == user_id).first()
     if not app or not app.cover_letter_docx_file:
-        raise HTTPException(status_code=404, detail="Application or cover letter not found")
-    docx_b64 = base64.b64encode(app.cover_letter_docx_file).decode('utf-8')
-    return {
-        "filename": f"cover_letter_{id}.docx",
-        "filedata": docx_b64,
-        "application_id": str(id)
-    }
+        raise HTTPException(status_code=404, detail="Application cover letter or DOCX file not found")
+    return StreamingResponse(
+        io.BytesIO(app.cover_letter_docx_file),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="application_cover_letter_{id}.docx"'
+        }
+    )
