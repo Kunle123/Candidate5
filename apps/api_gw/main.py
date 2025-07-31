@@ -211,6 +211,11 @@ async def login(request: Request):
 @app.post("/auth/register")
 async def register(request: Request):
     data = await request.json()
+    code = data.get("code")
+    import os
+    if not code or not (isinstance(code, str) and code.isdigit() and len(code) == 6) or code != os.environ.get("SIGNUP_CODE"):
+        return JSONResponse(status_code=403, content={"message": "Invalid or missing 6-digit access code."})
+    data.pop("code", None)
     async with httpx.AsyncClient() as client:
         resp = await client.post(f"{auth_service_url}/auth/register", json=data)
         if resp.status_code != 200:
