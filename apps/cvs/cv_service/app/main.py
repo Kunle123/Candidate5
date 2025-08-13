@@ -19,6 +19,12 @@ from io import BytesIO
 import time
 import base64
 import io
+from docx.shared import Pt, Inches
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.oxml.ns import qn
+from docx.shared import RGBColor
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml import OxmlElement
 
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
@@ -94,6 +100,164 @@ class CVUpdateContent(BaseModel):
     # references: Optional[List[Dict[str, Any]]] = None
     
     custom_sections: Optional[Dict[str, Any]] = None
+
+class ProfessionalCVFormatter:
+    """Professional CV formatter with enhanced styling and layout capabilities."""
+    def __init__(self):
+        self.doc = Document()
+        self.setup_document()
+        self.setup_styles()
+    def setup_document(self):
+        section = self.doc.sections[0]
+        section.page_height = Inches(11.69)
+        section.page_width = Inches(8.27)
+        section.top_margin = Inches(0.8)
+        section.bottom_margin = Inches(0.8)
+        section.left_margin = Inches(0.8)
+        section.right_margin = Inches(0.8)
+    def setup_styles(self):
+        self.colors = {
+            'primary': RGBColor(44, 62, 80),
+            'secondary': RGBColor(52, 152, 219),
+            'accent': RGBColor(149, 165, 166),
+            'text': RGBColor(44, 62, 80),
+            'light_text': RGBColor(127, 140, 141)
+        }
+        self.font_sizes = {
+            'name': 24,
+            'title': 18,
+            'section_heading': 14,
+            'job_title': 12,
+            'company': 11,
+            'body': 10,
+            'small': 9
+        }
+        self.spacing = {
+            'section_before': Pt(20),
+            'section_after': Pt(8),
+            'item_before': Pt(6),
+            'item_after': Pt(4),
+            'line_spacing': 1.15
+        }
+    def set_font_style(self, paragraph, font_size, bold=False, color=None, italic=False):
+        for run in paragraph.runs:
+            run.font.name = 'Calibri'
+            run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Calibri')
+            run.font.size = Pt(font_size)
+            run.bold = bold
+            run.italic = italic
+            if color:
+                run.font.color.rgb = color
+        paragraph.paragraph_format.line_spacing = self.spacing['line_spacing']
+    def add_horizontal_line(self, color=None):
+        para = self.doc.add_paragraph()
+        para.paragraph_format.space_before = Pt(6)
+        para.paragraph_format.space_after = Pt(6)
+        p = para._element
+        pPr = p.get_or_add_pPr()
+        pBdr = OxmlElement('w:pBdr')
+        pPr.insert_element_before(pBdr, 'w:shd', 'w:tabs', 'w:suppressAutoHyphens', 'w:kinsoku', 'w:wordWrap', 'w:overflowPunct', 'w:topLinePunct', 'w:autoSpaceDE', 'w:autoSpaceDN', 'w:bidi', 'w:adjustRightInd', 'w:snapToGrid', 'w:spacing', 'w:ind', 'w:contextualSpacing', 'w:mirrorIndents', 'w:suppressOverlap', 'w:jc', 'w:textDirection', 'w:textAlignment', 'w:textboxTightWrap', 'w:outlineLvl', 'w:divId', 'w:cnfStyle', 'w:rPr', 'w:sectPr', 'w:sectPrChange')
+        bottom = OxmlElement('w:bottom')
+        bottom.set(qn('w:val'), 'single')
+        bottom.set(qn('w:sz'), '6')
+        bottom.set(qn('w:space'), '1')
+        if color:
+            bottom.set(qn('w:color'), f"{color[0]:02x}{color[1]:02x}{color[2]:02x}")
+        else:
+            accent_color = self.colors['accent']
+            bottom.set(qn('w:color'), f"{accent_color[0]:02x}{accent_color[1]:02x}{accent_color[2]:02x}")
+        pBdr.append(bottom)
+    def add_header_section(self, name, title, contact_info):
+        name_para = self.doc.add_paragraph(name)
+        self.set_font_style(name_para, self.font_sizes['name'], bold=True, color=self.colors['primary'])
+        name_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        name_para.paragraph_format.space_after = Pt(4)
+        title_para = self.doc.add_paragraph(title)
+        self.set_font_style(title_para, self.font_sizes['title'], color=self.colors['secondary'])
+        title_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        title_para.paragraph_format.space_after = Pt(8)
+        if contact_info:
+            table = self.doc.add_table(rows=1, cols=len(contact_info))
+            table.alignment = WD_TABLE_ALIGNMENT.CENTER
+            for i, info in enumerate(contact_info):
+                cell = table.cell(0, i)
+                cell.text = info
+                cell_para = cell.paragraphs[0]
+                self.set_font_style(cell_para, self.font_sizes['small'], color=self.colors['light_text'])
+                cell_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        self.add_horizontal_line()
+    def add_section_heading(self, text):
+        para = self.doc.add_paragraph()
+        run = para.add_run(text.upper())
+        self.set_font_style(para, self.font_sizes['section_heading'], bold=True, color=self.colors['primary'])
+        para.paragraph_format.space_before = self.spacing['section_before']
+        para.paragraph_format.space_after = self.spacing['section_after']
+        return para
+    def add_experience_block(self, title, company, location, dates, description=None):
+        title_para = self.doc.add_paragraph()
+        title_run = title_para.add_run(title)
+        self.set_font_style(title_para, self.font_sizes['job_title'], bold=True, color=self.colors['text'])
+        dates_run = title_para.add_run(f"\t{dates}")
+        dates_run.font.name = 'Calibri'
+        dates_run.font.size = Pt(self.font_sizes['small'])
+        dates_run.font.color.rgb = self.colors['light_text']
+        tab_stops = title_para.paragraph_format.tab_stops
+        tab_stops.add_tab_stop(Inches(6.5), WD_PARAGRAPH_ALIGNMENT.RIGHT)
+        title_para.paragraph_format.space_before = self.spacing['item_before']
+        title_para.paragraph_format.space_after = Pt(2)
+        company_para = self.doc.add_paragraph(f"{company}")
+        if location:
+            company_para.add_run(f" • {location}")
+        self.set_font_style(company_para, self.font_sizes['company'], italic=True, color=self.colors['secondary'])
+        company_para.paragraph_format.space_after = Pt(4)
+        if description:
+            desc_para = self.doc.add_paragraph(description)
+            self.set_font_style(desc_para, self.font_sizes['body'], color=self.colors['text'])
+            desc_para.paragraph_format.space_after = self.spacing['item_after']
+            desc_para.paragraph_format.left_indent = Inches(0.2)
+    def add_education_block(self, degree, institution, location, year, details=None):
+        degree_para = self.doc.add_paragraph()
+        degree_run = degree_para.add_run(degree)
+        self.set_font_style(degree_para, self.font_sizes['job_title'], bold=True, color=self.colors['text'])
+        year_run = degree_para.add_run(f"\t{year}")
+        year_run.font.name = 'Calibri'
+        year_run.font.size = Pt(self.font_sizes['small'])
+        year_run.font.color.rgb = self.colors['light_text']
+        tab_stops = degree_para.paragraph_format.tab_stops
+        tab_stops.add_tab_stop(Inches(6.5), WD_PARAGRAPH_ALIGNMENT.RIGHT)
+        degree_para.paragraph_format.space_before = self.spacing['item_before']
+        degree_para.paragraph_format.space_after = Pt(2)
+        inst_para = self.doc.add_paragraph(f"{institution}")
+        if location:
+            inst_para.add_run(f" • {location}")
+        self.set_font_style(inst_para, self.font_sizes['company'], italic=True, color=self.colors['secondary'])
+        inst_para.paragraph_format.space_after = Pt(4)
+        if details:
+            details_para = self.doc.add_paragraph(details)
+            self.set_font_style(details_para, self.font_sizes['body'], color=self.colors['text'])
+            details_para.paragraph_format.space_after = self.spacing['item_after']
+            details_para.paragraph_format.left_indent = Inches(0.2)
+    def add_skills_section(self, skills_dict):
+        for category, skills in skills_dict.items():
+            cat_para = self.doc.add_paragraph()
+            cat_run = cat_para.add_run(f"{category}: ")
+            self.set_font_style(cat_para, self.font_sizes['body'], bold=True, color=self.colors['text'])
+            skills_run = cat_para.add_run(" • ".join(skills))
+            skills_run.font.name = 'Calibri'
+            skills_run.font.size = Pt(self.font_sizes['body'])
+            skills_run.font.color.rgb = self.colors['text']
+            cat_para.paragraph_format.space_after = Pt(4)
+            cat_para.paragraph_format.left_indent = Inches(0.2)
+    def add_bullet_points(self, items):
+        for item in items:
+            para = self.doc.add_paragraph(f"• {item}")
+            self.set_font_style(para, self.font_sizes['body'], color=self.colors['text'])
+            para.paragraph_format.left_indent = Inches(0.2)
+            para.paragraph_format.space_after = Pt(3)
+    def save_to_buffer(self):
+        buf = BytesIO()
+        self.doc.save(buf)
+        return buf.getvalue()
 
 # Helper function to verify JWT tokens
 async def verify_token(token: Optional[str] = Depends(oauth2_scheme)):
@@ -272,105 +436,32 @@ async def generate_cv_docx(
         logger.info(f"[DEBUG] Received payload: {payload}")
         logger.info(f"[DEBUG] User: {auth}")
         logger.info(f"[DEBUG] Starting CV DOCX generation")
-        from docx.shared import Pt, Inches
-        from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-        from docx.oxml.ns import qn
-        doc = Document()
-        section = doc.sections[0]
-        section.page_height = Inches(11.69)
-        section.page_width = Inches(8.27)
-        section.top_margin = Inches(1)
-        section.bottom_margin = Inches(1)
-        section.left_margin = Inches(1)
-        section.right_margin = Inches(1)
-        def set_font(paragraph, size, bold=False):
-            for run in paragraph.runs:
-                run.font.name = 'Arial'
-                run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
-                run.font.size = Pt(size)
-                run.bold = bold
-            paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
-        def add_section_heading(text):
-            para = doc.add_paragraph()
-            run = para.add_run(text.title())
-            set_font(para, 14, bold=True)
-            para.paragraph_format.space_before = Pt(18)
-            para.paragraph_format.space_after = Pt(12)
-            return para
-        def add_job_block(title, company, dates):
-            para_title = doc.add_paragraph(title)
-            set_font(para_title, 12, bold=True)
-            para_title.paragraph_format.space_before = Pt(12)
-            para_title.paragraph_format.space_after = Pt(0)
-            para_company = doc.add_paragraph(company)
-            set_font(para_company, 11, bold=False)
-            para_company.paragraph_format.space_after = Pt(0)
-            para_dates = doc.add_paragraph(dates)
-            set_font(para_dates, 11, bold=False)
-            para_dates.paragraph_format.space_after = Pt(6)
-        def add_bullet(text, indent=0.25):
-            para = doc.add_paragraph()
-            para.style = doc.styles['List Bullet']
-            para.paragraph_format.left_indent = Inches(indent)
-            para.paragraph_format.first_line_indent = Inches(0)
-            para.paragraph_format.space_after = Pt(3)
-            para.paragraph_format.line_spacing = 1.15
-            set_font(para, 11, bold=False)
-            para.text = text
-            return para
-        def add_sub_bullet(text):
-            return add_bullet(text, indent=0.5)
-        def add_contact_info(text):
-            para = doc.add_paragraph(text)
-            set_font(para, 10, bold=False)
-            para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            para.paragraph_format.space_after = Pt(6)
-            return para
+        # --- Use ProfessionalCVFormatter ---
         cv_text = payload.get("cv")
         if not cv_text:
             logger.warning("Missing 'cv' field in request body")
             raise HTTPException(status_code=400, detail="'cv' field is required in the request body.")
-        logger.info(f"[DEBUG] CV text received, length: {len(cv_text)}")
+        # For demonstration, parse the first lines for header info (customize as needed)
         lines = [l.strip() for l in cv_text.splitlines() if l.strip()]
-        if lines:
-            para = doc.add_paragraph(lines[0])
-            set_font(para, 20, bold=True)
-            para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            para.paragraph_format.space_after = Pt(6)
-            lines = lines[1:]
-        if lines and ("@" in lines[0] or any(c.isdigit() for c in lines[0])):
-            add_contact_info(lines[0])
-            lines = lines[1:]
-        section_headers = [
-            "Summary", "Professional Summary", "Core Competencies", "Experience", "Professional Experience", "Education", "Skills", "Certifications", "Projects", "References"
-        ]
-        i = 0
-        while i < len(lines):
-            line = lines[i]
-            if line.title() in section_headers:
-                add_section_heading(line)
-                i += 1
-                continue
-            if i+2 < len(lines) and not any(lines[i].startswith(b) for b in ["•", "-"]) and not any(lines[i+1].startswith(b) for b in ["•", "-"]) and not any(lines[i+2].startswith(b) for b in ["•", "-"]):
-                add_job_block(lines[i], lines[i+1], lines[i+2])
-                i += 3
-                continue
-            if line.startswith("•") or line.startswith("-"):
-                if line.startswith("    ") or line.startswith("\t"):
-                    add_sub_bullet(line.lstrip("•- \t"))
-                else:
-                    add_bullet(line[1:].strip())
-                i += 1
-                continue
-            para = doc.add_paragraph(line)
-            set_font(para, 11)
-            para.paragraph_format.space_after = Pt(6)
-            i += 1
-        logger.info("[DEBUG] Finished parsing CV text, saving DOCX to buffer")
-        buf = BytesIO()
-        doc.save(buf)
-        buf.seek(0)
-        docx_bytes = buf.getvalue()
+        name = lines[0] if lines else ""
+        title = lines[1] if len(lines) > 1 else ""
+        contact_info = []
+        if len(lines) > 2:
+            contact_info = [lines[2]]
+        summary = ""
+        for i, line in enumerate(lines):
+            if line.lower().startswith("professional summary"):
+                summary = lines[i+1] if i+1 < len(lines) else ""
+                break
+        cv = ProfessionalCVFormatter()
+        cv.add_header_section(name, title, contact_info)
+        if summary:
+            cv.add_section_heading("Professional Summary")
+            summary_para = cv.doc.add_paragraph(summary)
+            cv.set_font_style(summary_para, cv.font_sizes['body'], color=cv.colors['text'])
+            summary_para.paragraph_format.space_after = Pt(12)
+        # Add more sections as needed (Experience, Education, etc.)
+        docx_bytes = cv.save_to_buffer()
         logger.info(f"[DEBUG] DOCX bytes length: {len(docx_bytes)}")
         job_title = payload.get("job_title")
         company_name = payload.get("company_name")
@@ -381,7 +472,7 @@ async def generate_cv_docx(
             personal_info["company"] = company_name
         cover_letter_id = None
         if payload.get("cover_letter"):
-            logger.info("[DEBUG] Cover letter detected in payload, generating cover letter DOCX")
+            # ... existing cover letter logic ...
             cover_letter_text = payload["cover_letter"]
             cover_doc = Document()
             cover_doc.add_heading("Cover Letter", 0)
@@ -398,7 +489,6 @@ async def generate_cv_docx(
             cover_doc.save(cover_buf)
             cover_buf.seek(0)
             cover_docx_bytes = cover_buf.getvalue()
-            logger.info(f"[DEBUG] Cover letter DOCX bytes length: {len(cover_docx_bytes)}")
             cover_personal_info = {}
             if job_title:
                 cover_personal_info["job_title"] = job_title
