@@ -650,20 +650,86 @@ from fastapi import Request
 @router.post("/generate-assistant")
 async def generate_assistant(request: Request):
     """
-    Generate a tailored CV and cover letter using OpenAI Assistant API, following strict output requirements.
-    Accepts: {"action": "generate_cv", "profile": {...}, "job_description": "...", "keywords": [...], "cv_length": "..."}
-    Returns: {"cv": "...", "cover_letter": "...", "job_title": "...", "company_name": "..."}
+    Generate a tailored CV and cover letter or extract keywords using OpenAI Assistant API, following strict output requirements.
+    Accepts: {"action": "generate_cv"|"extract_keywords", "profile": {...}, "job_description": "...", "keywords": [...], "cv_length": "...", "thread_id": "..."}
+    Returns: {"cv": "...", "cover_letter": "...", "job_title": "...", "company_name": "..."} or {"keywords": [...], "thread_id": "..."}
     """
     try:
         data = await request.json()
         action = data.get("action", "generate_cv")
+        thread_id = data.get("thread_id")
         profile = data.get("profile")
         job_description = data.get("job_description")
         keywords = data.get("keywords")
         cv_length = data.get("cv_length")
         additional_keypoints = data.get("additional_keypoints")
         previous_cv = data.get("previous_cv")
-        # Compose user message for the assistant
+        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
+        if not OPENAI_API_KEY:
+            return {"error": "OpenAI API key not set"}
+        if not OPENAI_ASSISTANT_ID:
+            return {"error": "OpenAI Assistant ID not set"}
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        import time
+        import json
+        # --- Thread-aware keyword extraction ---
+        if action == "extract_keywords" and thread_id:
+            client.beta.threads.messages.create(
+                thread_id=thread_id,
+                role="user",
+                content="Extract the most important keywords from my profile and this job description for tailoring my application."
+            )
+            run = client.beta.threads.runs.create(
+                thread_id=thread_id,
+                assistant_id=OPENAI_ASSISTANT_ID
+            )
+            for _ in range(60):
+                run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+                if run_status.status in ("completed", "failed", "cancelled", "expired"):
+                    break
+                time.sleep(1)
+            if run_status.status != "completed":
+                return {"error": f"Assistant run did not complete: {run_status.status}"}
+            messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
+            if not messages.data:
+                return {"error": "No response from assistant"}
+            content = messages.data[0].content[0].text.value
+            try:
+                content_json = json.loads(content)
+                keywords = content_json.get("keywords", [])
+            except Exception as e:
+                return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
+            return {"keywords": keywords, "thread_id": thread_id}
+        # --- Thread-aware CV & cover letter generation ---
+        if action == "generate_cv" and thread_id:
+            client.beta.threads.messages.create(
+                thread_id=thread_id,
+                role="user",
+                content="Generate a CV and cover letter for this job."
+            )
+            run = client.beta.threads.runs.create(
+                thread_id=thread_id,
+                assistant_id=OPENAI_ASSISTANT_ID
+            )
+            for _ in range(60):
+                run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+                if run_status.status in ("completed", "failed", "cancelled", "expired"):
+                    break
+                time.sleep(1)
+            if run_status.status != "completed":
+                return {"error": f"Assistant run did not complete: {run_status.status}"}
+            messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
+            if not messages.data:
+                return {"error": "No response from assistant"}
+            content = messages.data[0].content[0].text.value
+            try:
+                content_json = json.loads(content)
+            except Exception as e:
+                return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
+            content_json["thread_id"] = thread_id
+            return content_json
+        # --- Default: create thread and send full context ---
         user_message = {
             "action": action,
             "profile": profile,
@@ -677,19 +743,8 @@ async def generate_assistant(request: Request):
             user_message["additional_keypoints"] = additional_keypoints
         if previous_cv:
             user_message["previous_cv"] = previous_cv
-
-        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-        OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
-        if not OPENAI_API_KEY:
-            return {"error": "OpenAI API key not set"}
-        if not OPENAI_ASSISTANT_ID:
-            return {"error": "OpenAI Assistant ID not set"}
-
-        client = openai.OpenAI(api_key=OPENAI_API_KEY)
-        # 1. Create a thread
         thread = client.beta.threads.create()
         thread_id = thread.id
-        # 2. Add user message to thread
         try:
             client.beta.threads.messages.create(
                 thread_id=thread_id,
@@ -699,30 +754,26 @@ async def generate_assistant(request: Request):
         except Exception as e:
             logger.error(f"[ERROR] Error adding message to thread: {str(e)}")
             return {"error": f"Error adding message to thread: {str(e)}"}
-        # 3. Run the assistant
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
             assistant_id=OPENAI_ASSISTANT_ID
         )
-        # 4. Poll for completion
-        import time
-        for _ in range(60):  # up to ~60 seconds
+        for _ in range(60):
             run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
             if run_status.status in ("completed", "failed", "cancelled", "expired"):
                 break
             time.sleep(1)
         if run_status.status != "completed":
             return {"error": f"Assistant run did not complete: {run_status.status}"}
-        # 5. Get the latest message from the assistant
         messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
         if not messages.data:
             return {"error": "No response from assistant"}
         content = messages.data[0].content[0].text.value
-        import json
         try:
             content_json = json.loads(content)
         except Exception as e:
             return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
+        content_json["thread_id"] = thread_id
         return content_json
     except Exception as e:
         logger.error(f"[ERROR] Error in generate_assistant: {str(e)}")
