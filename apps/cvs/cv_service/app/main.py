@@ -449,7 +449,7 @@ async def generate_cv_docx(
         # Fallback: parse from plain text if structured fields are missing
         cv_text = payload.get("cv")
         if cv_text:
-        lines = [l.strip() for l in cv_text.splitlines() if l.strip()]
+            lines = [l.strip() for l in cv_text.splitlines() if l.strip()]
             # Try to extract name, title, contact info, summary from first lines
             if not name and lines:
                 name = lines[0]
