@@ -29,4 +29,4 @@ class TopupCredits(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
     topup_credits_remaining = Column(Integer, nullable=False, default=0)
-    topup_credits_expiry = Column(DateTime, nullable=True) 
+    topup_credits_expiry = Column(DateTime, nullable=True) Fri Aug 15 15:03:40 BST 2025
