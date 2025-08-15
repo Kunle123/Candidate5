@@ -16,11 +16,11 @@ class UserProfile(Base):
     linkedin = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
     # --- Credit and Subscription Fields ---
-    monthly_credits_remaining = Column(Integer, nullable=False, default=3)  # 50 for paid, 3 for free
-    daily_credits_remaining = Column(Integer, nullable=False, default=0)    # 3 for monthly, 5 for annual, 0 for free
+    monthly_credits_remaining = Column(Integer, nullable=False, default=3)  # Always a constant
+    daily_credits_remaining = Column(Integer, nullable=False, default=0)    # Always a constant
     last_daily_reset = Column(DateTime, nullable=True)
     last_monthly_reset = Column(DateTime, nullable=True)
-    subscription_type = Column(String, nullable=False, default='free')  # 'free', 'monthly', 'annual'
+    subscription_type = Column(String, nullable=False, default='free')  # Always a constant
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow) 
 
