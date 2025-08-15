@@ -30,3 +30,4 @@ class TopupCredits(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
     topup_credits_remaining = Column(Integer, nullable=False, default=0)
     topup_credits_expiry = Column(DateTime, nullable=True)
+Fri Aug 15 15:34:46 BST 2025
