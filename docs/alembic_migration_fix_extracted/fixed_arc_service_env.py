@@ -3,17 +3,35 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from apps.arc.arc_service.models import Base
 
 from logging.config import fileConfig
+
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+
 from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# Patch: Use DATABASE_URL from environment if sqlalchemy.url is blank
+# Use ARC-specific database URL from environment
+def get_arc_database_url():
+    # Try ARC-specific URL first, then fall back to generic DATABASE_URL
+    arc_url = os.environ.get("ARC_DATABASE_URL")
+    if arc_url:
+        return arc_url
+    
+    # Fallback to generic DATABASE_URL but warn about it
+    generic_url = os.environ.get("DATABASE_URL")
+    if generic_url:
+        print("WARNING: Using generic DATABASE_URL for ARC service. Consider setting ARC_DATABASE_URL")
+        return generic_url
+    
+    # Default for development
+    return "postgresql://postgres:postgres@localhost:5432/arc_db"
+
+# Set the database URL
 if not config.get_main_option("sqlalchemy.url"):
-    db_url = os.environ.get("DATABASE_URL")
+    db_url = get_arc_database_url()
     if db_url:
         config.set_main_option("sqlalchemy.url", db_url)
 
@@ -24,8 +42,6 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -84,3 +100,4 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
+
