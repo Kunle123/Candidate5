@@ -7,11 +7,13 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
 from sqlalchemy.orm import Session
-from .models import UserProfile as UserProfileORM
+from .models import UserProfile as UserProfileORM, TopupCredits
 from .db import get_db
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 import requests
+from sqlalchemy import and_
+from datetime import date
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -114,6 +116,22 @@ class CreateUserProfileRequest(BaseModel):
     name: str
     phone_number: Optional[str] = None
 
+class UserCreditsResponse(BaseModel):
+    monthly_credits_remaining: int
+    daily_credits_remaining: int
+    topup_credits_remaining: int
+    subscription_type: str
+
+class UseCreditsRequest(BaseModel):
+    amount: int = 1
+
+class UpdateSubscriptionRequest(BaseModel):
+    user_id: str
+    subscription_type: str  # 'free', 'monthly', 'annual'
+
+class TopupCreditsRequest(BaseModel):
+    user_id: str
+
 # --- Dummy in-memory stores for demo ---
 users = {}
 settings = {}
@@ -158,6 +176,33 @@ def create_cv_profile_in_arc(user_id, name, email):
         response.raise_for_status()
     except Exception as e:
         logger.error(f"Failed to create CV profile in arc service: {e}")
+
+def reset_user_credits(user: UserProfileORM, db: Session):
+    now = datetime.utcnow()
+    today = date.today()
+    # Reset daily credits if new day
+    if not user.last_daily_reset or user.last_daily_reset.date() != today:
+        if user.subscription_type == 'monthly':
+            user.daily_credits_remaining = 3
+        elif user.subscription_type == 'annual':
+            user.daily_credits_remaining = 5
+        else:
+            user.daily_credits_remaining = 0
+        user.last_daily_reset = now
+    # Reset monthly credits if new month
+    if not user.last_monthly_reset or user.last_monthly_reset.month != now.month or user.last_monthly_reset.year != now.year:
+        if user.subscription_type in ['monthly', 'annual']:
+            user.monthly_credits_remaining = 50
+        else:
+            user.monthly_credits_remaining = 3
+        user.last_monthly_reset = now
+    # Remove expired top-up credits
+    expired_topups = db.query(TopupCredits).filter(
+        and_(TopupCredits.user_id == user.id, TopupCredits.topup_credits_expiry < now)
+    ).all()
+    for topup in expired_topups:
+        db.delete(topup)
+    db.commit()
 
 # --- Profile Endpoints ---
 @router.get("/user/list", response_model=List[UserProfileResponse])
@@ -312,6 +357,99 @@ def get_my_profile(user_id: str = Depends(get_current_user), db: Session = Depen
         return user
     raise HTTPException(status_code=404, detail="User not found")
 
+@router.get("/user/credits", response_model=UserCreditsResponse)
+def get_user_credits(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    reset_user_credits(user, db)
+    now = datetime.utcnow()
+    topup_credits = db.query(TopupCredits).filter(
+        TopupCredits.user_id == user_id,
+        TopupCredits.topup_credits_expiry > now
+    ).all()
+    total_topup_credits = sum(t.topup_credits_remaining for t in topup_credits)
+    return UserCreditsResponse(
+        monthly_credits_remaining=user.monthly_credits_remaining,
+        daily_credits_remaining=user.daily_credits_remaining,
+        topup_credits_remaining=total_topup_credits,
+        subscription_type=user.subscription_type
+    )
+
+@router.post("/user/credits/use", response_model=UserCreditsResponse)
+def use_user_credits(
+    req: UseCreditsRequest = Body(...),
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    reset_user_credits(user, db)
+    now = datetime.utcnow()
+    amount = req.amount
+    # 1. Use valid top-up credits first
+    topups = db.query(TopupCredits).filter(
+        TopupCredits.user_id == user_id,
+        TopupCredits.topup_credits_expiry > now,
+        TopupCredits.topup_credits_remaining > 0
+    ).order_by(TopupCredits.topup_credits_expiry.asc()).all()
+    for topup in topups:
+        if amount <= 0:
+            break
+        use = min(topup.topup_credits_remaining, amount)
+        topup.topup_credits_remaining -= use
+        amount -= use
+    # 2. Use daily credits
+    if amount > 0 and user.daily_credits_remaining > 0:
+        use = min(user.daily_credits_remaining, amount)
+        user.daily_credits_remaining -= use
+        amount -= use
+    # 3. Use monthly credits
+    if amount > 0 and user.monthly_credits_remaining > 0:
+        use = min(user.monthly_credits_remaining, amount)
+        user.monthly_credits_remaining -= use
+        amount -= use
+    if amount > 0:
+        db.rollback()
+        raise HTTPException(status_code=402, detail="Insufficient credits")
+    db.commit()
+    # Recalculate top-up credits
+    topup_credits = db.query(TopupCredits).filter(
+        TopupCredits.user_id == user_id,
+        TopupCredits.topup_credits_expiry > now
+    ).all()
+    total_topup_credits = sum(t.topup_credits_remaining for t in topup_credits)
+    return UserCreditsResponse(
+        monthly_credits_remaining=user.monthly_credits_remaining,
+        daily_credits_remaining=user.daily_credits_remaining,
+        topup_credits_remaining=total_topup_credits,
+        subscription_type=user.subscription_type
+    )
+
+@router.post("/user/credits/reset", response_model=UserCreditsResponse)
+def admin_reset_user_credits(
+    user_id: str = Body(...),
+    admin_user_id: str = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    reset_user_credits(user, db)
+    now = datetime.utcnow()
+    topup_credits = db.query(TopupCredits).filter(
+        TopupCredits.user_id == user_id,
+        TopupCredits.topup_credits_expiry > now
+    ).all()
+    total_topup_credits = sum(t.topup_credits_remaining for t in topup_credits)
+    return UserCreditsResponse(
+        monthly_credits_remaining=user.monthly_credits_remaining,
+        daily_credits_remaining=user.daily_credits_remaining,
+        topup_credits_remaining=total_topup_credits,
+        subscription_type=user.subscription_type
+    )
+
 # --- Settings Endpoints ---
 @router.get("/user/settings", response_model=UserSettings)
 def get_user_settings(user_id: str = Depends(get_current_user)):
@@ -385,6 +523,46 @@ def delete_job(job_id: str, user_id: str = Depends(get_current_user)):
 def submit_feedback(req: FeedbackRequest, user_id: Optional[str] = Depends(get_current_user)):
     feedbacks.append({"user_id": user_id, **req.dict()})
     return {"success": True}
+
+@router.post("/user/subscription/update", status_code=200)
+def update_user_subscription(req: UpdateSubscriptionRequest, db: Session = Depends(get_db)):
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == req.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.subscription_type = req.subscription_type
+    # Reset credits as per plan
+    now = datetime.utcnow()
+    if req.subscription_type == 'monthly':
+        user.monthly_credits_remaining = 50
+        user.daily_credits_remaining = 3
+    elif req.subscription_type == 'annual':
+        user.monthly_credits_remaining = 50
+        user.daily_credits_remaining = 5
+    else:
+        user.monthly_credits_remaining = 3
+        user.daily_credits_remaining = 0
+    user.last_monthly_reset = now
+    user.last_daily_reset = now
+    db.commit()
+    return {"status": "success", "subscription_type": user.subscription_type}
+
+@router.post("/user/topup/add", status_code=200)
+def add_topup_credits(req: TopupCreditsRequest, db: Session = Depends(get_db)):
+    from datetime import timedelta
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == req.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    now = datetime.utcnow()
+    expiry = now + timedelta(days=30)
+    from .models import TopupCredits
+    topup = TopupCredits(
+        user_id=user.id,
+        topup_credits_remaining=50,
+        topup_credits_expiry=expiry
+    )
+    db.add(topup)
+    db.commit()
+    return {"status": "success", "topup_credits_remaining": topup.topup_credits_remaining, "expiry": expiry.isoformat()}
 
 @app.get("/health")
 def health():

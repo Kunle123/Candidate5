@@ -1,4 +1,4 @@
-from app.models import Base
+from app.models import Base, TopupCredits
 from app.db import engine
 
 # Dummy change to trigger redeploy

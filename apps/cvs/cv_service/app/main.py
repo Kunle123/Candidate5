@@ -25,6 +25,7 @@ from docx.oxml.ns import qn
 from docx.shared import RGBColor
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import OxmlElement
+import httpx
 
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
@@ -952,7 +953,8 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
 async def create_application(
     payload: dict = Body(...),
     auth: dict = Depends(verify_token),
-    db: Session = Depends(get_db_session)
+    db: Session = Depends(get_db_session),
+    request: Request = None
 ):
     """
     Create an application (role) with CV and cover letter, store both DOCX files.
@@ -966,6 +968,27 @@ async def create_application(
     cover_letter_text = payload.get("cover_letter_text")
     if not (role_title and cv_text and cover_letter_text):
         raise HTTPException(status_code=400, detail="role_title, cv_text, and cover_letter_text are required.")
+    # --- CREDIT DEDUCTION ---
+    # Use the Authorization header from the request
+    if request is not None:
+        auth_header = request.headers.get("authorization")
+    else:
+        auth_header = None
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header for credit deduction.")
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.post(
+                USER_SERVICE_URL,
+                headers={"Authorization": auth_header, "Content-Type": "application/json"},
+                json={"amount": 1}
+            )
+            if resp.status_code != 200:
+                detail = resp.json().get("detail", "Failed to deduct credits")
+                raise HTTPException(status_code=402, detail=f"Credit deduction failed: {detail}")
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Error contacting user service for credit deduction: {str(e)}")
+    # --- END CREDIT DEDUCTION ---
     # Generate CV DOCX
     from docx import Document
     from io import BytesIO

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime
+from sqlalchemy import Column, String, DateTime, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 import datetime
 from sqlalchemy.dialects.postgresql import UUID
@@ -15,5 +15,18 @@ class UserProfile(Base):
     city_state_postal = Column(String, nullable=True)
     linkedin = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
+    # --- Credit and Subscription Fields ---
+    monthly_credits_remaining = Column(Integer, nullable=False, default=3)  # 50 for paid, 3 for free
+    daily_credits_remaining = Column(Integer, nullable=False, default=0)    # 3 for monthly, 5 for annual, 0 for free
+    last_daily_reset = Column(DateTime, nullable=True)
+    last_monthly_reset = Column(DateTime, nullable=True)
+    subscription_type = Column(String, nullable=False, default='free')  # 'free', 'monthly', 'annual'
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow) 
+
+class TopupCredits(Base):
+    __tablename__ = 'topup_credits'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    topup_credits_remaining = Column(Integer, nullable=False, default=0)
+    topup_credits_expiry = Column(DateTime, nullable=True) 
