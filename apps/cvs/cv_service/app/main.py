@@ -212,13 +212,13 @@ class ProfessionalCVFormatter:
         self.set_font_style(company_para, self.font_sizes['company'], italic=True, color=self.colors['secondary'])
         company_para.paragraph_format.space_after = Pt(4)
         if description:
+            # Always treat as bullet points
             if isinstance(description, list):
-                self.add_bullet_points(description)
+                bullets = description
             else:
-                desc_para = self.doc.add_paragraph(description)
-                self.set_font_style(desc_para, self.font_sizes['body'], color=self.colors['text'])
-                desc_para.paragraph_format.space_after = self.spacing['item_after']
-                desc_para.paragraph_format.left_indent = Inches(0.2)
+                # Split string by newlines, remove empty lines and manual bullets
+                bullets = [line.lstrip('•').strip() for line in description.split('\n') if line.strip()]
+            self.add_bullet_points(bullets)
     def add_education_block(self, degree, institution, location, year, details=None):
         degree_para = self.doc.add_paragraph()
         degree_run = degree_para.add_run(degree)
