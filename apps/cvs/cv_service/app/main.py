@@ -439,96 +439,41 @@ async def generate_cv_docx(
     try:
         logger.info(f"[DEBUG] Received payload: {payload}")
         logger.info(f"[DEBUG] User: {auth}")
-        logger.info(f"[DEBUG] Starting CV DOCX generation")
+        logger.info(f"[DEBUG] Starting CV DOCX generation (hierarchical JSON)")
         cv = ProfessionalCVFormatter()
-        # --- Structured JSON input ---
-        name = payload.get("name")
-        title = payload.get("title")
+        # --- Use explicit structured fields ---
+        name = payload.get("name", "")
+        job_title = payload.get("job_title", "")
         contact_info = payload.get("contact_info", [])
-        summary = payload.get("summary")
+        summary = payload.get("summary", "")
+        core_competencies = payload.get("core_competencies", [])
         experience = payload.get("experience", [])
         education = payload.get("education", [])
-        skills = payload.get("skills", {})
-        # Fallback: parse from plain text if structured fields are missing
-        cv_text = payload.get("cv")
-        if cv_text:
-            lines = [l.strip() for l in cv_text.splitlines() if l.strip()]
-            # Try to extract name, title, contact info, summary from first lines
-            if not name and lines:
-                name = lines[0]
-            if not title and len(lines) > 1:
-                title = lines[1]
-            if not contact_info and len(lines) > 2:
-                contact_info = [lines[2]]
-            # Parse sections by headers
-            section_map = {}
-            current_section = None
-            for line in lines:
-                lwr = line.lower()
-                if lwr in ["professional summary", "summary"]:
-                    current_section = "summary"
-                    section_map[current_section] = []
-                elif lwr in ["experience", "professional experience"]:
-                    current_section = "experience"
-                    section_map[current_section] = []
-                elif lwr == "education":
-                    current_section = "education"
-                    section_map[current_section] = []
-                elif lwr == "skills":
-                    current_section = "skills"
-                    section_map[current_section] = []
-                elif current_section:
-                    section_map[current_section].append(line)
-            if not summary and "summary" in section_map:
-                summary = " ".join(section_map["summary"])
-            if not experience and "experience" in section_map:
-                # Naive block grouping: every 4 lines = one job (title, company, location, dates, description)
-                exp_lines = section_map["experience"]
-                jobs = []
-                i = 0
-                while i < len(exp_lines):
-                    title = exp_lines[i] if i < len(exp_lines) else ""
-                    company = exp_lines[i+1] if i+1 < len(exp_lines) else ""
-                    location = ""
-                    dates = exp_lines[i+2] if i+2 < len(exp_lines) else ""
-                    description = exp_lines[i+3] if i+3 < len(exp_lines) else ""
-                    jobs.append({"title": title, "company": company, "location": location, "dates": dates, "description": description})
-                    i += 4
-                experience = jobs
-            if not education and "education" in section_map:
-                # Naive block grouping: every 4 lines = one degree
-                edu_lines = section_map["education"]
-                edus = []
-                i = 0
-                while i < len(edu_lines):
-                    degree = edu_lines[i] if i < len(edu_lines) else ""
-                    institution = edu_lines[i+1] if i+1 < len(edu_lines) else ""
-                    location = ""
-                    year = edu_lines[i+2] if i+2 < len(edu_lines) else ""
-                    details = edu_lines[i+3] if i+3 < len(edu_lines) else ""
-                    edus.append({"degree": degree, "institution": institution, "location": location, "year": year, "details": details})
-                    i += 4
-                education = edus
-            if not skills and "skills" in section_map:
-                # All lines as a single category
-                skills = {"Skills": section_map["skills"]}
-        # --- Add to formatter ---
-        cv.add_header_section(name or "", title or "", contact_info)
+        certifications = payload.get("certifications", [])
+        # Header
+        cv.add_header_section(name, job_title, contact_info)
+        # Summary
         if summary:
             cv.add_section_heading("Professional Summary")
-            summary_para = cv.doc.add_paragraph(summary)
-            cv.set_font_style(summary_para, cv.font_sizes['body'], color=cv.colors['text'])
-            summary_para.paragraph_format.space_after = Pt(12)
+            para = cv.doc.add_paragraph(summary)
+            cv.set_font_style(para, cv.font_sizes['body'], color=cv.colors['text'])
+            para.paragraph_format.space_after = Pt(12)
+        # Core Competencies
+        if core_competencies:
+            cv.add_section_heading("Core Competencies")
+            cv.add_bullet_points(core_competencies)
+        # Experience
         if experience:
             cv.add_section_heading("Professional Experience")
             for job in experience:
                 cv.add_experience_block(
-                    title=job.get("title", ""),
+                    title=job.get("job_title", ""),
                     company=job.get("company", ""),
                     location=job.get("location", ""),
                     dates=job.get("dates", ""),
-                    description=job.get("description", "")
+                    description=job.get("bullets", [])
                 )
+        # Education
         if education:
             cv.add_section_heading("Education")
             for edu in education:
@@ -536,15 +481,14 @@ async def generate_cv_docx(
                     degree=edu.get("degree", ""),
                     institution=edu.get("institution", ""),
                     location=edu.get("location", ""),
-                    year=edu.get("year", ""),
-                    details=edu.get("details", "")
+                    year=edu.get("dates", "")
                 )
-        if skills:
-            cv.add_section_heading("Skills")
-            cv.add_skills_section(skills)
+        # Certifications
+        if certifications:
+            cv.add_section_heading("Certifications")
+            cv.add_bullet_points(certifications)
         docx_bytes = cv.save_to_buffer()
         logger.info(f"[DEBUG] DOCX bytes length: {len(docx_bytes)}")
-        job_title = payload.get("job_title")
         company_name = payload.get("company_name")
         personal_info = {}
         if job_title:
