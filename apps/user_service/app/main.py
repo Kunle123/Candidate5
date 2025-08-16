@@ -343,20 +343,6 @@ def create_user_profile(
         db.rollback()
         raise HTTPException(status_code=500, detail="Internal server error while creating user profile")
 
-@router.get("/user/{user_id}", response_model=UserProfileResponse)
-def get_user_profile_by_id(user_id: str, db: Session = Depends(get_db)):
-    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
-    if user:
-        return user
-    raise HTTPException(status_code=404, detail="User not found")
-
-@router.get("/users/me", response_model=UserProfileResponse)
-def get_my_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
-    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
-    if user:
-        return user
-    raise HTTPException(status_code=404, detail="User not found")
-
 @router.get("/user/credits", response_model=UserCreditsResponse)
 def get_user_credits(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
@@ -375,6 +361,20 @@ def get_user_credits(user_id: str = Depends(get_current_user), db: Session = Dep
         topup_credits_remaining=total_topup_credits,
         subscription_type=user.subscription_type
     )
+
+@router.get("/user/{user_id}", response_model=UserProfileResponse)
+def get_user_profile_by_id(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
+    if user:
+        return user
+    raise HTTPException(status_code=404, detail="User not found")
+
+@router.get("/users/me", response_model=UserProfileResponse)
+def get_my_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
+    if user:
+        return user
+    raise HTTPException(status_code=404, detail="User not found")
 
 @router.post("/user/credits/use", response_model=UserCreditsResponse)
 def use_user_credits(
