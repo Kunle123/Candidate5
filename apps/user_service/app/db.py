@@ -2,8 +2,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 import os
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
+DATABASE_URL = (
+    os.getenv("USER_DATABASE_URL") or
+    os.getenv("DATABASE_URL") or
     "postgresql://postgres:jvTSAaPPRetcBWADiXAJmtKILCTUuNuZ@nozomi.proxy.rlwy.net:34043/railway"
 )
 

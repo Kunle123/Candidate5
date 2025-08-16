@@ -4,7 +4,11 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from databases import Database
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/arc_db")
+DATABASE_URL = (
+    os.getenv("ARC_DATABASE_URL") or
+    os.getenv("DATABASE_URL") or
+    "postgresql+asyncpg://postgres:postgres@localhost:5432/arc_db"
+)
 
 # SQLAlchemy ORM setup
 Base = declarative_base()

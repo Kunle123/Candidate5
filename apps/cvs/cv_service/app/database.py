@@ -10,7 +10,11 @@ import logging
 logger = logging.getLogger("cv_database")
 
 # Get database URL, with a default SQLite configuration for development
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = (
+    os.getenv("CV_DATABASE_URL") or
+    os.getenv("DATABASE_URL") or
+    "sqlite:///./cv_service.db"
+)
 if not DATABASE_URL:
     logger.warning("DATABASE_URL environment variable not set. Using SQLite for development.")
     DATABASE_URL = "sqlite:///./cv_service.db"
