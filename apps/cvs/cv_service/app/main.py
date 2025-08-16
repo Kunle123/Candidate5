@@ -896,6 +896,91 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
         }
     )
 
+@app.post("/api/cv/generate-docx")
+async def generate_docx_from_json(
+    payload: dict = Body(...)
+):
+    try:
+        cv = ProfessionalCVFormatter()
+        name = payload.get("name", "")
+        job_title = payload.get("job_title", "")
+        contact_info = payload.get("contact_info", [])
+        summary = payload.get("summary", "")
+        core_competencies = payload.get("core_competencies", [])
+        experience = payload.get("experience", [])
+        education = payload.get("education", [])
+        certifications = payload.get("certifications", [])
+        # Header
+        cv.add_header_section(name, job_title, contact_info)
+        # Summary
+        if summary:
+            cv.add_section_heading("Professional Summary")
+            para = cv.doc.add_paragraph(summary)
+            cv.set_font_style(para, cv.font_sizes['body'], color=cv.colors['text'])
+            para.paragraph_format.space_after = Pt(12)
+        # Core Competencies
+        if core_competencies:
+            cv.add_section_heading("Core Competencies")
+            cv.add_bullet_points(core_competencies)
+        # Experience
+        if experience:
+            cv.add_section_heading("Professional Experience")
+            for job in experience:
+                cv.add_experience_block(
+                    title=job.get("job_title", ""),
+                    company=job.get("company", ""),
+                    location=job.get("location", ""),
+                    dates=job.get("dates", ""),
+                    description=job.get("bullets", [])
+                )
+        # Education
+        if education:
+            cv.add_section_heading("Education")
+            for edu in education:
+                cv.add_education_block(
+                    degree=edu.get("degree", ""),
+                    institution=edu.get("institution", ""),
+                    location=edu.get("location", ""),
+                    year=edu.get("dates", "")
+                )
+        # Certifications
+        if certifications:
+            cv.add_section_heading("Certifications")
+            cv.add_bullet_points(certifications)
+        docx_bytes = cv.save_to_buffer()
+        import base64
+        docx_b64 = base64.b64encode(docx_bytes).decode('utf-8')
+        # Optionally handle cover letter
+        cover_letter_b64 = None
+        if payload.get("cover_letter"):
+            cover_letter_text = payload["cover_letter"]
+            cover_doc = Document()
+            cover_doc.add_heading("Cover Letter", 0)
+            for line in cover_letter_text.splitlines():
+                if line.strip() == "":
+                    cover_doc.add_paragraph()
+                else:
+                    para = cover_doc.add_paragraph(line)
+                    for run in para.runs:
+                        run.font.name = 'Arial'
+                        run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
+                        run.font.size = Pt(11)
+            from io import BytesIO
+            cover_buf = BytesIO()
+            cover_doc.save(cover_buf)
+            cover_buf.seek(0)
+            cover_docx_bytes = cover_buf.getvalue()
+            cover_letter_b64 = base64.b64encode(cover_docx_bytes).decode('utf-8')
+        return {
+            "cv": docx_b64,
+            "cover_letter": cover_letter_b64
+        }
+    except Exception as e:
+        logger.error(f"Error generating DOCX from JSON: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail="Failed to generate DOCX from JSON")
+
 @app.post("/api/applications")
 async def create_application(
     payload: dict = Body(...),
