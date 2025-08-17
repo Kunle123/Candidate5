@@ -465,6 +465,9 @@ async def inject_pii_placeholders(payload, auth_header):
         ]
     return payload
 
+def is_placeholder(val, placeholder):
+    return isinstance(val, str) and val.strip() == placeholder
+
 @app.post("/api/cv")
 @app.post("/api/cv/")
 async def generate_cv_docx(
@@ -478,14 +481,14 @@ async def generate_cv_docx(
     # --- Logging ---
     logger.info(f"[CV PERSIST] Received payload: {json.dumps(payload)[:1000]}" if payload else "[CV PERSIST] Received empty payload!")
     logger.info(f"[CV PERSIST] User: {auth}")
-    # --- PII Placeholder Replacement ---
-    auth_header = request.headers.get("authorization") if request else None
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header for PII injection.")
-    payload = await inject_pii_placeholders(payload, auth_header)
-    # --- Validation ---
+    # --- Validation: allow placeholders ---
     required_fields = ["name", "contact_info", "experience"]
-    missing = [f for f in required_fields if not payload.get(f)]
+    missing = [
+        f for f in required_fields
+        if not payload.get(f)
+        and not is_placeholder(payload.get(f), "{{CANDIDATE_NAME}}")
+        and not is_placeholder(payload.get(f), "{{CONTACT_INFO}}")
+    ]
     if missing:
         logger.warning(f"[CV PERSIST] Missing required fields: {missing}")
         raise HTTPException(status_code=400, detail=f"Missing required fields: {missing}")
@@ -496,6 +499,18 @@ async def generate_cv_docx(
         if not isinstance(job, dict) or not job.get("job_title"):
             logger.warning(f"[CV PERSIST] Experience[{idx}] missing 'job_title'")
             raise HTTPException(status_code=400, detail=f"Experience[{idx}] missing 'job_title'")
+    # --- PII Placeholder Replacement ---
+    auth_header = request.headers.get("authorization") if request else None
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header for PII injection.")
+    payload = await inject_pii_placeholders(payload, auth_header)
+    # --- Validation: after PII injection ---
+    if not payload.get("name") or is_placeholder(payload.get("name"), "{{CANDIDATE_NAME}}"):
+        logger.warning("[CV PERSIST] Name missing after PII injection.")
+        raise HTTPException(status_code=400, detail="Name missing after PII injection.")
+    if not payload.get("contact_info") or is_placeholder(payload.get("contact_info"), "{{CONTACT_INFO}}"):
+        logger.warning("[CV PERSIST] Contact info missing after PII injection.")
+        raise HTTPException(status_code=400, detail="Contact info missing after PII injection.")
     # --- Existing logic ---
     try:
         logger.info(f"[DEBUG] Starting CV DOCX generation (hierarchical JSON)")
@@ -963,14 +978,14 @@ async def generate_docx_from_json(
 ):
     # --- Logging ---
     logger.info(f"[DOCX GEN] Received payload: {json.dumps(payload)[:1000]}" if payload else "[DOCX GEN] Received empty payload!")
-    # --- PII Placeholder Replacement ---
-    auth_header = request.headers.get("authorization") if request else None
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header for PII injection.")
-    payload = await inject_pii_placeholders(payload, auth_header)
-    # --- Validation ---
+    # --- Validation: allow placeholders ---
     required_fields = ["name", "contact_info", "experience"]
-    missing = [f for f in required_fields if not payload.get(f)]
+    missing = [
+        f for f in required_fields
+        if not payload.get(f)
+        and not is_placeholder(payload.get(f), "{{CANDIDATE_NAME}}")
+        and not is_placeholder(payload.get(f), "{{CONTACT_INFO}}")
+    ]
     if missing:
         logger.warning(f"[DOCX GEN] Missing required fields: {missing}")
         raise HTTPException(status_code=400, detail=f"Missing required fields: {missing}")
@@ -981,6 +996,18 @@ async def generate_docx_from_json(
         if not isinstance(job, dict) or not job.get("job_title"):
             logger.warning(f"[DOCX GEN] Experience[{idx}] missing 'job_title'")
             raise HTTPException(status_code=400, detail=f"Experience[{idx}] missing 'job_title'")
+    # --- PII Placeholder Replacement ---
+    auth_header = request.headers.get("authorization") if request else None
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header for PII injection.")
+    payload = await inject_pii_placeholders(payload, auth_header)
+    # --- Validation: after PII injection ---
+    if not payload.get("name") or is_placeholder(payload.get("name"), "{{CANDIDATE_NAME}}"):
+        logger.warning("[DOCX GEN] Name missing after PII injection.")
+        raise HTTPException(status_code=400, detail="Name missing after PII injection.")
+    if not payload.get("contact_info") or is_placeholder(payload.get("contact_info"), "{{CONTACT_INFO}}"):
+        logger.warning("[DOCX GEN] Contact info missing after PII injection.")
+        raise HTTPException(status_code=400, detail="Contact info missing after PII injection.")
     # --- Existing logic ---
     try:
         cv = ProfessionalCVFormatter()
