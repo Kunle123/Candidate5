@@ -715,7 +715,6 @@ async def generate_assistant(request: Request):
                 "core_competencies": data.get("core_competencies"),
                 "certifications": data.get("certifications"),
                 "cover_letter": data.get("cover_letter"),
-                # Add any other relevant fields as needed
             }
             logger.info(f"[DEBUG] Adding full CV structure to thread {thread_id}: {json.dumps(message_content)[:500]} ... (truncated)")
             client.beta.threads.messages.create(
@@ -737,13 +736,17 @@ async def generate_assistant(request: Request):
             messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
             if not messages.data:
                 return {"error": "No response from assistant"}
-            content = messages.data[0].content[0].text.value
+            raw_content = messages.data[0].content[0].text.value
+            logger.info(f"[DEBUG] Raw latest thread message: {raw_content[:500]} ... (truncated)")
             try:
-                content_json = json.loads(content)
+                cv_data = json.loads(raw_content)
             except Exception as e:
-                return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
-            content_json["thread_id"] = thread_id
-            return content_json
+                logger.error(f"[ERROR] Failed to parse latest thread message as JSON: {e}")
+                return {"error": "Failed to parse thread message as JSON", "raw": raw_content}
+            logger.info(f"[DEBUG] Parsed payload for /api/cv/generate-docx: {json.dumps(cv_data)[:500]} ... (truncated)")
+            # Here you would POST cv_data to /api/cv/generate-docx (if this is the place)
+            cv_data["thread_id"] = thread_id
+            return cv_data
         # --- Thread-aware CV & cover letter generation ---
         if action == "generate_cv" and thread_id:
             client.beta.threads.messages.create(
