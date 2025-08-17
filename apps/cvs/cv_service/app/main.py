@@ -426,6 +426,45 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal server error", "error": str(exc)},
     )
 
+import httpx
+USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8000/api/user/profile")
+
+async def inject_pii_placeholders(payload, auth_header):
+    """
+    Replace {{CANDIDATE_NAME}} and {{CONTACT_INFO}} placeholders in payload with actual PII from user profile.
+    """
+    if not (payload.get("name") == "{{CANDIDATE_NAME}}" or payload.get("contact_info") == "{{CONTACT_INFO}}"):
+        return payload  # No placeholders to replace
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            USER_SERVICE_URL,
+            headers={"Authorization": auth_header}
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to fetch user profile for PII injection.")
+        user_profile = resp.json()
+    # Replace name
+    if payload.get("name") == "{{CANDIDATE_NAME}}":
+        actual_name = user_profile.get("name")
+        if not actual_name:
+            raise HTTPException(status_code=400, detail="User profile missing name for PII injection.")
+        payload["name"] = actual_name
+    # Replace contact_info
+    if payload.get("contact_info") == "{{CONTACT_INFO}}":
+        address = user_profile.get("address_line1") or ""
+        city = user_profile.get("city_state_postal") or ""
+        email = user_profile.get("email") or ""
+        phone = user_profile.get("phone_number") or ""
+        linkedin = user_profile.get("linkedin") or ""
+        if not (address or city or email or phone or linkedin):
+            raise HTTPException(status_code=400, detail="User profile missing contact info for PII injection.")
+        payload["contact_info"] = [
+            address,
+            city,
+            f"{email} | {phone} | {linkedin}"
+        ]
+    return payload
+
 @app.post("/api/cv")
 @app.post("/api/cv/")
 async def generate_cv_docx(
@@ -439,6 +478,11 @@ async def generate_cv_docx(
     # --- Logging ---
     logger.info(f"[CV PERSIST] Received payload: {json.dumps(payload)[:1000]}" if payload else "[CV PERSIST] Received empty payload!")
     logger.info(f"[CV PERSIST] User: {auth}")
+    # --- PII Placeholder Replacement ---
+    auth_header = request.headers.get("authorization") if request else None
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header for PII injection.")
+    payload = await inject_pii_placeholders(payload, auth_header)
     # --- Validation ---
     required_fields = ["name", "contact_info", "experience"]
     missing = [f for f in required_fields if not payload.get(f)]
@@ -913,17 +957,23 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
 
 @app.post("/api/cv/generate-docx")
 async def generate_docx_from_json(
-    payload: dict = Body(...)
+    payload: dict = Body(...),
+    auth: dict = Depends(verify_token),
+    request: Request = None
 ):
     # --- Logging ---
     logger.info(f"[DOCX GEN] Received payload: {json.dumps(payload)[:1000]}" if payload else "[DOCX GEN] Received empty payload!")
+    # --- PII Placeholder Replacement ---
+    auth_header = request.headers.get("authorization") if request else None
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header for PII injection.")
+    payload = await inject_pii_placeholders(payload, auth_header)
     # --- Validation ---
     required_fields = ["name", "contact_info", "experience"]
     missing = [f for f in required_fields if not payload.get(f)]
     if missing:
         logger.warning(f"[DOCX GEN] Missing required fields: {missing}")
         raise HTTPException(status_code=400, detail=f"Missing required fields: {missing}")
-    # Validate experience structure
     if not isinstance(payload.get("experience"), list) or not payload["experience"]:
         logger.warning("[DOCX GEN] 'experience' must be a non-empty list")
         raise HTTPException(status_code=400, detail="'experience' must be a non-empty list")
