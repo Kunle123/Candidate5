@@ -701,14 +701,23 @@ async def generate_assistant(request: Request):
             except Exception as e:
                 return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
             return {"keywords": keywords, "thread_id": thread_id}
-        # --- Thread-aware update_cv (apply keypoints) ---
+        # --- Thread-aware update_cv (apply keypoints and full CV structure) ---
         if action == "update_cv" and thread_id:
-            # Compose the message content with keypoints
+            # Compose the message content with full CV structure
             message_content = {
                 "cv_keypoints": data.get("cv_keypoints"),
                 "cover_letter_keypoints": data.get("cover_letter_keypoints"),
                 "cv_length": data.get("cv_length"),
+                "experience": data.get("experience"),
+                "education": data.get("education"),
+                "skills": data.get("skills"),
+                "summary": data.get("summary"),
+                "core_competencies": data.get("core_competencies"),
+                "certifications": data.get("certifications"),
+                "cover_letter": data.get("cover_letter"),
+                # Add any other relevant fields as needed
             }
+            logger.info(f"[DEBUG] Adding full CV structure to thread {thread_id}: {json.dumps(message_content)[:500]} ... (truncated)")
             client.beta.threads.messages.create(
                 thread_id=thread_id,
                 role="user",
