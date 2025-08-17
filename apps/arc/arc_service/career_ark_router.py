@@ -701,6 +701,40 @@ async def generate_assistant(request: Request):
             except Exception as e:
                 return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
             return {"keywords": keywords, "thread_id": thread_id}
+        # --- Thread-aware update_cv (apply keypoints) ---
+        if action == "update_cv" and thread_id:
+            # Compose the message content with keypoints
+            message_content = {
+                "cv_keypoints": data.get("cv_keypoints"),
+                "cover_letter_keypoints": data.get("cover_letter_keypoints"),
+                "cv_length": data.get("cv_length"),
+            }
+            client.beta.threads.messages.create(
+                thread_id=thread_id,
+                role="user",
+                content=json.dumps(message_content)
+            )
+            run = client.beta.threads.runs.create(
+                thread_id=thread_id,
+                assistant_id=OPENAI_ASSISTANT_ID
+            )
+            for _ in range(60):
+                run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+                if run_status.status in ("completed", "failed", "cancelled", "expired"):
+                    break
+                time.sleep(1)
+            if run_status.status != "completed":
+                return {"error": f"Assistant run did not complete: {run_status.status}"}
+            messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
+            if not messages.data:
+                return {"error": "No response from assistant"}
+            content = messages.data[0].content[0].text.value
+            try:
+                content_json = json.loads(content)
+            except Exception as e:
+                return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
+            content_json["thread_id"] = thread_id
+            return content_json
         # --- Thread-aware CV & cover letter generation ---
         if action == "generate_cv" and thread_id:
             client.beta.threads.messages.create(
