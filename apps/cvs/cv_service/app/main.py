@@ -482,12 +482,11 @@ async def generate_cv_docx(
     logger.info(f"[CV PERSIST] Received payload: {json.dumps(payload)[:1000]}" if payload else "[CV PERSIST] Received empty payload!")
     logger.info(f"[CV PERSIST] User: {auth}")
     # --- Validation: allow placeholders ---
-    required_fields = ["name", "contact_info", "experience"]
+    required_fields = ["name", "experience"]
     missing = [
         f for f in required_fields
         if not payload.get(f)
         and not is_placeholder(payload.get(f), "{{CANDIDATE_NAME}}")
-        and not is_placeholder(payload.get(f), "{{CONTACT_INFO}}")
     ]
     if missing:
         logger.warning(f"[CV PERSIST] Missing required fields: {missing}")
@@ -508,9 +507,7 @@ async def generate_cv_docx(
     if not payload.get("name") or is_placeholder(payload.get("name"), "{{CANDIDATE_NAME}}"):
         logger.warning("[CV PERSIST] Name missing after PII injection.")
         raise HTTPException(status_code=400, detail="Name missing after PII injection.")
-    if not payload.get("contact_info") or is_placeholder(payload.get("contact_info"), "{{CONTACT_INFO}}"):
-        logger.warning("[CV PERSIST] Contact info missing after PII injection.")
-        raise HTTPException(status_code=400, detail="Contact info missing after PII injection.")
+    # contact_info is now optional, do not validate
     # --- Existing logic ---
     try:
         logger.info(f"[DEBUG] Starting CV DOCX generation (hierarchical JSON)")
@@ -979,12 +976,11 @@ async def generate_docx_from_json(
     # --- Logging ---
     logger.info(f"[DOCX GEN] Received payload: {json.dumps(payload)[:1000]}" if payload else "[DOCX GEN] Received empty payload!")
     # --- Validation: allow placeholders ---
-    required_fields = ["name", "contact_info", "experience"]
+    required_fields = ["name", "experience"]
     missing = [
         f for f in required_fields
         if not payload.get(f)
         and not is_placeholder(payload.get(f), "{{CANDIDATE_NAME}}")
-        and not is_placeholder(payload.get(f), "{{CONTACT_INFO}}")
     ]
     if missing:
         logger.warning(f"[DOCX GEN] Missing required fields: {missing}")
@@ -1005,9 +1001,7 @@ async def generate_docx_from_json(
     if not payload.get("name") or is_placeholder(payload.get("name"), "{{CANDIDATE_NAME}}"):
         logger.warning("[DOCX GEN] Name missing after PII injection.")
         raise HTTPException(status_code=400, detail="Name missing after PII injection.")
-    if not payload.get("contact_info") or is_placeholder(payload.get("contact_info"), "{{CONTACT_INFO}}"):
-        logger.warning("[DOCX GEN] Contact info missing after PII injection.")
-        raise HTTPException(status_code=400, detail="Contact info missing after PII injection.")
+    # contact_info is now optional, do not validate
     # --- Existing logic ---
     try:
         cv = ProfessionalCVFormatter()
