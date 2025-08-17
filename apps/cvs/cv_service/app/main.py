@@ -436,9 +436,24 @@ async def generate_cv_docx(
 ):
     import base64
     import traceback
+    # --- Logging ---
+    logger.info(f"[CV PERSIST] Received payload: {json.dumps(payload)[:1000]}" if payload else "[CV PERSIST] Received empty payload!")
+    logger.info(f"[CV PERSIST] User: {auth}")
+    # --- Validation ---
+    required_fields = ["name", "contact_info", "experience"]
+    missing = [f for f in required_fields if not payload.get(f)]
+    if missing:
+        logger.warning(f"[CV PERSIST] Missing required fields: {missing}")
+        raise HTTPException(status_code=400, detail=f"Missing required fields: {missing}")
+    if not isinstance(payload.get("experience"), list) or not payload["experience"]:
+        logger.warning("[CV PERSIST] 'experience' must be a non-empty list")
+        raise HTTPException(status_code=400, detail="'experience' must be a non-empty list")
+    for idx, job in enumerate(payload["experience"]):
+        if not isinstance(job, dict) or not job.get("job_title"):
+            logger.warning(f"[CV PERSIST] Experience[{idx}] missing 'job_title'")
+            raise HTTPException(status_code=400, detail=f"Experience[{idx}] missing 'job_title'")
+    # --- Existing logic ---
     try:
-        logger.info(f"[DEBUG] Received payload: {payload}")
-        logger.info(f"[DEBUG] User: {auth}")
         logger.info(f"[DEBUG] Starting CV DOCX generation (hierarchical JSON)")
         cv = ProfessionalCVFormatter()
         # --- Use explicit structured fields ---
@@ -900,6 +915,23 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
 async def generate_docx_from_json(
     payload: dict = Body(...)
 ):
+    # --- Logging ---
+    logger.info(f"[DOCX GEN] Received payload: {json.dumps(payload)[:1000]}" if payload else "[DOCX GEN] Received empty payload!")
+    # --- Validation ---
+    required_fields = ["name", "contact_info", "experience"]
+    missing = [f for f in required_fields if not payload.get(f)]
+    if missing:
+        logger.warning(f"[DOCX GEN] Missing required fields: {missing}")
+        raise HTTPException(status_code=400, detail=f"Missing required fields: {missing}")
+    # Validate experience structure
+    if not isinstance(payload.get("experience"), list) or not payload["experience"]:
+        logger.warning("[DOCX GEN] 'experience' must be a non-empty list")
+        raise HTTPException(status_code=400, detail="'experience' must be a non-empty list")
+    for idx, job in enumerate(payload["experience"]):
+        if not isinstance(job, dict) or not job.get("job_title"):
+            logger.warning(f"[DOCX GEN] Experience[{idx}] missing 'job_title'")
+            raise HTTPException(status_code=400, detail=f"Experience[{idx}] missing 'job_title'")
+    # --- Existing logic ---
     try:
         cv = ProfessionalCVFormatter()
         name = payload.get("name", "")
