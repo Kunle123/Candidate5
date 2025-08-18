@@ -455,6 +455,7 @@ async def inject_pii_placeholders(payload, auth_header):
         if not actual_name:
             raise HTTPException(status_code=400, detail="User profile missing name for PII injection.")
         payload["name"] = actual_name
+        logger.info(f"[PII] Replaced CANDIDATE_NAME placeholder with: {payload['name']}")
     # Replace contact_info
     if is_contact_info_placeholder:
         address = user_profile.get("address_line1") or ""
