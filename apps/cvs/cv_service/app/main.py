@@ -432,8 +432,14 @@ USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8000/api/u
 async def inject_pii_placeholders(payload, auth_header):
     """
     Replace {{CANDIDATE_NAME}} and {{CONTACT_INFO}} placeholders in payload with actual PII from user profile.
+    Accepts contact_info as either a string placeholder or an array containing the placeholder.
     """
-    if not (payload.get("name") == "{{CANDIDATE_NAME}}" or payload.get("contact_info") == "{{CONTACT_INFO}}"):
+    contact_info = payload.get("contact_info")
+    is_contact_info_placeholder = (
+        contact_info == "{{CONTACT_INFO}}" or
+        (isinstance(contact_info, list) and len(contact_info) == 1 and contact_info[0] == "{{CONTACT_INFO}}")
+    )
+    if not (payload.get("name") == "{{CANDIDATE_NAME}}" or is_contact_info_placeholder):
         return payload  # No placeholders to replace
     async with httpx.AsyncClient() as client:
         resp = await client.get(
@@ -450,7 +456,7 @@ async def inject_pii_placeholders(payload, auth_header):
             raise HTTPException(status_code=400, detail="User profile missing name for PII injection.")
         payload["name"] = actual_name
     # Replace contact_info
-    if payload.get("contact_info") == "{{CONTACT_INFO}}":
+    if is_contact_info_placeholder:
         address = user_profile.get("address_line1") or ""
         city = user_profile.get("city_state_postal") or ""
         email = user_profile.get("email") or ""
@@ -507,7 +513,11 @@ async def generate_cv_docx(
     if not payload.get("name") or is_placeholder(payload.get("name"), "{{CANDIDATE_NAME}}"):
         logger.warning("[CV PERSIST] Name missing after PII injection.")
         raise HTTPException(status_code=400, detail="Name missing after PII injection.")
-    # contact_info is now optional, do not validate
+    # contact_info is now optional, but if present, must be an array of strings
+    if "contact_info" in payload and payload["contact_info"] is not None:
+        if not isinstance(payload["contact_info"], list) or not all(isinstance(x, str) for x in payload["contact_info"]):
+            logger.warning("[CV PERSIST] contact_info must be an array of strings after PII injection.")
+            raise HTTPException(status_code=400, detail="'contact_info' must be an array of strings after PII injection")
     # --- Existing logic ---
     try:
         logger.info(f"[DEBUG] Starting CV DOCX generation (hierarchical JSON)")
@@ -1001,7 +1011,11 @@ async def generate_docx_from_json(
     if not payload.get("name") or is_placeholder(payload.get("name"), "{{CANDIDATE_NAME}}"):
         logger.warning("[DOCX GEN] Name missing after PII injection.")
         raise HTTPException(status_code=400, detail="Name missing after PII injection.")
-    # contact_info is now optional, do not validate
+    # contact_info is now optional, but if present, must be an array of strings
+    if "contact_info" in payload and payload["contact_info"] is not None:
+        if not isinstance(payload["contact_info"], list) or not all(isinstance(x, str) for x in payload["contact_info"]):
+            logger.warning("[DOCX GEN] contact_info must be an array of strings after PII injection.")
+            raise HTTPException(status_code=400, detail="'contact_info' must be an array of strings after PII injection")
     # --- Existing logic ---
     try:
         cv = ProfessionalCVFormatter()
