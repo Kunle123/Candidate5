@@ -824,3 +824,42 @@ async def generate_assistant(request: Request):
     except Exception as e:
         logger.error(f"[ERROR] Error in generate_assistant: {str(e)}")
         return {"error": f"Error generating CV: {str(e)}"}
+
+import tempfile
+from .assistant_manager import CVAssistantManager
+
+@router.post("/importassistant")
+async def import_cv_assistant(file: UploadFile = File(...)):
+    """
+    Import a CV file, extract its text, send it to the OpenAI Assistant for parsing, and return structured JSON.
+    """
+    # 1. Save uploaded file to a temp file
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
+    # 2. Extract text from file (support PDF, DOCX, TXT)
+    ext = file.filename.split('.')[-1].lower()
+    if ext == "pdf":
+        import pdfplumber
+        with pdfplumber.open(tmp_path) as pdf:
+            text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+    elif ext in ("docx", "doc"):
+        from docx import Document
+        doc = Document(tmp_path)
+        text = "\n".join([p.text for p in doc.paragraphs])
+    elif ext == "txt":
+        with open(tmp_path, "r", encoding="utf-8") as f:
+            text = f.read()
+    else:
+        os.unlink(tmp_path)
+        raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF, DOCX, and TXT are supported.")
+    os.unlink(tmp_path)
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="No text could be extracted from the file.")
+    # 3. Process with OpenAI Assistant
+    try:
+        assistant = CVAssistantManager()
+        parsed_data = assistant.process_cv(text)
+        return {"success": True, "data": parsed_data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"CV processing failed: {e}")
