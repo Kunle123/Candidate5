@@ -246,3 +246,21 @@ class Application(Base):
     cover_letter_docx_file = Column(LargeBinary, nullable=False)
     cv_text = Column(Text, nullable=True)
     cover_letter_text = Column(Text, nullable=True) 
+
+class ApplicationHistory(Base):
+    __tablename__ = "application_history"
+    if is_sqlite:
+        id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+        user_id = Column(String(36), nullable=False, index=True)
+    else:
+        id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+        user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    job_title = Column(String(255), nullable=False)
+    company_name = Column(String(255), nullable=True)
+    job_description = Column(Text, nullable=True)
+    applied_at = Column(DateTime(timezone=True), nullable=True)
+    salary = Column(String(64), nullable=True)
+    contact_name = Column(String(255), nullable=True)
+    contact_number = Column(String(64), nullable=True)
+    organisation = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now()) 
