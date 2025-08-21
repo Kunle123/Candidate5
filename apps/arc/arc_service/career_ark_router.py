@@ -827,8 +827,50 @@ async def generate_assistant(request: Request):
 
 import tempfile
 from .assistant_manager import CVAssistantManager
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+import pyclamd
+
+limiter = Limiter(key_func=get_remote_address)
+
+ALLOWED_MIME_TYPES = {
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain"
+}
+MAX_FILE_SIZE = 2 * 1024 * 1024  # 2 MB
+
+def get_mime_type(filename):
+    import mimetypes
+    mime, _ = mimetypes.guess_type(filename)
+    return mime
+
+async def validate_upload(file: UploadFile):
+    # Check MIME type
+    mime_type = file.content_type or get_mime_type(file.filename)
+    if mime_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid file type")
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File too large (max 2MB)")
+    # Save to temp file for scanning
+    import tempfile
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(contents)
+        tmp_path = tmp.name
+    # Malware scan
+    try:
+        cd = pyclamd.ClamdUnixSocket()
+        result = cd.scan_file(tmp_path)
+        if result:
+            raise HTTPException(status_code=400, detail="Malware detected in uploaded file")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Malware scan failed: {e}")
+    return contents, tmp_path
 
 @router.post("/importassistant")
+@limiter.limit("5/minute")
 async def import_cv_assistant(
     file: UploadFile = File(...),
     user_id: str = Depends(get_current_user),
@@ -837,11 +879,8 @@ async def import_cv_assistant(
     """
     Import a CV file, extract its text, send it to the OpenAI Assistant for parsing, persist to DB, and return structured JSON.
     """
-    import tempfile
-    # 1. Save uploaded file to a temp file
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        tmp.write(await file.read())
-        tmp_path = tmp.name
+    # 1. Validate and scan upload
+    contents, tmp_path = await validate_upload(file)
     # 2. Extract text from file (support PDF, DOCX, TXT)
     ext = file.filename.split('.')[-1].lower()
     if ext == "pdf":
@@ -853,8 +892,7 @@ async def import_cv_assistant(
         doc = Document(tmp_path)
         text = "\n".join([p.text for p in doc.paragraphs])
     elif ext == "txt":
-        with open(tmp_path, "r", encoding="utf-8") as f:
-            text = f.read()
+        text = contents.decode("utf-8", errors="ignore")
     else:
         os.unlink(tmp_path)
         raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF, DOCX, and TXT are supported.")
