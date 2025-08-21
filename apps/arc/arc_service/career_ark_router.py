@@ -872,6 +872,7 @@ async def validate_upload(file: UploadFile):
 @router.post("/importassistant")
 @limiter.limit("5/minute")
 async def import_cv_assistant(
+    request: Request,  # Required for SlowAPI
     file: UploadFile = File(...),
     user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db)
