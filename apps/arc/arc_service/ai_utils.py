@@ -4,6 +4,7 @@ import logging
 from fastapi import HTTPException
 import openai
 from .schemas import ArcData
+from .models import UserArcData, WorkExperience, Education, Certification, Skill, Project
 
 def flatten_work_experience(ai_work_experience):
     flat = []
@@ -319,10 +320,7 @@ def extract_work_experience_description_with_ai(cv_text, work_exp_metadata):
 
 def save_parsed_cv_to_db(parsed_data, user_id, db):
     import uuid
-    from .models import WorkExperience, Education, Certification, Skill, Project, UserArcData
-    import logging
-    logger = logging.getLogger("arc")
-    # Ensure user_arc_data exists for this user (legacy support)
+    # Ensure user_arc_data exists for this user
     user_arc_data = db.query(UserArcData).filter_by(user_id=user_id).first()
     if not user_arc_data:
         user_arc_data = UserArcData(user_id=user_id, arc_data={})
@@ -331,7 +329,6 @@ def save_parsed_cv_to_db(parsed_data, user_id, db):
         db.refresh(user_arc_data)
     def norm(s):
         return (s or "").strip().lower()
-
     # Work Experience
     existing_work_exps = {
         (norm(wx.company), norm(wx.title), norm(wx.start_date), norm(wx.end_date)): wx
@@ -354,7 +351,6 @@ def save_parsed_cv_to_db(parsed_data, user_id, db):
                 description=wx.get("description", None),
                 order_index=idx
             ))
-
     # Education
     existing_educations = {(e.institution, e.degree, e.start_date, e.end_date): e for e in db.query(Education).filter_by(user_id=user_id).all()}
     for idx, edu in enumerate(parsed_data.get("education", [])):
@@ -376,7 +372,6 @@ def save_parsed_cv_to_db(parsed_data, user_id, db):
                 description=edu.get("description", None),
                 order_index=idx
             ))
-
     # Certifications
     existing_certs = {(c.name, c.issuer, c.year): c for c in db.query(Certification).filter_by(user_id=user_id).all()}
     for idx, cert in enumerate(parsed_data.get("certifications", [])):
@@ -394,7 +389,6 @@ def save_parsed_cv_to_db(parsed_data, user_id, db):
                 year=cert.get("year", cert.get("date", None)),
                 order_index=idx
             ))
-
     # Skills
     existing_skills = set(s.skill for s in db.query(Skill).filter_by(user_id=user_id).all())
     for skill in parsed_data.get("skills", []):
@@ -404,7 +398,6 @@ def save_parsed_cv_to_db(parsed_data, user_id, db):
                 user_id=user_id,
                 skill=skill
             ))
-
     # Projects
     existing_projects = set((p.name, p.description) for p in db.query(Project).filter_by(user_id=user_id).all())
     for idx, proj in enumerate(parsed_data.get("projects", [])):
