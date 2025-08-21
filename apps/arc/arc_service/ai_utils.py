@@ -352,13 +352,16 @@ def save_parsed_cv_to_db(parsed_data, user_id, db):
                 order_index=idx
             ))
     # Education
-    existing_educations = {(e.institution, e.degree, e.start_date, e.end_date): e for e in db.query(Education).filter_by(user_id=user_id).all()}
+    existing_educations = {(e.institution, e.degree, e.start_date, e.end_date, tuple(e.description) if isinstance(e.description, list) else e.description): e for e in db.query(Education).filter_by(user_id=user_id).all()}
     for idx, edu in enumerate(parsed_data.get("education", [])):
+        desc = edu.get("description", None)
+        desc_tuple = tuple(desc) if isinstance(desc, list) else desc
         key = (
             edu.get("institution", ""),
             edu.get("degree", ""),
             edu.get("start_date", None),
-            edu.get("end_date", None)
+            edu.get("end_date", None),
+            desc_tuple
         )
         if key not in existing_educations:
             db.add(Education(
@@ -369,7 +372,7 @@ def save_parsed_cv_to_db(parsed_data, user_id, db):
                 field=edu.get("field", None),
                 start_date=edu.get("start_date", None),
                 end_date=edu.get("end_date", None),
-                description=edu.get("description", None),
+                description=desc,
                 order_index=idx
             ))
     # Certifications
@@ -399,15 +402,17 @@ def save_parsed_cv_to_db(parsed_data, user_id, db):
                 skill=skill
             ))
     # Projects
-    existing_projects = set((p.name, p.description) for p in db.query(Project).filter_by(user_id=user_id).all())
+    existing_projects = set((p.name, tuple(p.description) if isinstance(p.description, list) else p.description) for p in db.query(Project).filter_by(user_id=user_id).all())
     for idx, proj in enumerate(parsed_data.get("projects", [])):
-        key = (proj.get("name", ""), proj.get("description", None))
+        desc = proj.get("description", None)
+        desc_tuple = tuple(desc) if isinstance(desc, list) else desc
+        key = (proj.get("name", ""), desc_tuple)
         if key not in existing_projects:
             db.add(Project(
                 id=uuid.uuid4(),
                 user_id=user_id,
                 name=proj.get("name", ""),
-                description=proj.get("description", None),
+                description=desc,
                 order_index=idx
             ))
     db.commit() 
