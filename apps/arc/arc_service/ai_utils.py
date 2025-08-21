@@ -315,4 +315,99 @@ def extract_work_experience_description_with_ai(cv_text, work_exp_metadata):
         return json.loads(raw_response)
     except Exception as e:
         logger.error(f"AI description extraction failed: {e}")
-        raise HTTPException(status_code=500, detail=f"AI description extraction failed: {e}") 
+        raise HTTPException(status_code=500, detail=f"AI description extraction failed: {e}")
+
+def save_parsed_cv_to_db(parsed_data, user_id, db):
+    import uuid
+    from .models import WorkExperience, Education, Certification, Skill, Project
+    import logging
+    logger = logging.getLogger("arc")
+    def norm(s):
+        return (s or "").strip().lower()
+
+    # Work Experience
+    existing_work_exps = {
+        (norm(wx.company), norm(wx.title), norm(wx.start_date), norm(wx.end_date)): wx
+        for wx in db.query(WorkExperience).filter_by(user_id=user_id).all()
+    }
+    for idx, wx in enumerate(parsed_data.get("work_experience", [])):
+        company = norm(wx.get("company", ""))
+        title = norm(wx.get("title", wx.get("job_title", "")))
+        start_date = norm(wx.get("start_date", ""))
+        end_date = norm(wx.get("end_date", ""))
+        key = (company, title, start_date, end_date)
+        if key not in existing_work_exps:
+            db.add(WorkExperience(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                company=wx.get("company", ""),
+                title=wx.get("job_title", wx.get("title", "")),
+                start_date=wx.get("start_date", ""),
+                end_date=wx.get("end_date", ""),
+                description=wx.get("description", None),
+                order_index=idx
+            ))
+
+    # Education
+    existing_educations = {(e.institution, e.degree, e.start_date, e.end_date): e for e in db.query(Education).filter_by(user_id=user_id).all()}
+    for idx, edu in enumerate(parsed_data.get("education", [])):
+        key = (
+            edu.get("institution", ""),
+            edu.get("degree", ""),
+            edu.get("start_date", None),
+            edu.get("end_date", None)
+        )
+        if key not in existing_educations:
+            db.add(Education(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                institution=edu.get("institution", ""),
+                degree=edu.get("degree", ""),
+                field=edu.get("field", None),
+                start_date=edu.get("start_date", None),
+                end_date=edu.get("end_date", None),
+                description=edu.get("description", None),
+                order_index=idx
+            ))
+
+    # Certifications
+    existing_certs = {(c.name, c.issuer, c.year): c for c in db.query(Certification).filter_by(user_id=user_id).all()}
+    for idx, cert in enumerate(parsed_data.get("certifications", [])):
+        key = (
+            cert.get("name", ""),
+            cert.get("issuer", None),
+            cert.get("year", cert.get("date", None))
+        )
+        if key not in existing_certs:
+            db.add(Certification(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                name=cert.get("name", ""),
+                issuer=cert.get("issuer", None),
+                year=cert.get("year", cert.get("date", None)),
+                order_index=idx
+            ))
+
+    # Skills
+    existing_skills = set(s.skill for s in db.query(Skill).filter_by(user_id=user_id).all())
+    for skill in parsed_data.get("skills", []):
+        if skill not in existing_skills:
+            db.add(Skill(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                skill=skill
+            ))
+
+    # Projects
+    existing_projects = set((p.name, p.description) for p in db.query(Project).filter_by(user_id=user_id).all())
+    for idx, proj in enumerate(parsed_data.get("projects", [])):
+        key = (proj.get("name", ""), proj.get("description", None))
+        if key not in existing_projects:
+            db.add(Project(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                name=proj.get("name", ""),
+                description=proj.get("description", None),
+                order_index=idx
+            ))
+    db.commit() 

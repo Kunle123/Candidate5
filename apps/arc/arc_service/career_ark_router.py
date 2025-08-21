@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 import io
 from .arc_schemas import ArcData
 from .cv_utils import extract_text_from_docx, extract_text_from_pdf, split_cv_by_sections, nlp_chunk_text
-from .ai_utils import parse_cv_with_ai_chunk
+from .ai_utils import parse_cv_with_ai_chunk, save_parsed_cv_to_db
 from .schemas import ProfileCreate, ProfileUpdate, ProfileOut, WorkExperienceCreate, WorkExperienceUpdate, WorkExperienceOut, EducationCreate, EducationUpdate, EducationOut, SkillCreate, SkillOut, ProjectCreate, ProjectUpdate, ProjectOut, CertificationCreate, CertificationUpdate, CertificationOut, TrainingCreate, TrainingUpdate, Role
 from openai import OpenAI
 from fastapi.routing import APIRoute
@@ -829,10 +829,15 @@ import tempfile
 from .assistant_manager import CVAssistantManager
 
 @router.post("/importassistant")
-async def import_cv_assistant(file: UploadFile = File(...)):
+async def import_cv_assistant(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    Import a CV file, extract its text, send it to the OpenAI Assistant for parsing, and return structured JSON.
+    Import a CV file, extract its text, send it to the OpenAI Assistant for parsing, persist to DB, and return structured JSON.
     """
+    import tempfile
     # 1. Save uploaded file to a temp file
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(await file.read())
@@ -858,8 +863,10 @@ async def import_cv_assistant(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="No text could be extracted from the file.")
     # 3. Process with OpenAI Assistant
     try:
+        from .assistant_manager import CVAssistantManager
         assistant = CVAssistantManager()
         parsed_data = assistant.process_cv(text)
+        save_parsed_cv_to_db(parsed_data, user_id, db)
         return {"success": True, "data": parsed_data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"CV processing failed: {e}")
