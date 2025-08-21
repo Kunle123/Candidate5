@@ -14,3 +14,4 @@ openai
 tiktoken
 PyJWT 
 spacy 
+slowapi 
