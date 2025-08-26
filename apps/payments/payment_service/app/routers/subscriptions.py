@@ -53,11 +53,12 @@ class UserSubscription(BaseModel):
 # Subscription plans
 SUBSCRIPTION_PLANS = [
     SubscriptionPlan(
-        id="dominator",
-        name="Career Dominator",
-        description="All features for career domination",
-        price_id="price_1RIwjO3N6Cy1dIMXoND5K4zc",
-        amount=2999,  # £29.99
+        id="monthly",
+        name="Monthly Subscription",
+        description="Monthly subscription plan (24.99 GBP)",
+        price_id="price_1S0LuxKSNVTgQ7kdoe7dBoar",
+        amount=2499,  # £24.99 in pence
+        currency="gbp",
         interval="month",
         features=[
             "All Pro features",
@@ -68,33 +69,33 @@ SUBSCRIPTION_PLANS = [
         ]
     ),
     SubscriptionPlan(
-        id="accelerator",
-        name="Career Accelerator",
-        description="Advanced tools for career acceleration",
-        price_id="price_1RIwjO3N6Cy1dIMXfkNuOMaT",
-        amount=1999,  # £19.99
-        interval="month",
+        id="annual",
+        name="Annual Subscription",
+        description="Annual subscription plan (199 GBP)",
+        price_id="price_1S0LwRKSNVTgQ7kdDOtmKDH1",
+        amount=19900,  # £199.00 in pence
+        currency="gbp",
+        interval="year",
         features=[
-            "Create and store unlimited CVs",
-            "Advanced AI optimization",
-            "Detailed job match analysis",
-            "Keyword optimization",
-            "Cover letter generator"
+            "All Pro features",
+            "Priority support",
+            "Interview coaching",
+            "LinkedIn profile optimization",
+            "Career strategy session"
         ]
     ),
     SubscriptionPlan(
-        id="starter",
-        name="Career Starter",
-        description="Essential tools for starting your career",
-        price_id="price_1RIwjP3N6Cy1dIMXvOLBf1bi",
-        amount=1499,  # £14.99
-        interval="month",
+        id="topup",
+        name="Top-up",
+        description="One-time top-up (29.99 GBP)",
+        price_id="price_1S0LxqKSNVTgQ7kdD743axKL",
+        amount=2999,  # £29.99 in pence
+        currency="gbp",
+        interval="one_time",
         features=[
-            "Create and store up to 3 CVs",
-            "Basic AI optimization suggestions",
-            "Limited job match analysis"
+            "50 credits valid for 1 month"
         ]
-    )
+    ),
 ]
 
 @router.get("/plans", response_model=List[SubscriptionPlan])
