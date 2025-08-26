@@ -35,6 +35,7 @@ app.add_middleware(
 # Request ID middleware for tracking
 @app.middleware("http")
 async def add_request_id_and_log(request: Request, call_next):
+    print(f"Request started: {request.method} {request.url.path} (print fallback)", flush=True)
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
     
