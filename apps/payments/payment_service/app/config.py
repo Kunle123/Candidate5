@@ -7,10 +7,10 @@ class Settings(BaseSettings):
     # Stripe Configuration
     STRIPE_API_KEY: str
     STRIPE_WEBHOOK_SECRET: str
-    STRIPE_PRICE_ID: str
-    BASIC_PLAN_PRICE_ID: str
-    PRO_PLAN_PRICE_ID: str
-    ENTERPRISE_PLAN_PRICE_ID: str
+    STRIPE_PRICE_ID: Optional[str] = None
+    BASIC_PLAN_PRICE_ID: Optional[str] = None
+    PRO_PLAN_PRICE_ID: Optional[str] = None
+    ENTERPRISE_PLAN_PRICE_ID: Optional[str] = None
     # New dynamic plan price IDs and amounts
     MONTHLY_PLAN_PRICE_ID: Optional[str] = None
     ANNUAL_PLAN_PRICE_ID: Optional[str] = None
