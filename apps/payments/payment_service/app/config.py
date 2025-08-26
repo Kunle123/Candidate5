@@ -11,6 +11,13 @@ class Settings(BaseSettings):
     BASIC_PLAN_PRICE_ID: str
     PRO_PLAN_PRICE_ID: str
     ENTERPRISE_PLAN_PRICE_ID: str
+    # New dynamic plan price IDs and amounts
+    MONTHLY_PLAN_PRICE_ID: Optional[str] = None
+    ANNUAL_PLAN_PRICE_ID: Optional[str] = None
+    TOPUP_PLAN_PRICE_ID: Optional[str] = None
+    MONTHLY_PLAN_AMOUNT: Optional[int] = None
+    ANNUAL_PLAN_AMOUNT: Optional[int] = None
+    TOPUP_PLAN_AMOUNT: Optional[int] = None
     
     # Server Configuration
     HOST: str = "0.0.0.0"
