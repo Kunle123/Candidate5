@@ -29,6 +29,7 @@ class WebhookResponse(BaseModel):
 
 @router.post("/stripe", response_model=WebhookResponse)
 async def stripe_webhook(request: Request):
+    print("stripe_webhook called (print fallback)", flush=True)
     logger.info(f"stripe_webhook called. Headers: {dict(request.headers)}")
     """
     Handle Stripe webhook events.
