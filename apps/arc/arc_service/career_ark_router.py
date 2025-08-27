@@ -664,6 +664,8 @@ async def generate_assistant(request: Request):
         cv_length = data.get("cv_length")
         additional_keypoints = data.get("additional_keypoints")
         previous_cv = data.get("previous_cv")
+        num_pages = data.get("numPages")
+        language = data.get("language")
         OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
         OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
         if not OPENAI_API_KEY:
@@ -789,6 +791,10 @@ async def generate_assistant(request: Request):
             user_message["additional_keypoints"] = additional_keypoints
         if previous_cv:
             user_message["previous_cv"] = previous_cv
+        if num_pages is not None:
+            user_message["numPages"] = num_pages
+        if language is not None:
+            user_message["language"] = language
         thread = client.beta.threads.create()
         thread_id = thread.id
         try:
