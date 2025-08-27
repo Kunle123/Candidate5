@@ -795,17 +795,12 @@ async def generate_assistant(request: Request):
             user_message["numPages"] = num_pages
         if language is not None:
             user_message["language"] = language
-        thread = client.beta.threads.create()
-        thread_id = thread.id
-        try:
-            client.beta.threads.messages.create(
-                thread_id=thread_id,
-                role="user",
-                content=str(user_message)
-            )
-        except Exception as e:
-            logger.error(f"[ERROR] Error adding message to thread: {str(e)}")
-            return {"error": f"Error adding message to thread: {str(e)}"}
+        import json
+        client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
+            content=json.dumps(user_message)  # Send as proper JSON
+        )
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
             assistant_id=OPENAI_ASSISTANT_ID
