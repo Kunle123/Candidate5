@@ -26,6 +26,7 @@ from docx.shared import RGBColor
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import OxmlElement
 import httpx
+from sqlalchemy.exc import NoResultFound
 
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
@@ -336,6 +337,37 @@ def serialize_cv(cv, include_relationships=True, db=None):
     result["cover_letter_available"] = cover_letter_available
     result["cover_letter_download_url"] = cover_letter_download_url
     return result
+
+class ApplicationHistoryIn(BaseModel):
+    job_title: str
+    company_name: str
+    job_description: Optional[str] = None
+    applied_at: Optional[str] = None
+    salary: Optional[str] = None
+    contact_name: Optional[str] = None
+    contact_number: Optional[str] = None
+    organisation: Optional[str] = None
+
+class ApplicationHistoryOut(ApplicationHistoryIn):
+    id: str
+    created_at: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+def serialize_application_history(entry):
+    return {
+        "id": str(entry.id),
+        "job_title": entry.job_title,
+        "company_name": entry.company_name,
+        "job_description": entry.job_description,
+        "applied_at": entry.applied_at.isoformat() if entry.applied_at else None,
+        "salary": entry.salary,
+        "contact_name": entry.contact_name,
+        "contact_number": entry.contact_number,
+        "organisation": entry.organisation,
+        "created_at": entry.created_at.isoformat() if entry.created_at else None,
+    }
 
 # Routes
 @app.get("/")
@@ -1234,3 +1266,40 @@ async def download_application_cover_letter(id: str = Path(...), auth: dict = De
             "Content-Disposition": f'attachment; filename="application_cover_letter_{id}.docx"'
         }
     )
+
+@app.get("/api/application-history", response_model=List[ApplicationHistoryOut])
+async def get_application_history(auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    user_id = auth["user_id"]
+    entries = db.query(models.ApplicationHistory).filter_by(user_id=user_id).order_by(models.ApplicationHistory.created_at.desc()).all()
+    return [serialize_application_history(e) for e in entries]
+
+@app.post("/api/application-history", response_model=ApplicationHistoryOut)
+async def create_application_history(payload: ApplicationHistoryIn, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    user_id = auth["user_id"]
+    entry = models.ApplicationHistory(user_id=user_id, **payload.dict())
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return serialize_application_history(entry)
+
+@app.patch("/api/application-history/{id}", response_model=ApplicationHistoryOut)
+async def update_application_history(id: str, payload: ApplicationHistoryIn, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    user_id = auth["user_id"]
+    entry = db.query(models.ApplicationHistory).filter_by(id=id, user_id=user_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    for k, v in payload.dict(exclude_unset=True).items():
+        setattr(entry, k, v)
+    db.commit()
+    db.refresh(entry)
+    return serialize_application_history(entry)
+
+@app.delete("/api/application-history/{id}")
+async def delete_application_history(id: str, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+    user_id = auth["user_id"]
+    entry = db.query(models.ApplicationHistory).filter_by(id=id, user_id=user_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    db.delete(entry)
+    db.commit()
+    return {"success": True}
