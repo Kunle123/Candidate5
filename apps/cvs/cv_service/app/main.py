@@ -543,7 +543,11 @@ async def generate_cv_docx(
         # Core Competencies
         if core_competencies:
             cv.add_section_heading("Core Competencies")
-            cv.add_bullet_points(core_competencies)
+            # Render all keywords on a single line, each with a bullet
+            para = cv.doc.add_paragraph()
+            para.add_run(" ".join([f"• {kw}" for kw in core_competencies]))
+            cv.set_font_style(para, cv.font_sizes['body'], color=cv.colors['text'])
+            para.paragraph_format.space_after = Pt(8)
         # Experience
         if experience:
             cv.add_section_heading("Professional Experience")
@@ -1039,7 +1043,11 @@ async def generate_docx_from_json(
         # Core Competencies
         if core_competencies:
             cv.add_section_heading("Core Competencies")
-            cv.add_bullet_points(core_competencies)
+            # Render all keywords on a single line, each with a bullet
+            para = cv.doc.add_paragraph()
+            para.add_run(" ".join([f"• {kw}" for kw in core_competencies]))
+            cv.set_font_style(para, cv.font_sizes['body'], color=cv.colors['text'])
+            para.paragraph_format.space_after = Pt(8)
         # Experience
         if experience:
             cv.add_section_heading("Professional Experience")

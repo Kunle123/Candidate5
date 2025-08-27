@@ -63,6 +63,14 @@ CRITICAL REQUIREMENTS:
                 thread_id=thread.id
             )
             response_content = messages.data[0].content[0].text.value
-            return json.loads(response_content)
+            print("RAW ASSISTANT RESPONSE:", response_content)
+            import logging
+            logging.getLogger().info(f"RAW ASSISTANT RESPONSE: {response_content}")
+            try:
+                return json.loads(response_content)
+            except Exception as e:
+                logging.getLogger().error(f"JSON decode error: {e}")
+                logging.getLogger().error(f"RAW ASSISTANT RESPONSE: {response_content}")
+                raise Exception(f"Assistant returned invalid JSON: {response_content}")
         else:
             raise Exception(f"Assistant processing failed: {run.status}")
