@@ -13,7 +13,7 @@ from starlette.requests import Request as StarletteRequest
 from starlette.responses import StreamingResponse, JSONResponse
 from routers.cover_letters import router as cover_letters_router
 from routers.mega_cv import router as mega_cv_router
-from routers.applications import router as applications_router
+# from routers.applications import router as applications_router
 import re
 from fastapi.exception_handlers import http_exception_handler
 
@@ -255,7 +255,7 @@ def list_routes():
 
 app.include_router(cover_letters_router)
 app.include_router(mega_cv_router)
-app.include_router(applications_router)
+# app.include_router(applications_router)
 
 @app.api_route("/api/users/profile", methods=["PATCH"])
 async def update_user_profile(request: Request):
