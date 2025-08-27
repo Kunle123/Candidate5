@@ -796,6 +796,7 @@ async def generate_assistant(request: Request):
         if language is not None:
             user_message["language"] = language
         import json
+        logger.info(f"[OPENAI PAYLOAD] Sending to OpenAI: {json.dumps(user_message)}")
         # If no thread_id, create a new thread (first request)
         if not thread_id:
             thread = client.beta.threads.create()
