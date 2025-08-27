@@ -796,6 +796,11 @@ async def generate_assistant(request: Request):
         if language is not None:
             user_message["language"] = language
         import json
+        # If no thread_id, create a new thread (first request)
+        if not thread_id:
+            thread = client.beta.threads.create()
+            thread_id = thread.id
+        # Now always have a valid thread_id
         client.beta.threads.messages.create(
             thread_id=thread_id,
             role="user",
