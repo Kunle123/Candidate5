@@ -355,8 +355,8 @@ async def proxy_application_history(request: StarletteRequest, full_path: str):
     path = f"/api/application-history{full_path}"
     return await proxy(request, cv_service_url, path)
 
-@app.api_route("/api/application-history/", methods=["GET", "POST", "PATCH", "DELETE"])
-async def proxy_application_history_slash(request: StarletteRequest):
+@app.api_route("/api/application-history", methods=["GET", "POST", "PATCH", "DELETE"])
+async def proxy_application_history_direct(request: StarletteRequest):
     path = "/api/application-history"
     return await proxy(request, cv_service_url, path)
 
