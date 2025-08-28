@@ -349,6 +349,13 @@ async def proxy_auth_linkedin(request: Request):
 async def proxy_auth_linkedin_callback(request: Request):
     return await proxy(request, AUTH_SERVICE_URL, "/auth/linkedin/callback")
 
+# Proxy /api/application-history and subpaths to CV service
+@app.api_route("/api/application-history{full_path:path}", methods=["GET", "POST", "PATCH", "DELETE"])
+async def proxy_application_history(request: StarletteRequest, full_path: str):
+    path = f"/api/application-history{full_path}"
+    return await proxy(request, cv_service_url, path)
+
+# This must be the last route!
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def catch_all(request: StarletteRequest, full_path: str):
     logger.info(f"[DEBUG] catch_all called with full_path: {full_path}")
@@ -382,9 +389,4 @@ ALLOWED_ORIGIN = "https://c5-frontend-pied.vercel.app"
 @app.api_route("/api/applications{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_applications(request: StarletteRequest, full_path: str):
     path = f"/api/applications{full_path}"
-    return await proxy(request, cv_service_url, path)
-
-@app.api_route("/api/application-history{full_path:path}", methods=["GET", "POST", "PATCH", "DELETE"])
-async def proxy_application_history(request: StarletteRequest, full_path: str):
-    path = f"/api/application-history{full_path}"
     return await proxy(request, cv_service_url, path)
