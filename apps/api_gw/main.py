@@ -383,3 +383,8 @@ ALLOWED_ORIGIN = "https://c5-frontend-pied.vercel.app"
 async def proxy_applications(request: StarletteRequest, full_path: str):
     path = f"/api/applications{full_path}"
     return await proxy(request, cv_service_url, path)
+
+@app.api_route("/api/application-history{full_path:path}", methods=["GET", "POST", "PATCH", "DELETE"])
+async def proxy_application_history(request: StarletteRequest, full_path: str):
+    path = f"/api/application-history{full_path}"
+    return await proxy(request, cv_service_url, path)
