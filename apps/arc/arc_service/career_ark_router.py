@@ -750,11 +750,31 @@ async def generate_assistant(request: Request):
             cv_data["thread_id"] = thread_id
             return cv_data
         # --- Thread-aware CV & cover letter generation ---
-        if action == "generate_cv" and thread_id:
+        # Always include profile and job_description in the payload, even for follow-up requests
+        if action == "generate_cv":
+            user_message = {
+                "action": action,
+                "profile": profile,
+                "job_description": job_description
+            }
+            if keywords:
+                user_message["keywords"] = keywords
+            if cv_length:
+                user_message["cv_length"] = cv_length
+            if additional_keypoints:
+                user_message["additional_keypoints"] = additional_keypoints
+            if previous_cv:
+                user_message["previous_cv"] = previous_cv
+            if num_pages is not None:
+                user_message["numPages"] = num_pages
+            if language is not None:
+                user_message["language"] = language
+            import json
+            logger.info(f"[OPENAI PAYLOAD] Sending to OpenAI: {json.dumps(user_message)}")
             client.beta.threads.messages.create(
                 thread_id=thread_id,
                 role="user",
-                content="Generate a CV and cover letter for this job."
+                content=json.dumps(user_message)
             )
             run = client.beta.threads.runs.create(
                 thread_id=thread_id,
