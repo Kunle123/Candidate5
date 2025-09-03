@@ -61,6 +61,10 @@ if OPENAI_API_KEY:
     client = OpenAI(api_key=OPENAI_API_KEY)
 
 # --- Pydantic models ---
+class KeywordRAG(BaseModel):
+    keyword: str
+    status: str  # "red", "amber", "green"
+
 class KeywordsRequest(BaseModel):
     profile: dict
     job_description: str
@@ -97,10 +101,6 @@ class AssistantActionRequest(BaseModel):
     additional_keypoints: Optional[List[str]] = None
     previous_cv: Optional[str] = None
     thread_id: Optional[str] = None
-
-class KeywordRAG(BaseModel):
-    keyword: str
-    status: str  # "red", "amber", "green"
 
 # --- Profile Endpoints ---
 # [REMOVED: All /profiles* endpoints and CVProfile usage as part of refactor]
