@@ -77,6 +77,7 @@ class GenerateCVRequest(BaseModel):
 class GenerateCVResponse(BaseModel):
     cv: str
     cover_letter: str
+    keywords: Optional[List[KeywordRAG]] = None
 
 class UpdateCVRequest(BaseModel):
     profile: dict
@@ -96,6 +97,10 @@ class AssistantActionRequest(BaseModel):
     additional_keypoints: Optional[List[str]] = None
     previous_cv: Optional[str] = None
     thread_id: Optional[str] = None
+
+class KeywordRAG(BaseModel):
+    keyword: str
+    status: str  # "red", "amber", "green"
 
 # --- Profile Endpoints ---
 # [REMOVED: All /profiles* endpoints and CVProfile usage as part of refactor]
