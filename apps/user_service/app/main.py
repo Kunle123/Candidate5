@@ -323,7 +323,8 @@ def create_user_profile(
             email=req.email,
             name=req.name,
             created_at=now,
-            updated_at=now
+            updated_at=now,
+            subscription_type='free'  # Always default to free on signup
         )
         
         db.add(new_user)
