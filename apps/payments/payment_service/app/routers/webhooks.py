@@ -45,6 +45,7 @@ async def stripe_webhook(request: Request):
         # Get the raw request body
         body = await request.body()
         body_str = body.decode("utf-8")
+        logger.info(f"Raw Stripe webhook body: {body_str}")
         
         # Get the Stripe signature from headers
         sig_header = request.headers.get("stripe-signature")
@@ -281,8 +282,8 @@ async def handle_invoice_payment_failed(invoice):
 async def notify_subscription_update(user_id, subscription, is_deleted=False, is_payment_failed=False):
     """Notify other services about subscription changes and update user credits"""
     try:
-        # Get subscription details
         plan_id = subscription.metadata.get("plan_id", "basic")
+        logger.info(f"notify_subscription_update called for user_id={user_id}, plan_id={plan_id}")
         # Map plan_id to subscription_type
         if plan_id in [os.getenv("MONTHLY_PLAN_PRICE_ID")]:
             subscription_type = "monthly"
@@ -301,11 +302,13 @@ async def notify_subscription_update(user_id, subscription, is_deleted=False, is
             "user_id": user_id,
             "subscription_type": subscription_type
         }
+        logger.info(f"Sending credit update to user service: {update_credits_url} with payload: {payload}")
         # Call user service to update credits
         async with httpx.AsyncClient(timeout=10.0) as client:
             headers = {"Content-Type": "application/json"}
             try:
                 response = await client.post(update_credits_url, json=payload, headers=headers)
+                logger.info(f"User service response: {response.status_code} {response.text}")
                 if response.status_code != 200:
                     logger.warning(f"Failed to update user credits: {response.status_code} {response.text}")
             except Exception as e:
