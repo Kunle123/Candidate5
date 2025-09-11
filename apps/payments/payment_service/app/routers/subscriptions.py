@@ -135,6 +135,8 @@ async def create_checkout_session(
                 detail=f"Subscription plan with ID {request.plan_id} not found"
             )
         
+        # Log the plan and metadata being used for the checkout session
+        logger.info(f"Creating Stripe Checkout Session with price_id: {plan.price_id}, amount: {plan.amount}, metadata: {{'user_id': {request.user_id}, 'plan_id': {plan.id}}}")
         # Create a Stripe Checkout session
         checkout_session = stripe.checkout.Session.create(
             customer_email=request.email,
