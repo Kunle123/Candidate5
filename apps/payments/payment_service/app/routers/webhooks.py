@@ -279,29 +279,38 @@ async def handle_invoice_payment_failed(invoice):
         logger.error(f"Error handling invoice.payment_failed: {str(e)}")
 
 async def notify_subscription_update(user_id, subscription, is_deleted=False, is_payment_failed=False):
-    """Notify other services about subscription changes"""
+    """Notify other services about subscription changes and update user credits"""
     try:
         # Get subscription details
         plan_id = subscription.metadata.get("plan_id", "basic")
-        
+        # Map plan_id to subscription_type
+        if plan_id in [os.getenv("MONTHLY_PLAN_PRICE_ID")]:
+            subscription_type = "monthly"
+        elif plan_id in [os.getenv("ANNUAL_PLAN_PRICE_ID")]:
+            subscription_type = "annual"
+        else:
+            subscription_type = "free"
         # Determine subscription status
         status = "canceled" if is_deleted else subscription.status
         if is_payment_failed and status == "active":
             status = "past_due"
-        
-        # Create notification payload
+        # Create notification payload for user service
+        user_service_url = os.getenv("USER_SERVICE_URL", "http://user_service:8000")
+        update_credits_url = f"{user_service_url}/user/subscription/update"
         payload = {
             "user_id": user_id,
-            "subscription_id": subscription.id,
-            "status": status,
-            "plan_id": plan_id,
-            "current_period_end": subscription.current_period_end,
-            "cancel_at_period_end": subscription.cancel_at_period_end,
-            "is_active": status == "active"
+            "subscription_type": subscription_type
         }
-        
-        # Send notification to Auth Service
-        # (This would update user's permissions/roles based on subscription)
+        # Call user service to update credits
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            headers = {"Content-Type": "application/json"}
+            try:
+                response = await client.post(update_credits_url, json=payload, headers=headers)
+                if response.status_code != 200:
+                    logger.warning(f"Failed to update user credits: {response.status_code} {response.text}")
+            except Exception as e:
+                logger.warning(f"Error updating user credits: {str(e)}")
+        # (Optional) Still notify Auth Service if needed
         auth_service_url = f"{settings.AUTH_SERVICE_URL}/api/users/{user_id}/subscription"
         async with httpx.AsyncClient(timeout=10.0) as client:
             headers = {"Content-Type": "application/json"}
@@ -313,6 +322,6 @@ async def notify_subscription_update(user_id, subscription, is_deleted=False, is
                 logger.warning(f"Error notifying Auth Service: {str(e)}")
         
         logger.info(f"Subscription update notification sent for user {user_id} - status: {status}")
-    
+        logger.info(f"User credits update notification sent for user {user_id} - subscription_type: {subscription_type}")
     except Exception as e:
         logger.error(f"Error in notify_subscription_update: {str(e)}") 
