@@ -35,7 +35,7 @@ app.add_middleware(
 # Request ID middleware for tracking
 @app.middleware("http")
 async def add_request_id_and_log(request: Request, call_next):
-    print(f"Request started: {request.method} {request.url.path} (print fallback)", flush=True)
+    logger.info(f"Request started: {request.method} {request.url.path} (print fallback)")
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
     
@@ -68,12 +68,12 @@ app.include_router(webhooks_router)
 @app.on_event("startup")
 async def startup():
     logger.info("Starting up Payment Service")
-    print("ALL ENV VARS AT STARTUP:", dict(os.environ))
-    print("CWD:", os.getcwd())
+    logger.info(f"ALL ENV VARS AT STARTUP: {dict(os.environ)}")
+    logger.info(f"CWD: {os.getcwd()}")
     for root, dirs, files in os.walk("."):
         for file in files:
             if file.endswith(".env"):
-                print("Found .env file:", os.path.join(root, file))
+                logger.info(f"Found .env file: {os.path.join(root, file)}")
 
 @app.on_event("shutdown")
 async def shutdown():

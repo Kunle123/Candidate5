@@ -11,7 +11,7 @@ from app.config import settings
 from datetime import datetime
 
 # Configure logger
-logger = logging.getLogger("payment_service")
+logger = logging.getLogger(__name__)
 
 # Initialize router
 router = APIRouter(prefix="/api/webhooks")
@@ -29,8 +29,7 @@ class WebhookResponse(BaseModel):
 
 @router.post("/stripe", response_model=WebhookResponse)
 async def stripe_webhook(request: Request):
-    print("stripe_webhook called (print fallback)", flush=True)
-    logger.info(f"stripe_webhook called. Headers: {dict(request.headers)}")
+    logger.info("stripe_webhook called")
     """
     Handle Stripe webhook events.
     
