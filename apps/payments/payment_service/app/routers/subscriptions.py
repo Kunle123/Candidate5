@@ -160,7 +160,7 @@ async def create_checkout_session(
                 },
             ],
             metadata={
-                "user_id": request.user_id,
+                "user_id": request.user_id,  # Always use UUID here
                 "plan_id": plan.id
             },
             mode="subscription",

@@ -200,8 +200,8 @@ async def add_payment_method(
         else:
             # Create a new customer
             customer = stripe.Customer.create(
-                email=user_id,
-                metadata={"user_id": user_id}
+                email=user_id,  # user_id should be the UUID
+                metadata={"user_id": user_id}  # Always use UUID here
             )
             customer_id = customer.id
         
@@ -220,7 +220,7 @@ async def add_payment_method(
             customer=customer_id,
             setup_intent_data={
                 "metadata": {
-                    "user_id": user_id
+                    "user_id": user_id  # Always use UUID here
                 }
             },
             success_url=f"{return_url}?success=true&setup_intent_id={setup_intent.id}",
