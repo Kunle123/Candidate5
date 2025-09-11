@@ -8,6 +8,8 @@ import logging
 import stripe
 import json
 from app.config import settings
+from fastapi import Depends
+from jose import jwt, JWTError
 
 # Configure logger
 logger = logging.getLogger("payment_service")
@@ -310,3 +312,35 @@ async def set_default_payment_method(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred"
         ) 
+
+@router.post("/customer-portal")
+async def create_customer_portal(token: str = Depends(oauth2_scheme)):
+    """Create a Stripe Customer Portal session for the authenticated user and return the portal URL."""
+    try:
+        # Decode the JWT to get the user's email
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            user_email = payload.get("email")
+            if not user_email:
+                raise HTTPException(status_code=400, detail="User email not found in token.")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid authentication token.")
+
+        # Find the Stripe customer by email
+        customers = stripe.Customer.list(email=user_email, limit=1)
+        if not customers.data:
+            raise HTTPException(status_code=404, detail="Stripe customer not found for user.")
+        customer_id = customers.data[0].id
+
+        # Create the billing portal session
+        portal_session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url="https://candidate5.co.uk/account"
+        )
+        return {"url": portal_session.url}
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error in create_customer_portal: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error creating customer portal: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error in create_customer_portal: {str(e)}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred") 
