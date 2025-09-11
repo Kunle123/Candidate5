@@ -38,7 +38,7 @@ router = APIRouter()
 class UserProfileResponse(BaseModel):
     id: Union[str, UUID]
     email: EmailStr
-    name: str
+    name: Optional[str] = None
     address_line1: Optional[str] = None
     city_state_postal: Optional[str] = None
     linkedin: Optional[str] = None
@@ -113,7 +113,7 @@ class FeedbackRequest(BaseModel):
 class CreateUserProfileRequest(BaseModel):
     id: str
     email: EmailStr
-    name: str
+    name: Optional[str] = None
     phone_number: Optional[str] = None
 
 class UserCreditsResponse(BaseModel):
