@@ -296,7 +296,7 @@ async def notify_subscription_update(user_id, subscription, is_deleted=False, is
         if is_payment_failed and status == "active":
             status = "past_due"
         # Create notification payload for user service
-        user_service_url = os.getenv("USER_SERVICE_URL", "http://user_service:8000")
+        user_service_url = os.getenv("USER_SERVICE_URL", "https://api-gw-production.up.railway.app")
         update_credits_url = f"{user_service_url}/api/user/subscription/update"
         payload = {
             "user_id": user_id,
