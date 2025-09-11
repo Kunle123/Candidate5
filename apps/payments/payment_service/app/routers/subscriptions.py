@@ -100,8 +100,20 @@ SUBSCRIPTION_PLANS = [
 
 @router.get("/plans", response_model=List[SubscriptionPlan])
 async def get_subscription_plans():
-    """Get all available subscription plans (public endpoint)"""
-    return SUBSCRIPTION_PLANS
+    """Get all available subscription plans (public endpoint, returns Stripe price ID as 'id')."""
+    # Return plans with 'id' set to the Stripe price_id for frontend use
+    return [
+        SubscriptionPlan(
+            id=plan.price_id,  # Use Stripe price ID as 'id'
+            name=plan.name,
+            description=plan.description,
+            price_id=plan.price_id,
+            amount=plan.amount,
+            currency=plan.currency,
+            interval=plan.interval,
+            features=plan.features
+        ) for plan in SUBSCRIPTION_PLANS
+    ]
 
 @router.get("/plans/{plan_id}", response_model=SubscriptionPlan)
 async def get_subscription_plan(plan_id: str, token: str = Depends(oauth2_scheme)):
