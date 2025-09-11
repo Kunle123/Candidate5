@@ -99,8 +99,8 @@ SUBSCRIPTION_PLANS = [
 ]
 
 @router.get("/plans", response_model=List[SubscriptionPlan])
-async def get_subscription_plans(token: str = Depends(oauth2_scheme)):
-    """Get all available subscription plans"""
+async def get_subscription_plans():
+    """Get all available subscription plans (public endpoint)"""
     return SUBSCRIPTION_PLANS
 
 @router.get("/plans/{plan_id}", response_model=SubscriptionPlan)
