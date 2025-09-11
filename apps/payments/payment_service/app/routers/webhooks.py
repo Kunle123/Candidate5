@@ -44,10 +44,11 @@ async def stripe_webhook(request: Request):
         # Get the raw request body
         body = await request.body()
         body_str = body.decode("utf-8")
-        logger.info(f"Raw Stripe webhook body: {body_str}")
+        logger.info(f"[DEBUG] Raw Stripe webhook body (first 500 chars): {body_str[:500]}")
         
         # Get the Stripe signature from headers
         sig_header = request.headers.get("stripe-signature")
+        logger.info(f"[DEBUG] Stripe-Signature header: {sig_header}")
         
         if not sig_header:
             logger.warning("Missing Stripe signature header")
