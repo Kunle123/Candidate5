@@ -134,17 +134,17 @@ async def create_checkout_session(
 ):
     """Create a Stripe Checkout session for subscription purchase"""
     try:
-        # Find the plan by ID
+        # Find the plan by price_id (Stripe price ID)
         plan = None
         for p in SUBSCRIPTION_PLANS:
-            if p.id == request.plan_id:
+            if p.price_id == request.plan_id:
                 plan = p
                 break
         
         if not plan:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Subscription plan with ID {request.plan_id} not found"
+                detail=f"Subscription plan with price_id {request.plan_id} not found"
             )
         
         # Log the plan and metadata being used for the checkout session
