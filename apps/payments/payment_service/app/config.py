@@ -61,7 +61,7 @@ class LogConfig(dict):
                 }
             },
             root={
-                "level": "INFO",
+                "level": "DEBUG",  # Changed from INFO to DEBUG
                 "handlers": ["console"],
             },
         )
