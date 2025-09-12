@@ -27,34 +27,93 @@ class WebhookResponse(BaseModel):
     status: str
     message: str
 
-@router.post("/stripe")
+@router.post("/stripe", response_model=WebhookResponse)
 async def stripe_webhook(request: Request):
-    print("🔥 WEBHOOK DEBUG: Handler called")
-    body = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-    print(f"🔥 WEBHOOK DEBUG: Body length: {len(body)}")
-    print(f"🔥 WEBHOOK DEBUG: Signature: {sig_header}")
-    print(f"🔥 WEBHOOK DEBUG: Secret configured: {bool(STRIPE_WEBHOOK_SECRET)}")
-    if not sig_header:
-        print("🔥 WEBHOOK DEBUG: Missing signature header")
-        return {"detail": "Missing Stripe signature header"}
-    # Test signature verification
+    logger.info("stripe_webhook called")
     try:
-        print("🔥 WEBHOOK DEBUG: About to verify signature...")
-        event = stripe.Webhook.construct_event(
-            body,
-            sig_header,
-            STRIPE_WEBHOOK_SECRET
+        # Get the raw request body
+        body = await request.body()
+        body_str = body.decode("utf-8")
+        logger.info(f"[DEBUG] Raw body type: {type(body)}")
+        logger.info(f"[DEBUG] Raw body length: {len(body)}")
+        logger.info(f"[DEBUG] Body string length: {len(body_str)}")
+        logger.info(f"[DEBUG] Raw Stripe webhook body (first 500 chars): {body_str[:500]}")
+
+        # Get the Stripe signature from headers
+        sig_header = request.headers.get("stripe-signature")
+        logger.info(f"[DEBUG] Stripe-Signature header: {sig_header}")
+        logger.info(f"[DEBUG] Webhook secret configured: {bool(STRIPE_WEBHOOK_SECRET)}")
+        if STRIPE_WEBHOOK_SECRET:
+            logger.info(f"[DEBUG] Secret starts with whsec_: {STRIPE_WEBHOOK_SECRET.startswith('whsec_')}")
+            logger.info(f"[DEBUG] Secret length: {len(STRIPE_WEBHOOK_SECRET)}")
+            logger.info(f"[DEBUG] Secret preview: {STRIPE_WEBHOOK_SECRET[:15]}...")
+        else:
+            logger.error("[DEBUG] STRIPE_WEBHOOK_SECRET is None or empty!")
+
+        if not sig_header:
+            logger.warning("Missing Stripe signature header")
+            return {"detail": "Missing Stripe signature header"}
+
+        if not STRIPE_WEBHOOK_SECRET:
+            logger.warning("Stripe webhook secret not configured")
+            return WebhookResponse(
+                status="error",
+                message="Stripe webhook secret not configured"
+            )
+
+        # Verify the webhook signature
+        try:
+            logger.info("[DEBUG] About to verify signature...")
+            event = stripe.Webhook.construct_event(
+                body,  # Use raw bytes for signature verification
+                sig_header,
+                STRIPE_WEBHOOK_SECRET
+            )
+            logger.info("✅ [DEBUG] Signature verification successful!")
+        except stripe.error.SignatureVerificationError as e:
+            logger.error(f"❌ [DEBUG] Signature verification failed: {str(e)}")
+            logger.error(f"[DEBUG] Error type: {type(e)}")
+            logger.error(f"[DEBUG] Using secret: {STRIPE_WEBHOOK_SECRET[:15]}...")
+            logger.error(f"[DEBUG] Using signature: {sig_header}")
+            logger.error(f"[DEBUG] Body hash (for debugging): {hash(body)}")
+            return {"status": "error", "message": f"Invalid signature: {str(e)}"}
+        except Exception as e:
+            logger.error(f"❌ [DEBUG] Unexpected error during signature verification: {str(e)}")
+            logger.error(f"[DEBUG] Error type: {type(e)}")
+            return {"status": "error", "message": f"Webhook processing error: {str(e)}"}
+
+        # Process the event
+        event_type = event["type"]
+        event_object = event["data"]["object"]
+        logger.info(f"[DEBUG] Event type: {event_type}")
+        logger.info(f"[DEBUG] Event object: {event_object}")
+        logger.info(f"Received Stripe webhook event: {event_type}")
+
+        # Handle specific event types
+        if event_type == "checkout.session.completed":
+            await handle_checkout_session_completed(event_object)
+        elif event_type == "subscription.created":
+            await handle_subscription_created(event_object)
+        elif event_type == "subscription.updated":
+            await handle_subscription_updated(event_object)
+        elif event_type == "subscription.deleted":
+            await handle_subscription_deleted(event_object)
+        elif event_type == "invoice.payment_succeeded":
+            await handle_invoice_payment_succeeded(event_object)
+        elif event_type == "invoice.payment_failed":
+            await handle_invoice_payment_failed(event_object)
+        else:
+            logger.info(f"Unhandled event type: {event_type}")
+
+        return WebhookResponse(
+            status="success",
+            message=f"Processed webhook event: {event_type}"
         )
-        print("🔥 WEBHOOK DEBUG: ✅ Signature verification SUCCESS!")
-        print(f"🔥 WEBHOOK DEBUG: Event type: {event.get('type')}")
-        return {"status": "success", "event_type": event.get('type')}
-    except stripe.error.SignatureVerificationError as e:
-        print(f"🔥 WEBHOOK DEBUG: ❌ Signature verification FAILED: {str(e)}")
-        return {"status": "error", "message": f"Invalid signature: {str(e)}"}
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"🔥 WEBHOOK DEBUG: ❌ Unexpected error: {str(e)}")
-        return {"status": "error", "message": f"Error: {str(e)}"}
+        logger.error(f"Unexpected error in webhook handler: {str(e)}")
+        return {"status": "error", "message": f"Internal server error: {str(e)}"}
 
 @router.get("/test")
 async def test_webhook_routing():
