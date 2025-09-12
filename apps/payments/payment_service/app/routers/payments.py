@@ -214,14 +214,21 @@ async def add_payment_method(
         )
         
         # Create a Checkout session for setup
+        # If this is a top-up/one-off payment, add plan_id to metadata
+        # (Assume you have a way to pass the top-up price_id; if not, add a placeholder for future use)
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             mode="setup",
             customer=customer_id,
             setup_intent_data={
                 "metadata": {
-                    "user_id": user_id  # Always use UUID here
+                    "user_id": user_id,  # Always use UUID here
+                    # "plan_id": topup_price_id  # Uncomment and set if you have a top-up price_id
                 }
+            },
+            metadata={
+                "user_id": user_id,
+                # "plan_id": topup_price_id  # Uncomment and set if you have a top-up price_id
             },
             success_url=f"{return_url}?success=true&setup_intent_id={setup_intent.id}",
             cancel_url=f"{return_url}?canceled=true",
