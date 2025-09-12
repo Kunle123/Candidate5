@@ -173,6 +173,33 @@ async def handle_checkout_session_completed(session):
             
             # Notify the user service (or any other service) about the subscription change
             await notify_subscription_update(user_id, subscription)
+        # If this was a top-up (one-off payment)
+        elif session.mode == "payment":
+            # Get user ID and plan_id from metadata
+            user_id = session.metadata.get("user_id")
+            plan_id = session.metadata.get("plan_id")
+            logger.info(f"[TOPUP] Detected payment session: user_id={user_id}, plan_id={plan_id}")
+            # Check if plan_id matches the top-up price ID
+            topup_price_id = os.getenv("TOPUP_PLAN_PRICE_ID")
+            if plan_id == topup_price_id:
+                logger.info(f"[TOPUP] Top-up payment detected for user {user_id}, calling user service to add credits.")
+                # Call user service to add top-up credits
+                user_service_url = os.getenv("USER_SERVICE_URL", "http://candidate5-9cbd5b79.railway.internal:8080")
+                add_topup_url = f"{user_service_url}/api/user/topup/add"
+                payload = {"user_id": user_id}
+                try:
+                    async with httpx.AsyncClient(timeout=10.0) as client:
+                        response = await client.post(add_topup_url, json=payload)
+                        logger.info(f"[TOPUP] User service response: {response.status_code} {response.text}")
+                        print(f"🔥 TOPUP: User service response: {response.status_code} {response.text}")
+                        if response.status_code != 200:
+                            logger.warning(f"[TOPUP] Failed to add top-up credits: {response.status_code} {response.text}")
+                            print(f"🔥 TOPUP: Failed to add top-up credits: {response.status_code} {response.text}")
+                except Exception as e:
+                    logger.warning(f"[TOPUP] Error adding top-up credits: {str(e)}")
+                    print(f"🔥 TOPUP: Error adding top-up credits: {str(e)}")
+            else:
+                logger.info(f"[TOPUP] Payment session is not a top-up (plan_id={plan_id}, expected={topup_price_id})")
     
     except Exception as e:
         logger.error(f"Error handling checkout.session.completed: {str(e)}")
