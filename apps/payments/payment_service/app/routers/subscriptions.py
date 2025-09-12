@@ -148,7 +148,7 @@ async def create_checkout_session(
             )
         
         # Log the plan and metadata being used for the checkout session
-        logger.info(f"Creating Stripe Checkout Session with price_id: {plan.price_id}, amount: {plan.amount}, metadata: {{'user_id': {request.user_id}, 'plan_id': {plan.id}}}")
+        logger.info(f"Creating Stripe Checkout Session with price_id: {plan.price_id}, amount: {plan.amount}, metadata: {{'user_id': {request.user_id}, 'plan_id': {plan.price_id}}}")
         # Create a Stripe Checkout session
         checkout_session = stripe.checkout.Session.create(
             customer_email=request.email,
@@ -161,7 +161,7 @@ async def create_checkout_session(
             ],
             metadata={
                 "user_id": request.user_id,  # Always use UUID here
-                "plan_id": plan.id
+                "plan_id": plan.price_id    # Use Stripe price ID for plan_id
             },
             mode="subscription",
             success_url=f"{request.return_url}?success=true&session_id={{CHECKOUT_SESSION_ID}}",
