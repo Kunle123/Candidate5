@@ -50,6 +50,11 @@ class UserPaymentProfile(BaseModel):
     default_payment_method_id: Optional[str] = None
     has_payment_method: bool = False
 
+class AddPaymentMethodRequest(BaseModel):
+    user_id: str
+    email: str
+    return_url: str
+
 @router.get("/methods/{user_id}", response_model=List[PaymentMethod])
 async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme)):
     """Get all payment methods for a user"""
@@ -185,12 +190,12 @@ async def get_payment_history(user_id: str, token: str = Depends(oauth2_scheme))
 
 @router.post("/methods/add")
 async def add_payment_method(
-    user_id: str,
-    email: str,
-    return_url: str,
+    req: AddPaymentMethodRequest,
     token: str = Depends(oauth2_scheme)
 ):
-    """Create a Stripe SetupIntent for adding a payment method"""
+    user_id = req.user_id
+    email = req.email
+    return_url = req.return_url
     try:
         # First, get or create a customer in Stripe
         customers = stripe.Customer.list(email=email, limit=1)
