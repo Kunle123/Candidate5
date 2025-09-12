@@ -558,7 +558,7 @@ def add_topup_credits(req: TopupCreditsRequest, db: Session = Depends(get_db)):
     from .models import TopupCredits
     topup = TopupCredits(
         user_id=user.id,
-        topup_credits_remaining=50,
+        topup_credits_remaining=100,  # Changed from 50 to 100
         topup_credits_expiry=expiry
     )
     db.add(topup)
