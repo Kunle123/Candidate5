@@ -38,7 +38,23 @@ async def stripe_webhook(request: Request):
     if not sig_header:
         print("🔥 WEBHOOK DEBUG: Missing signature header")
         return {"detail": "Missing Stripe signature header"}
-    return {"status": "debug version working"}
+    # Test signature verification
+    try:
+        print("🔥 WEBHOOK DEBUG: About to verify signature...")
+        event = stripe.Webhook.construct_event(
+            body,
+            sig_header,
+            STRIPE_WEBHOOK_SECRET
+        )
+        print("🔥 WEBHOOK DEBUG: ✅ Signature verification SUCCESS!")
+        print(f"🔥 WEBHOOK DEBUG: Event type: {event.get('type')}")
+        return {"status": "success", "event_type": event.get('type')}
+    except stripe.error.SignatureVerificationError as e:
+        print(f"🔥 WEBHOOK DEBUG: ❌ Signature verification FAILED: {str(e)}")
+        return {"status": "error", "message": f"Invalid signature: {str(e)}"}
+    except Exception as e:
+        print(f"🔥 WEBHOOK DEBUG: ❌ Unexpected error: {str(e)}")
+        return {"status": "error", "message": f"Error: {str(e)}"}
 
 @router.get("/test")
 async def test_webhook_routing():
