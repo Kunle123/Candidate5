@@ -298,7 +298,7 @@ async def options_handler(full_path: str):
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
     return response
 
-@app.api_route("/api/webhooks{full_path:path}", methods=["POST", "OPTIONS"])
+@app.api_route("/api/webhooks{full_path:path}", methods=["GET", "POST", "OPTIONS"])
 async def proxy_webhooks(request: StarletteRequest, full_path: str):
     path = f"/api/webhooks{full_path}"
     return await proxy(request, payment_service_url, path)
