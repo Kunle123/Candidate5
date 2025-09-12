@@ -186,25 +186,24 @@ async def get_payment_history(user_id: str, token: str = Depends(oauth2_scheme))
 @router.post("/methods/add")
 async def add_payment_method(
     user_id: str,
+    email: str,
     return_url: str,
     token: str = Depends(oauth2_scheme)
 ):
     """Create a Stripe SetupIntent for adding a payment method"""
     try:
         # First, get or create a customer in Stripe
-        customers = stripe.Customer.list(email=user_id, limit=1)
-        
+        customers = stripe.Customer.list(email=email, limit=1)
         customer_id = None
         if customers.data:
             customer_id = customers.data[0].id
         else:
             # Create a new customer
             customer = stripe.Customer.create(
-                email=user_id,  # user_id should be the UUID
+                email=email,  # Use the actual email
                 metadata={"user_id": user_id}  # Always use UUID here
             )
             customer_id = customer.id
-        
         # Create a SetupIntent
         setup_intent = stripe.SetupIntent.create(
             customer=customer_id,
@@ -212,17 +211,14 @@ async def add_payment_method(
             usage="off_session",
             metadata={"user_id": user_id}
         )
-        
         # Create a Checkout session for setup
-        # If this is a top-up/one-off payment, add plan_id to metadata
-        # (Assume you have a way to pass the top-up price_id; if not, add a placeholder for future use)
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             mode="setup",
             customer=customer_id,
             setup_intent_data={
                 "metadata": {
-                    "user_id": user_id,  # Always use UUID here
+                    "user_id": user_id,
                     # "plan_id": topup_price_id  # Uncomment and set if you have a top-up price_id
                 }
             },
@@ -233,13 +229,11 @@ async def add_payment_method(
             success_url=f"{return_url}?success=true&setup_intent_id={setup_intent.id}",
             cancel_url=f"{return_url}?canceled=true",
         )
-        
         return {
             "setup_intent_id": setup_intent.id,
             "client_secret": setup_intent.client_secret,
             "checkout_url": checkout_session.url
         }
-    
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in add_payment_method: {str(e)}")
         raise HTTPException(
