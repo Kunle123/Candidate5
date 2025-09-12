@@ -29,6 +29,7 @@ class WebhookResponse(BaseModel):
 
 @router.post("/stripe", response_model=WebhookResponse)
 async def stripe_webhook(request: Request):
+    print("🔥 WEBHOOK HANDLER CALLED")
     logger.info("stripe_webhook called")
     try:
         # Get the raw request body
@@ -293,6 +294,7 @@ async def handle_invoice_payment_failed(invoice):
     logger.info(f"[DEBUG] Exiting handle_invoice_payment_failed")
 
 async def notify_subscription_update(user_id, subscription, is_deleted=False, is_payment_failed=False):
+    print(f"🔥 NOTIFY SUBSCRIPTION UPDATE: user_id={user_id}, plan_id={subscription.metadata.get('plan_id')}")
     logger.info(f"[DEBUG] Entered notify_subscription_update with user_id={user_id}, subscription={subscription}, is_deleted={is_deleted}, is_payment_failed={is_payment_failed}")
     """Notify other services about subscription changes and update user credits"""
     try:
