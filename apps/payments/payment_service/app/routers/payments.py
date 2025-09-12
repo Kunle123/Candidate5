@@ -55,6 +55,11 @@ class AddPaymentMethodRequest(BaseModel):
     email: str
     return_url: str
 
+class TopupRequest(BaseModel):
+    user_id: str
+    email: str
+    return_url: str
+
 @router.get("/methods/{user_id}", response_model=List[PaymentMethod])
 async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme)):
     """Get all payment methods for a user"""
@@ -350,3 +355,59 @@ async def create_customer_portal(token: str = Depends(oauth2_scheme)):
     except Exception as e:
         logger.error(f"Error in create_customer_portal: {str(e)}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred") 
+
+@router.post("/topup")
+async def create_topup_checkout_session(
+    req: TopupRequest,
+    token: str = Depends(oauth2_scheme)
+):
+    """Create a Stripe Checkout Session for a one-off top-up payment"""
+    try:
+        topup_price_id = os.getenv("TOPUP_PLAN_PRICE_ID")
+        if not topup_price_id:
+            raise HTTPException(status_code=500, detail="Top-up price ID not configured")
+        # Find or create Stripe customer
+        customers = stripe.Customer.list(email=req.email, limit=1)
+        customer_id = None
+        if customers.data:
+            customer_id = customers.data[0].id
+        else:
+            customer = stripe.Customer.create(
+                email=req.email,
+                metadata={"user_id": req.user_id}
+            )
+            customer_id = customer.id
+        # Create Stripe Checkout Session for payment
+        checkout_session = stripe.checkout.Session.create(
+            customer=customer_id,
+            payment_method_types=["card"],
+            mode="payment",
+            line_items=[
+                {
+                    "price": topup_price_id,
+                    "quantity": 1,
+                },
+            ],
+            metadata={
+                "user_id": req.user_id,
+                "plan_id": topup_price_id
+            },
+            success_url=f"{req.return_url}?success=true&session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{req.return_url}?canceled=true",
+        )
+        return {
+            "session_id": checkout_session.id,
+            "checkout_url": checkout_session.url
+        }
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error in create_topup_checkout_session: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error creating top-up checkout session: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Error in create_topup_checkout_session: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
+        ) 
