@@ -87,6 +87,17 @@ async def root():
 def health():
     return {"status": "ok"}
 
+@app.get("/debug-logs")
+async def debug_logs():
+    print("🔥 ROUTE PRINT TEST (main.py)")
+    logging.info("🔥 ROUTE LOGGER TEST (main.py)")
+    import logging as pylogging
+    uvicorn_logger = pylogging.getLogger("uvicorn")
+    uvicorn_logger.info("🔥 UVICORN LOGGER TEST (main.py)")
+    granian_logger = pylogging.getLogger("granian")
+    granian_logger.info("🔥 GRANIAN LOGGER TEST (main.py)")
+    return {"message": "Check logs for debug output from print, logger, uvicorn, and granian"}
+
 # Run debug server if executed directly
 if __name__ == "__main__":
     import uvicorn
