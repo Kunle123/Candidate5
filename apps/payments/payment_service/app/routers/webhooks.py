@@ -69,7 +69,7 @@ async def stripe_webhook(request: Request):
         # Verify the webhook signature
         try:
             event = stripe.Webhook.construct_event(
-                body_str,
+                body,  # Use raw bytes for signature verification
                 sig_header,
                 STRIPE_WEBHOOK_SECRET
             )
