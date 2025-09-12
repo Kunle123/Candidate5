@@ -12,4 +12,8 @@ async def health_check():
     logging.info("HEALTH LOGGER TEST")
     return {"status": "ok"}
 
-# ... existing code ... 
+@app.get("/debug-logs")
+async def debug_logs():
+    print("🔥 ROUTE PRINT TEST")
+    logging.info("🔥 ROUTE LOGGER TEST")
+    return {"message": "Check logs for debug output"} 
