@@ -30,56 +30,71 @@ class WebhookResponse(BaseModel):
 @router.post("/stripe", response_model=WebhookResponse)
 async def stripe_webhook(request: Request):
     logger.info("stripe_webhook called")
-    """
-    Handle Stripe webhook events.
-    
-    This endpoint receives webhook events from Stripe for events like:
-    - subscription.created
-    - subscription.updated
-    - subscription.deleted
-    - invoice.payment_succeeded
-    - payment_intent.succeeded
-    """
     try:
         # Get the raw request body
         body = await request.body()
         body_str = body.decode("utf-8")
+        logger.info(f"[DEBUG] Raw body type: {type(body)}")
+        logger.info(f"[DEBUG] Raw body length: {len(body)}")
+        logger.info(f"[DEBUG] Body string length: {len(body_str)}")
         logger.info(f"[DEBUG] Raw Stripe webhook body (first 500 chars): {body_str[:500]}")
-        logger.debug(f"[DEBUG] Full Stripe webhook body: {body_str}")
-        
+
         # Get the Stripe signature from headers
         sig_header = request.headers.get("stripe-signature")
         logger.info(f"[DEBUG] Stripe-Signature header: {sig_header}")
-        logger.debug(f"[DEBUG] All headers: {dict(request.headers)}")
         
+        # DEBUG: Check webhook secret
+        logger.info(f"[DEBUG] Webhook secret configured: {bool(STRIPE_WEBHOOK_SECRET)}")
+        if STRIPE_WEBHOOK_SECRET:
+            logger.info(f"[DEBUG] Secret starts with whsec_: {STRIPE_WEBHOOK_SECRET.startswith('whsec_')}")
+            logger.info(f"[DEBUG] Secret length: {len(STRIPE_WEBHOOK_SECRET)}")
+            logger.info(f"[DEBUG] Secret preview: {STRIPE_WEBHOOK_SECRET[:15]}...")
+        else:
+            logger.error("[DEBUG] STRIPE_WEBHOOK_SECRET is None or empty!")
+
         if not sig_header:
             logger.warning("Missing Stripe signature header")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Missing Stripe signature header"
             )
-        
+
         if not STRIPE_WEBHOOK_SECRET:
             logger.warning("Stripe webhook secret not configured")
             return WebhookResponse(
                 status="error",
                 message="Stripe webhook secret not configured"
             )
-        
+
         # Verify the webhook signature
         try:
+            logger.info("[DEBUG] About to verify signature...")
             event = stripe.Webhook.construct_event(
                 body,  # Use raw bytes for signature verification
                 sig_header,
                 STRIPE_WEBHOOK_SECRET
             )
+            logger.info("✅ [DEBUG] Signature verification successful!")
+            
         except stripe.error.SignatureVerificationError as e:
-            logger.warning(f"Invalid Stripe signature: {str(e)}")
+            logger.error(f"❌ [DEBUG] Signature verification failed: {str(e)}")
+            logger.error(f"[DEBUG] Error type: {type(e)}")
+            # Log the exact error details
+            logger.error(f"[DEBUG] Using secret: {STRIPE_WEBHOOK_SECRET[:15]}...")
+            logger.error(f"[DEBUG] Using signature: {sig_header}")
+            logger.error(f"[DEBUG] Body hash (for debugging): {hash(body)}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid Stripe signature"
+                detail=f"Invalid Stripe signature: {str(e)}"
             )
-        
+        except Exception as e:
+            logger.error(f"❌ [DEBUG] Unexpected error during signature verification: {str(e)}")
+            logger.error(f"[DEBUG] Error type: {type(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Webhook processing error: {str(e)}"
+            )
+
         # Process the event
         event_type = event["type"]
         event_object = event["data"]["object"]
@@ -116,12 +131,13 @@ async def stripe_webhook(request: Request):
             message=f"Processed webhook event: {event_type}"
         )
     
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"[ERROR] Exception in stripe_webhook: {str(e)}", exc_info=True)
-        # Don't return an error status code to Stripe to avoid retries
-        return WebhookResponse(
-            status="error",
-            message=f"Error processing webhook: {str(e)}"
+        logger.error(f"Unexpected error in webhook handler: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
         )
 
 async def handle_checkout_session_completed(session):
