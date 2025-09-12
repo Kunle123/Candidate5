@@ -45,10 +45,12 @@ async def stripe_webhook(request: Request):
         body = await request.body()
         body_str = body.decode("utf-8")
         logger.info(f"[DEBUG] Raw Stripe webhook body (first 500 chars): {body_str[:500]}")
+        logger.debug(f"[DEBUG] Full Stripe webhook body: {body_str}")
         
         # Get the Stripe signature from headers
         sig_header = request.headers.get("stripe-signature")
         logger.info(f"[DEBUG] Stripe-Signature header: {sig_header}")
+        logger.debug(f"[DEBUG] All headers: {dict(request.headers)}")
         
         if not sig_header:
             logger.warning("Missing Stripe signature header")
@@ -82,6 +84,9 @@ async def stripe_webhook(request: Request):
         event_type = event["type"]
         event_object = event["data"]["object"]
         
+        logger.info(f"[DEBUG] Event type: {event_type}")
+        logger.info(f"[DEBUG] Event object: {event_object}")
+        
         logger.info(f"Received Stripe webhook event: {event_type}")
         
         # Handle specific event types
@@ -112,7 +117,7 @@ async def stripe_webhook(request: Request):
         )
     
     except Exception as e:
-        logger.error(f"Error processing Stripe webhook: {str(e)}")
+        logger.error(f"[ERROR] Exception in stripe_webhook: {str(e)}", exc_info=True)
         # Don't return an error status code to Stripe to avoid retries
         return WebhookResponse(
             status="error",
@@ -120,6 +125,7 @@ async def stripe_webhook(request: Request):
         )
 
 async def handle_checkout_session_completed(session):
+    logger.info(f"[DEBUG] Entered handle_checkout_session_completed for session: {session}")
     """Handle checkout.session.completed event"""
     logger.info(f"Processing checkout.session.completed: {session.id}")
     
@@ -160,8 +166,10 @@ async def handle_checkout_session_completed(session):
     
     except Exception as e:
         logger.error(f"Error handling checkout.session.completed: {str(e)}")
+    logger.info(f"[DEBUG] Exiting handle_checkout_session_completed")
 
 async def handle_subscription_created(subscription):
+    logger.info(f"[DEBUG] Entered handle_subscription_created for subscription: {subscription}")
     """Handle subscription.created event"""
     logger.info(f"Processing subscription.created: {subscription.id}")
     
@@ -182,8 +190,10 @@ async def handle_subscription_created(subscription):
     
     except Exception as e:
         logger.error(f"Error handling subscription.created: {str(e)}")
+    logger.info(f"[DEBUG] Exiting handle_subscription_created")
 
 async def handle_subscription_updated(subscription):
+    logger.info(f"[DEBUG] Entered handle_subscription_updated for subscription: {subscription}")
     """Handle subscription.updated event"""
     logger.info(f"Processing subscription.updated: {subscription.id}")
     
@@ -204,8 +214,10 @@ async def handle_subscription_updated(subscription):
     
     except Exception as e:
         logger.error(f"Error handling subscription.updated: {str(e)}")
+    logger.info(f"[DEBUG] Exiting handle_subscription_updated")
 
 async def handle_subscription_deleted(subscription):
+    logger.info(f"[DEBUG] Entered handle_subscription_deleted for subscription: {subscription}")
     """Handle subscription.deleted event"""
     logger.info(f"Processing subscription.deleted: {subscription.id}")
     
@@ -226,8 +238,10 @@ async def handle_subscription_deleted(subscription):
     
     except Exception as e:
         logger.error(f"Error handling subscription.deleted: {str(e)}")
+    logger.info(f"[DEBUG] Exiting handle_subscription_deleted")
 
 async def handle_invoice_payment_succeeded(invoice):
+    logger.info(f"[DEBUG] Entered handle_invoice_payment_succeeded for invoice: {invoice}")
     """Handle invoice.payment_succeeded event"""
     logger.info(f"Processing invoice.payment_succeeded: {invoice.id}")
     
@@ -252,8 +266,10 @@ async def handle_invoice_payment_succeeded(invoice):
     
     except Exception as e:
         logger.error(f"Error handling invoice.payment_succeeded: {str(e)}")
+    logger.info(f"[DEBUG] Exiting handle_invoice_payment_succeeded")
 
 async def handle_invoice_payment_failed(invoice):
+    logger.info(f"[DEBUG] Entered handle_invoice_payment_failed for invoice: {invoice}")
     """Handle invoice.payment_failed event"""
     logger.info(f"Processing invoice.payment_failed: {invoice.id}")
     
@@ -278,8 +294,10 @@ async def handle_invoice_payment_failed(invoice):
     
     except Exception as e:
         logger.error(f"Error handling invoice.payment_failed: {str(e)}")
+    logger.info(f"[DEBUG] Exiting handle_invoice_payment_failed")
 
 async def notify_subscription_update(user_id, subscription, is_deleted=False, is_payment_failed=False):
+    logger.info(f"[DEBUG] Entered notify_subscription_update with user_id={user_id}, subscription={subscription}, is_deleted={is_deleted}, is_payment_failed={is_payment_failed}")
     """Notify other services about subscription changes and update user credits"""
     try:
         plan_id = subscription.metadata.get("plan_id", "basic")
@@ -328,3 +346,4 @@ async def notify_subscription_update(user_id, subscription, is_deleted=False, is
         logger.info(f"User credits update notification sent for user {user_id} - subscription_type: {subscription_type}")
     except Exception as e:
         logger.error(f"Error in notify_subscription_update: {str(e)}") 
+    logger.info(f"[DEBUG] Exiting notify_subscription_update") 
