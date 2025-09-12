@@ -140,6 +140,11 @@ async def stripe_webhook(request: Request):
             detail="Internal server error"
         )
 
+@router.get("/test")
+async def test_webhook_routing():
+    logger.info("✅ Webhook routing test endpoint called!")
+    return {"status": "webhook routing works", "service": "payments"}
+
 async def handle_checkout_session_completed(session):
     logger.info(f"[DEBUG] Entered handle_checkout_session_completed for session: {session}")
     """Handle checkout.session.completed event"""
