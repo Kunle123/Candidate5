@@ -39,6 +39,8 @@ async def stripe_webhook(request: Request):
         logger.info(f"[DEBUG] Raw body length: {len(body)}")
         logger.info(f"[DEBUG] Body string length: {len(body_str)}")
         logger.info(f"[DEBUG] Raw Stripe webhook body (first 500 chars): {body_str[:500]}")
+        print(f"🔥 WEBHOOK DEBUG: Headers: {dict(request.headers)}")
+        print(f"🔥 WEBHOOK DEBUG: Body (first 500 chars): {body_str[:500]}")
 
         # Get the Stripe signature from headers
         sig_header = request.headers.get("stripe-signature")
@@ -53,10 +55,12 @@ async def stripe_webhook(request: Request):
 
         if not sig_header:
             logger.warning("Missing Stripe signature header")
+            print("🔥 WEBHOOK DEBUG: Missing signature header")
             return {"detail": "Missing Stripe signature header"}
 
         if not STRIPE_WEBHOOK_SECRET:
             logger.warning("Stripe webhook secret not configured")
+            print("🔥 WEBHOOK DEBUG: Missing webhook secret")
             return WebhookResponse(
                 status="error",
                 message="Stripe webhook secret not configured"
@@ -65,22 +69,26 @@ async def stripe_webhook(request: Request):
         # Verify the webhook signature
         try:
             logger.info("[DEBUG] About to verify signature...")
+            print("🔥 WEBHOOK DEBUG: About to verify signature...")
             event = stripe.Webhook.construct_event(
                 body,  # Use raw bytes for signature verification
                 sig_header,
                 STRIPE_WEBHOOK_SECRET
             )
             logger.info("✅ [DEBUG] Signature verification successful!")
+            print("🔥 WEBHOOK DEBUG: ✅ Signature verification SUCCESS!")
         except stripe.error.SignatureVerificationError as e:
             logger.error(f"❌ [DEBUG] Signature verification failed: {str(e)}")
             logger.error(f"[DEBUG] Error type: {type(e)}")
             logger.error(f"[DEBUG] Using secret: {STRIPE_WEBHOOK_SECRET[:15]}...")
             logger.error(f"[DEBUG] Using signature: {sig_header}")
             logger.error(f"[DEBUG] Body hash (for debugging): {hash(body)}")
+            print(f"🔥 WEBHOOK DEBUG: ❌ Signature verification FAILED: {str(e)}")
             return {"status": "error", "message": f"Invalid signature: {str(e)}"}
         except Exception as e:
             logger.error(f"❌ [DEBUG] Unexpected error during signature verification: {str(e)}")
             logger.error(f"[DEBUG] Error type: {type(e)}")
+            print(f"🔥 WEBHOOK DEBUG: ❌ Unexpected error: {str(e)}")
             return {"status": "error", "message": f"Webhook processing error: {str(e)}"}
 
         # Process the event
@@ -89,6 +97,8 @@ async def stripe_webhook(request: Request):
         logger.info(f"[DEBUG] Event type: {event_type}")
         logger.info(f"[DEBUG] Event object: {event_object}")
         logger.info(f"Received Stripe webhook event: {event_type}")
+        print(f"🔥 WEBHOOK DEBUG: Routing event type: {event_type}")
+        print(f"🔥 WEBHOOK DEBUG: Event object: {json.dumps(event_object, default=str)[:500]}")
 
         # Handle specific event types
         if event_type == "checkout.session.completed":
@@ -105,7 +115,9 @@ async def stripe_webhook(request: Request):
             await handle_invoice_payment_failed(event_object)
         else:
             logger.info(f"Unhandled event type: {event_type}")
+            print(f"🔥 WEBHOOK DEBUG: Unhandled event type: {event_type}")
 
+        print(f"🔥 WEBHOOK DEBUG: Handler completed for event type: {event_type}")
         return WebhookResponse(
             status="success",
             message=f"Processed webhook event: {event_type}"
@@ -114,6 +126,7 @@ async def stripe_webhook(request: Request):
         raise
     except Exception as e:
         logger.error(f"Unexpected error in webhook handler: {str(e)}")
+        print(f"🔥 WEBHOOK DEBUG: Unexpected error in handler: {str(e)}")
         return {"status": "error", "message": f"Internal server error: {str(e)}"}
 
 @router.get("/test")
@@ -296,10 +309,11 @@ async def handle_invoice_payment_failed(invoice):
 async def notify_subscription_update(user_id, subscription, is_deleted=False, is_payment_failed=False):
     print(f"🔥 NOTIFY SUBSCRIPTION UPDATE: user_id={user_id}, plan_id={subscription.metadata.get('plan_id')}")
     logger.info(f"[DEBUG] Entered notify_subscription_update with user_id={user_id}, subscription={subscription}, is_deleted={is_deleted}, is_payment_failed={is_payment_failed}")
-    """Notify other services about subscription changes and update user credits"""
     try:
         plan_id = subscription.metadata.get("plan_id", "basic")
         logger.info(f"notify_subscription_update called for user_id={user_id}, plan_id={plan_id}")
+        print(f"🔥 NOTIFY: Extracted plan_id: {plan_id}")
+        print(f"🔥 NOTIFY: Subscription metadata: {subscription.metadata}")
         # Map plan_id to subscription_type
         if plan_id in [os.getenv("MONTHLY_PLAN_PRICE_ID")]:
             subscription_type = "monthly"
@@ -307,10 +321,12 @@ async def notify_subscription_update(user_id, subscription, is_deleted=False, is
             subscription_type = "annual"
         else:
             subscription_type = "free"
+        print(f"🔥 NOTIFY: Mapped subscription_type: {subscription_type}")
         # Determine subscription status
         status = "canceled" if is_deleted else subscription.status
         if is_payment_failed and status == "active":
             status = "past_due"
+        print(f"🔥 NOTIFY: Final status: {status}")
         # Create notification payload for user service
         user_service_url = os.getenv("USER_SERVICE_URL", "https://api-gw-production.up.railway.app")
         update_credits_url = f"{user_service_url}/api/user/subscription/update"
@@ -319,29 +335,38 @@ async def notify_subscription_update(user_id, subscription, is_deleted=False, is
             "subscription_type": subscription_type
         }
         logger.info(f"Sending credit update to user service: {update_credits_url} with payload: {payload}")
+        print(f"🔥 NOTIFY: Sending credit update to: {update_credits_url} with payload: {payload}")
         # Call user service to update credits
         async with httpx.AsyncClient(timeout=10.0) as client:
             headers = {"Content-Type": "application/json"}
             try:
                 response = await client.post(update_credits_url, json=payload, headers=headers)
                 logger.info(f"User service response: {response.status_code} {response.text}")
+                print(f"🔥 NOTIFY: User service response: {response.status_code} {response.text}")
                 if response.status_code != 200:
                     logger.warning(f"Failed to update user credits: {response.status_code} {response.text}")
+                    print(f"🔥 NOTIFY: Failed to update user credits: {response.status_code} {response.text}")
             except Exception as e:
                 logger.warning(f"Error updating user credits: {str(e)}")
+                print(f"🔥 NOTIFY: Error updating user credits: {str(e)}")
         # (Optional) Still notify Auth Service if needed
         auth_service_url = f"{settings.AUTH_SERVICE_URL}/api/users/{user_id}/subscription"
+        print(f"🔥 NOTIFY: Notifying Auth Service at: {auth_service_url} with payload: {payload}")
         async with httpx.AsyncClient(timeout=10.0) as client:
             headers = {"Content-Type": "application/json"}
             try:
                 response = await client.post(auth_service_url, json=payload, headers=headers)
                 if response.status_code != 200:
                     logger.warning(f"Failed to notify Auth Service: {response.status_code} {response.text}")
+                    print(f"🔥 NOTIFY: Failed to notify Auth Service: {response.status_code} {response.text}")
             except Exception as e:
                 logger.warning(f"Error notifying Auth Service: {str(e)}")
-        
+                print(f"🔥 NOTIFY: Error notifying Auth Service: {str(e)}")
         logger.info(f"Subscription update notification sent for user {user_id} - status: {status}")
         logger.info(f"User credits update notification sent for user {user_id} - subscription_type: {subscription_type}")
+        print(f"🔥 NOTIFY: Notification sent for user {user_id} - status: {status}, subscription_type: {subscription_type}")
     except Exception as e:
-        logger.error(f"Error in notify_subscription_update: {str(e)}") 
-    logger.info(f"[DEBUG] Exiting notify_subscription_update") 
+        logger.error(f"Error in notify_subscription_update: {str(e)}")
+        print(f"🔥 NOTIFY: Error in notify_subscription_update: {str(e)}")
+    logger.info(f"[DEBUG] Exiting notify_subscription_update")
+    print(f"🔥 NOTIFY: Exiting notify_subscription_update") 
