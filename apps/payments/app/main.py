@@ -8,6 +8,8 @@ app = FastAPI()
 
 @app.get("/health")
 async def health_check():
+    print("HEALTH ENDPOINT CALLED")
+    logging.info("HEALTH LOGGER TEST")
     return {"status": "ok"}
 
 # ... existing code ... 
