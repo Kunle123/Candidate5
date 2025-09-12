@@ -164,6 +164,12 @@ async def create_checkout_session(
                 "plan_id": plan.price_id    # Use Stripe price ID for plan_id
             },
             mode="subscription",
+            subscription_data={
+                "metadata": {
+                    "user_id": request.user_id,
+                    "plan_id": plan.price_id
+                }
+            },
             success_url=f"{request.return_url}?success=true&session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{request.return_url}?canceled=true",
         )
