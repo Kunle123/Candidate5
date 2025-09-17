@@ -587,12 +587,16 @@ async def generate_cv_docx(
         if experience:
             cv.add_section_heading("Professional Experience")
             for job in experience:
+                # Prefer 'responsibilities', fallback to 'bullets', fallback to empty list
+                responsibilities = job.get("responsibilities")
+                if responsibilities is None:
+                    responsibilities = job.get("bullets", [])
                 cv.add_experience_block(
                     title=job.get("job_title", ""),
                     company=job.get("company", ""),
                     location=job.get("location", ""),
                     dates=job.get("dates", ""),
-                    description=job.get("bullets", [])
+                    description=responsibilities
                 )
         # Education
         if education:
@@ -1105,12 +1109,16 @@ async def generate_docx_from_json(
         if experience:
             cv.add_section_heading("Professional Experience")
             for job in experience:
+                # Prefer 'responsibilities', fallback to 'bullets', fallback to empty list
+                responsibilities = job.get("responsibilities")
+                if responsibilities is None:
+                    responsibilities = job.get("bullets", [])
                 cv.add_experience_block(
                     title=job.get("job_title", ""),
                     company=job.get("company", ""),
                     location=job.get("location", ""),
                     dates=job.get("dates", ""),
-                    description=job.get("bullets", [])
+                    description=responsibilities
                 )
         # Education
         if education:
