@@ -158,6 +158,24 @@ def update_work_experience(id: UUID, data: WorkExperienceUpdate, db: Session = D
     db.refresh(entry)
     return entry
 
+@router.patch("/work_experience/{id}", response_model=WorkExperienceOut)
+def patch_work_experience(id: UUID, data: WorkExperienceUpdate, db: Session = Depends(get_db)):
+    entry = db.query(WorkExperience).get(id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Not found")
+    update_data = data.dict(exclude_unset=True)
+    desc = update_data.get("description")
+    if desc is not None:
+        if isinstance(desc, str):
+            desc = [line.strip() for line in desc.splitlines() if line.strip()]
+        entry.description = desc
+        update_data.pop("description")
+    for field, value in update_data.items():
+        setattr(entry, field, value)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
 @router.delete("/work_experience/{id}")
 def delete_work_experience(id: UUID, db: Session = Depends(get_db)):
     entry = db.query(WorkExperience).get(id)
