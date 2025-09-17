@@ -1247,6 +1247,27 @@ async def create_application(
     db.add(app)
     db.commit()
     db.refresh(app)
+
+    # Also create ApplicationHistory
+    from .models import ApplicationHistory
+    salary = payload.get("salary")
+    contact_number = payload.get("contact_number")
+    contact_name = payload.get("contact_name")
+    company_name = payload.get("company_name") or None
+    job_title = role_title
+    job_description = job_description
+    entry = ApplicationHistory(
+        user_id=user_id,
+        job_title=job_title,
+        company_name=company_name,
+        job_description=job_description,
+        salary=salary,
+        contact_name=contact_name,
+        contact_number=contact_number
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
     return {
         "id": str(app.id),
         "role_title": app.role_title,
