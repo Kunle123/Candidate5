@@ -685,12 +685,30 @@ async def generate_cv_docx(
         except Exception as e:
             logger.error(f"Base64 encoding failed: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail="Failed to encode DOCX as base64")
-        return {
-            "filename": f"cv_{new_cv.id}.docx",
-            "filedata": docx_b64,
-            "cv_id": str(new_cv.id),
-            "cover_letter_id": cover_letter_id
+        # Build response dict according to conditional field requirements
+        response = {
+            "name": name,
+            "contact_info": contact_info,
+            "summary": summary,
+            "experience": experience,
+            "education": education,
+            "certifications": certifications,
+            "cover_letter": payload.get("cover_letter", ""),
+            "job_title": job_title,
+            "company_name": payload.get("company_name", "")
         }
+        if include_relevant_experience and payload.get("relevant_achievements"):
+            response["relevant_achievements"] = payload["relevant_achievements"]
+        if include_keywords and core_competencies:
+            response["core_competencies"] = core_competencies
+        # Optionally include job description fields if present
+        if payload.get("salary"):
+            response["salary"] = payload["salary"]
+        if payload.get("contact_name"):
+            response["contact_name"] = payload["contact_name"]
+        if payload.get("contact_number"):
+            response["contact_number"] = payload["contact_number"]
+        return JSONResponse(content=response)
     except Exception as e:
         logger.error(f"Error generating CV DOCX: {e}")
         logger.error(traceback.format_exc())
