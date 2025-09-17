@@ -1176,103 +1176,31 @@ async def create_application(
     request: Request = None
 ):
     """
-    Create an application (role) with CV and cover letter, store both DOCX files.
+    Create a single ApplicationHistory record for a job application.
     """
-    import base64
-    from .models import Application
-    user_id = auth["user_id"]
-    role_title = payload.get("role_title")
-    job_description = payload.get("job_description")
-    cv_text = payload.get("cv_text")
-    cover_letter_text = payload.get("cover_letter_text")
-    if not (role_title and cv_text and cover_letter_text):
-        raise HTTPException(status_code=400, detail="role_title, cv_text, and cover_letter_text are required.")
-    # --- CREDIT DEDUCTION ---
-    # Use the Authorization header from the request
-    if request is not None:
-        auth_header = request.headers.get("authorization")
-    else:
-        auth_header = None
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header for credit deduction.")
-    async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.post(
-                USER_SERVICE_URL,
-                headers={"Authorization": auth_header, "Content-Type": "application/json"},
-                json={"amount": 1}
-            )
-            if resp.status_code != 200:
-                detail = resp.json().get("detail", "Failed to deduct credits")
-                raise HTTPException(status_code=402, detail=f"Credit deduction failed: {detail}")
-        except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Error contacting user service for credit deduction: {str(e)}")
-    # --- END CREDIT DEDUCTION ---
-    # Generate CV DOCX
-    from docx import Document
-    from io import BytesIO
-    cv_doc = Document()
-    cv_doc.add_heading("Curriculum Vitae", 0)
-    for line in cv_text.splitlines():
-        if line.strip() == "":
-            cv_doc.add_paragraph()
-        else:
-            cv_doc.add_paragraph(line)
-    cv_buf = BytesIO()
-    cv_doc.save(cv_buf)
-    cv_buf.seek(0)
-    cv_docx_bytes = cv_buf.getvalue()
-    # Generate Cover Letter DOCX
-    cl_doc = Document()
-    cl_doc.add_heading("Cover Letter", 0)
-    for line in cover_letter_text.splitlines():
-        if line.strip() == "":
-            cl_doc.add_paragraph()
-        else:
-            cl_doc.add_paragraph(line)
-    cl_buf = BytesIO()
-    cl_doc.save(cl_buf)
-    cl_buf.seek(0)
-    cl_docx_bytes = cl_buf.getvalue()
-    # Store Application
-    app = Application(
-        user_id=user_id,
-        role_title=role_title,
-        job_description=job_description,
-        cv_docx_file=cv_docx_bytes,
-        cover_letter_docx_file=cl_docx_bytes,
-        cv_text=cv_text,
-        cover_letter_text=cover_letter_text
-    )
-    db.add(app)
-    db.commit()
-    db.refresh(app)
-
-    # Also create ApplicationHistory
     from .models import ApplicationHistory
-    salary = payload.get("salary")
-    contact_number = payload.get("contact_number")
+    user_id = auth["user_id"]
+    job_title = payload.get("role_title") or payload.get("job_title")
+    company_name = payload.get("company_name") or payload.get("company") or payload.get("organisation")
     contact_name = payload.get("contact_name")
-    company_name = payload.get("company_name") or None
-    job_title = role_title
-    job_description = job_description
+    contact_number = payload.get("contact_number")
+    salary = payload.get("salary")
+    applied_at = payload.get("applied_at")
+    job_description = payload.get("job_description")
     entry = ApplicationHistory(
         user_id=user_id,
         job_title=job_title,
         company_name=company_name,
-        job_description=job_description,
-        salary=salary,
         contact_name=contact_name,
-        contact_number=contact_number
+        contact_number=contact_number,
+        salary=salary,
+        applied_at=applied_at,
+        job_description=job_description
     )
     db.add(entry)
     db.commit()
     db.refresh(entry)
-    return {
-        "id": str(app.id),
-        "role_title": app.role_title,
-        "created_at": app.created_at.isoformat(),
-    }
+    return serialize_application_history(entry)
 
 @app.get("/api/applications")
 async def list_applications(auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
