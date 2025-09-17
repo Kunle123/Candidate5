@@ -564,6 +564,9 @@ async def generate_cv_docx(
         experience = payload.get("experience", [])
         education = payload.get("education", [])
         certifications = payload.get("certifications", [])
+        include_keywords = payload.get("includeKeywords", False)
+        include_relevant_experience = payload.get("includeRelevantExperience", False)
+        logger.info(f"includeKeywords: {include_keywords}, includeRelevantExperience: {include_relevant_experience}")
         # Header
         cv.add_header_section(name, job_title, contact_info)
         # Summary
