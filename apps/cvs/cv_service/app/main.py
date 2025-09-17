@@ -1113,13 +1113,14 @@ async def generate_docx_from_json(
                 responsibilities = job.get("responsibilities")
                 if responsibilities is None:
                     responsibilities = job.get("bullets", [])
-                cv.add_experience_block(
-                    title=job.get("job_title", ""),
-                    company=job.get("company", ""),
-                    location=job.get("location", ""),
-                    dates=job.get("dates", ""),
-                    description=responsibilities
-                )
+                responsibilities = limit_bullets(responsibilities, bullet_limit)
+                responsibilities = [enforce_language(b, language) for b in responsibilities]
+                experience_out.append({
+                    "job_title": job.get("job_title", "") or job.get("title", ""),
+                    "company_name": job.get("company_name", "") or job.get("company", ""),
+                    "dates": job.get("dates", "") or f"{job.get('start_date', '')} – {job.get('end_date', '')}",
+                    "responsibilities": responsibilities
+                })
         # Education
         if education:
             cv.add_section_heading("Education")
