@@ -689,29 +689,89 @@ async def generate_cv_docx(
         except Exception as e:
             logger.error(f"Base64 encoding failed: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail="Failed to encode DOCX as base64")
-        # Build response dict according to conditional field requirements
-        response = {
-            "name": name,
-            "contact_info": contact_info,
-            "summary": summary,
-            "experience": experience,
-            "education": education,
-            "certifications": certifications,
-            "cover_letter": payload.get("cover_letter", ""),
-            "job_title": job_title,
-            "company_name": payload.get("company_name", "")
-        }
+        # Example priority assignment logic (replace with real logic as needed)
+        def assign_priority(items, max_priority=4):
+            # Assign priorities: 1 for first 2, 2 for next 2, etc.
+            out = []
+            for i, item in enumerate(items):
+                prio = 1 + (i // 2)
+                out.append({"content": item, "priority": min(prio, max_priority)})
+            return out
+
+        # Wrap summary and cover_letter
+        summary_obj = {"content": summary, "priority": 1}
+        cover_letter_obj = {"content": payload.get("cover_letter", ""), "priority": 1}
+
+        # Wrap relevant_achievements
+        relevant_achievements_obj = []
         if include_relevant_experience and payload.get("relevant_achievements"):
-            response["relevant_achievements"] = payload["relevant_achievements"]
+            relevant_achievements_obj = assign_priority(payload["relevant_achievements"])
+
+        # Wrap core_competencies
+        core_competencies_obj = []
         if include_keywords and core_competencies:
-            response["core_competencies"] = core_competencies
-        # Optionally include job description fields if present
+            core_competencies_obj = assign_priority(core_competencies)
+
+        # Wrap certifications
+        certifications_obj = assign_priority(certifications)
+
+        # Wrap experience responsibilities
+        experience_out = []
+        for job in experience:
+            responsibilities = job.get("responsibilities")
+            if responsibilities is None:
+                responsibilities = job.get("bullets", [])
+            responsibilities_obj = assign_priority(responsibilities)
+            experience_out.append({
+                "job_title": job.get("job_title", "") or job.get("title", ""),
+                "company_name": job.get("company_name", "") or job.get("company", ""),
+                "dates": job.get("dates", "") or f"{job.get('start_date', '')} – {job.get('end_date', '')}",
+                "responsibilities": responsibilities_obj
+            })
+
+        # Wrap education
+        education_out = []
+        for i, edu in enumerate(education):
+            education_out.append({
+                "degree": edu.get("degree", ""),
+                "institution": edu.get("institution", ""),
+                "year": edu.get("year", ""),
+                "priority": 1 if i == 0 else 2
+            })
+
+        # Trimming guide
+        trimming_guide = {
+            "2_page_version": "Keep priority 1-2 content only",
+            "3_page_version": "Keep priority 1-3 content only",
+            "4_page_version": "Keep all content (priority 1-5)"
+        }
+
+        # Build response dict
+        response = {
+            "name": "{{CANDIDATE_NAME}}",
+            "contact_info": ["{{CONTACT_INFO}}"],
+            "summary": summary_obj,
+            "experience": experience_out,
+            "education": education_out,
+            "certifications": certifications_obj,
+            "cover_letter": cover_letter_obj,
+            "job_title": job_title,
+            "company_name": payload.get("company_name", ""),
+            "trimming_guide": trimming_guide
+        }
+        if relevant_achievements_obj:
+            response["relevant_achievements"] = relevant_achievements_obj
+        if core_competencies_obj:
+            response["core_competencies"] = core_competencies_obj
         if payload.get("salary"):
             response["salary"] = payload["salary"]
         if payload.get("contact_name"):
             response["contact_name"] = payload["contact_name"]
         if payload.get("contact_number"):
             response["contact_number"] = payload["contact_number"]
+        response.pop("thread_id", None)
+        response.pop("skills", None)
+        response.pop("achievements", None)
         return JSONResponse(content=response)
     except Exception as e:
         logger.error(f"Error generating CV DOCX: {e}")
