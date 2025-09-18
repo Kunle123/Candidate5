@@ -757,10 +757,9 @@ async def generate_cv_docx(
             "cover_letter": cover_letter_obj,
             "job_title": job_title,
             "company_name": payload.get("company_name", ""),
-            "trimming_guide": trimming_guide
+            "trimming_guide": trimming_guide,
+            "relevant_achievements": relevant_achievements_obj  # Always include, even if empty
         }
-        if relevant_achievements_obj:
-            response["relevant_achievements"] = relevant_achievements_obj
         if core_competencies_obj:
             response["core_competencies"] = core_competencies_obj
         if payload.get("salary"):
