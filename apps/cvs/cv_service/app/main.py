@@ -1098,6 +1098,17 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
         }
     )
 
+# Add helper functions at the top of the file (after imports)
+def extract_content(item):
+    if isinstance(item, dict) and "content" in item:
+        return item["content"]
+    return item
+
+def extract_list_content(items):
+    if not isinstance(items, list):
+        return []
+    return [extract_content(i) for i in items]
+
 @app.post("/api/cv/generate-docx")
 async def generate_docx_from_json(
     payload: dict = Body(...),
@@ -1137,23 +1148,18 @@ async def generate_docx_from_json(
         if not isinstance(payload["contact_info"], list) or not all(isinstance(x, str) for x in payload["contact_info"]):
             logger.warning("[DOCX GEN] contact_info must be an array of strings after PII injection.")
             raise HTTPException(status_code=400, detail="'contact_info' must be an array of strings after PII injection")
-    # --- Existing logic ---
     try:
         cv = ProfessionalCVFormatter()
         name = payload.get("name", "")
         job_title = payload.get("job_title", "")
         contact_info = payload.get("contact_info", [])
-        summary = payload.get("summary", "")
-        summary = extract_content(summary)
-        cover_letter = payload.get("cover_letter", "")
-        cover_letter = extract_content(cover_letter)
-        core_competencies = payload.get("core_competencies", [])
-        core_competencies = extract_list_content(core_competencies)
-        relevant_achievements = payload.get("relevant_achievements", [])
-        relevant_achievements = extract_list_content(relevant_achievements)
+        summary = extract_content(payload.get("summary", ""))
+        cover_letter = extract_content(payload.get("cover_letter", ""))
+        core_competencies = extract_list_content(payload.get("core_competencies", []))
+        relevant_achievements = extract_list_content(payload.get("relevant_achievements", []))
         experience = payload.get("experience", [])
         education = payload.get("education", [])
-        certifications = payload.get("certifications", [])
+        certifications = extract_list_content(payload.get("certifications", []))
         # Header
         cv.add_header_section(name, job_title, contact_info)
         # Summary
@@ -1165,7 +1171,6 @@ async def generate_docx_from_json(
         # Core Competencies
         if core_competencies:
             cv.add_section_heading("Core Competencies")
-            # Render all keywords on a single line, each with a bullet
             para = cv.doc.add_paragraph()
             para.add_run(" ".join([f"• {kw}" for kw in core_competencies]))
             cv.set_font_style(para, cv.font_sizes['body'], color=cv.colors['text'])
@@ -1174,19 +1179,17 @@ async def generate_docx_from_json(
         if experience:
             cv.add_section_heading("Professional Experience")
             for job in experience:
-                # Prefer 'responsibilities', fallback to 'bullets', fallback to empty list
                 responsibilities = job.get("responsibilities")
                 if responsibilities is None:
                     responsibilities = job.get("bullets", [])
                 responsibilities = extract_list_content(responsibilities)
-                responsibilities = limit_bullets(responsibilities, bullet_limit)
-                responsibilities = [enforce_language(b, language) for b in responsibilities]
-                experience_out.append({
-                    "job_title": job.get("job_title", "") or job.get("title", ""),
-                    "company_name": job.get("company_name", "") or job.get("company", ""),
-                    "dates": job.get("dates", "") or f"{job.get('start_date', '')} – {job.get('end_date', '')}",
-                    "responsibilities": responsibilities
-                })
+                cv.add_experience_block(
+                    title=job.get("job_title", "") or job.get("title", ""),
+                    company=job.get("company_name", "") or job.get("company", ""),
+                    location=job.get("location", ""),
+                    dates=job.get("dates", "") or f"{job.get('start_date', '')} – {job.get('end_date', '')}",
+                    description=responsibilities
+                )
         # Education
         if education:
             cv.add_section_heading("Education")
@@ -1206,11 +1209,10 @@ async def generate_docx_from_json(
         docx_b64 = base64.b64encode(docx_bytes).decode('utf-8')
         # Optionally handle cover letter
         cover_letter_b64 = None
-        if payload.get("cover_letter"):
-            cover_letter_text = payload["cover_letter"]
+        if cover_letter:
             cover_doc = Document()
             cover_doc.add_heading("Cover Letter", 0)
-            for line in cover_letter_text.splitlines():
+            for line in cover_letter.splitlines():
                 if line.strip() == "":
                     cover_doc.add_paragraph()
                 else:
@@ -1225,10 +1227,16 @@ async def generate_docx_from_json(
             cover_buf.seek(0)
             cover_docx_bytes = cover_buf.getvalue()
             cover_letter_b64 = base64.b64encode(cover_docx_bytes).decode('utf-8')
-        return {
+        # Build response
+        response = {
             "cv": docx_b64,
             "cover_letter": cover_letter_b64
         }
+        # Optional fields
+        for opt in ["salary", "contact_name", "contact_number", "company_name", "job_title"]:
+            if payload.get(opt):
+                response[opt] = payload[opt]
+        return response
     except Exception as e:
         logger.error(f"Error generating DOCX from JSON: {e}")
         import traceback
