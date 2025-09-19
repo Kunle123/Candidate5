@@ -1144,7 +1144,13 @@ async def generate_docx_from_json(
         job_title = payload.get("job_title", "")
         contact_info = payload.get("contact_info", [])
         summary = payload.get("summary", "")
+        summary = extract_content(summary)
+        cover_letter = payload.get("cover_letter", "")
+        cover_letter = extract_content(cover_letter)
         core_competencies = payload.get("core_competencies", [])
+        core_competencies = extract_list_content(core_competencies)
+        relevant_achievements = payload.get("relevant_achievements", [])
+        relevant_achievements = extract_list_content(relevant_achievements)
         experience = payload.get("experience", [])
         education = payload.get("education", [])
         certifications = payload.get("certifications", [])
@@ -1172,6 +1178,7 @@ async def generate_docx_from_json(
                 responsibilities = job.get("responsibilities")
                 if responsibilities is None:
                     responsibilities = job.get("bullets", [])
+                responsibilities = extract_list_content(responsibilities)
                 responsibilities = limit_bullets(responsibilities, bullet_limit)
                 responsibilities = [enforce_language(b, language) for b in responsibilities]
                 experience_out.append({
