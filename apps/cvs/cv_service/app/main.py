@@ -27,6 +27,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import OxmlElement
 import httpx
 from sqlalchemy.exc import NoResultFound
+import traceback
 
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
@@ -558,6 +559,8 @@ async def persist_cv(
         job_title = payload.get("job_title", "")
         contact_info = payload.get("contact_info", [])
         summary = payload.get("summary", "")
+        if isinstance(summary, dict):
+            summary = summary.get("content", "")
         core_competencies = payload.get("core_competencies", [])
         experience = payload.get("experience", [])
         education = payload.get("education", [])
