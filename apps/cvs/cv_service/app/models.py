@@ -61,6 +61,13 @@ class CV(Base):
     docx_file = Column(LargeBinary, nullable=True)
     # Add direct link to cover letter
     cover_letter_id = Column(UUID(as_uuid=True), ForeignKey("cvs.id", ondelete="SET NULL"), nullable=True)
+    # New fields for modern CV structure
+    if is_sqlite:
+        relevant_achievements = Column(Text, nullable=True)  # Store as JSON string in SQLite
+        core_competencies = Column(Text, nullable=True)      # Store as JSON string in SQLite
+    else:
+        relevant_achievements = Column(JSONB, nullable=True)  # Store as array/object in PostgreSQL
+        core_competencies = Column(JSONB, nullable=True)      # Store as array/object in PostgreSQL
     # Relationship for ORM (PostgreSQL only)
     if not is_sqlite:
         cover_letter = relationship("CV", remote_side=[id], uselist=False, post_update=True)

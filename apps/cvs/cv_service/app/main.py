@@ -509,14 +509,12 @@ def is_placeholder(val, placeholder):
 
 @app.post("/api/cv")
 @app.post("/api/cv/")
-async def generate_cv_docx(
+async def persist_cv(
     payload: dict = Body(...),
     auth: dict = Depends(verify_token),
     request: Request = None,
     db: Session = Depends(get_db_session)
 ):
-    import base64
-    import traceback
     # --- Logging ---
     logger.info(f"[CV PERSIST] Received payload: {json.dumps(payload)[:1000]}" if payload else "[CV PERSIST] Received empty payload!")
     logger.info(f"[CV PERSIST] User: {auth}")
