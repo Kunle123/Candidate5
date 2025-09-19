@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import FileResponse, JSONResponse
+from copy import deepcopy
 
 # Create FastAPI app
 app = FastAPI(title="CandidateV CV Service")
@@ -364,52 +365,39 @@ async def get_cvs(
 
     return cvs
 
-@app.post("/api/cv", response_model=CV, status_code=status.HTTP_201_CREATED)
-async def create_cv(cv_data: CVCreate, auth: dict = Depends(verify_token)):
-    """Create a new CV with user options."""
+FORBIDDEN_FIELDS = {"thread_id", "skills", "achievements"}
+PII_PLACEHOLDERS = {
+    "name": "{{CANDIDATE_NAME}}",
+    "contact_info": ["{{CONTACT_INFO}}"]
+}
+
+@app.post("/api/cv", status_code=status.HTTP_201_CREATED)
+async def create_cv(payload: dict = Body(...), auth: dict = Depends(verify_token)):
+    """Create a new CV with the new JSON format ({content, priority} objects, etc)."""
     user_id = auth["user_id"]
-    # Check if template exists
-    if cv_data.template_id not in MOCK_TEMPLATES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Template not found"
-        )
-    # If copying from existing CV
-    if cv_data.base_cv_id:
-        if user_id not in MOCK_CVS or cv_data.base_cv_id not in MOCK_CVS[user_id]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Base CV not found"
-            )
-        base_cv = MOCK_CVS[user_id][cv_data.base_cv_id]
-        cv = create_empty_cv(user_id, cv_data.name, cv_data.description, cv_data.template_id)
-        cv.content = base_cv.content.copy()
-        cv.content.template_id = cv_data.template_id
-        cv.metadata.name = cv_data.name
-        cv.metadata.description = cv_data.description
-        cv.metadata.is_default = cv_data.is_default
-        # Store user options in metadata
-        cv.metadata.num_pages = cv_data.num_pages
-        cv.metadata.include_keywords = cv_data.include_keywords
-        cv.metadata.include_relevant_experience = cv_data.include_relevant_experience
-        if cv_data.is_default:
-            for other_cv_id, other_cv in MOCK_CVS[user_id].items():
-                if other_cv_id != cv.id:
-                    other_cv.metadata.is_default = False
-        MOCK_CVS[user_id][cv.id] = cv
-        return cv
-    # Create new empty CV
-    cv = create_empty_cv(user_id, cv_data.name, cv_data.description, cv_data.template_id)
-    # Store user options in metadata
-    cv.metadata.num_pages = cv_data.num_pages
-    cv.metadata.include_keywords = cv_data.include_keywords
-    cv.metadata.include_relevant_experience = cv_data.include_relevant_experience
-    if cv_data.is_default:
-        for other_cv_id, other_cv in MOCK_CVS.get(user_id, {}).items():
-            if other_cv_id != cv.id:
-                other_cv.metadata.is_default = False
-        cv.metadata.is_default = True
-    return cv
+    # Remove forbidden fields
+    cv_data = deepcopy(payload)
+    for field in FORBIDDEN_FIELDS:
+        cv_data.pop(field, None)
+    # Ensure PII placeholders
+    for k, v in PII_PLACEHOLDERS.items():
+        if k not in cv_data or not cv_data[k]:
+            cv_data[k] = v
+    # Generate a new CV ID and timestamps
+    cv_id = str(uuid.uuid4())
+    now = datetime.utcnow()
+    # Store in mock DB
+    if user_id not in MOCK_CVS:
+        MOCK_CVS[user_id] = {}
+    cv_record = {
+        "id": cv_id,
+        "user_id": user_id,
+        "cv_json": cv_data,
+        "created_at": now,
+        "updated_at": now
+    }
+    MOCK_CVS[user_id][cv_id] = cv_record
+    return cv_record
 
 @app.get("/api/cv/{cv_id}", response_model=CV)
 async def get_cv(cv_id: str, auth: dict = Depends(verify_token)):
