@@ -558,13 +558,11 @@ async def persist_cv(
         name = payload.get("name", "")
         job_title = payload.get("job_title", "")
         contact_info = payload.get("contact_info", [])
-        summary = payload.get("summary", "")
-        if isinstance(summary, dict):
-            summary = summary.get("content", "")
-        core_competencies = payload.get("core_competencies", [])
+        summary = extract_content(payload.get("summary", ""))
+        core_competencies = extract_list_content(payload.get("core_competencies", []))
         experience = payload.get("experience", [])
         education = payload.get("education", [])
-        certifications = payload.get("certifications", [])
+        certifications = extract_list_content(payload.get("certifications", []))
         include_keywords = payload.get("includeKeywords", False)
         include_relevant_experience = payload.get("includeRelevantExperience", False)
         logger.info(f"includeKeywords: {include_keywords}, includeRelevantExperience: {include_relevant_experience}")
@@ -579,7 +577,6 @@ async def persist_cv(
         # Core Competencies
         if core_competencies:
             cv.add_section_heading("Core Competencies")
-            # Render all keywords on a single line, each with a bullet
             para = cv.doc.add_paragraph()
             para.add_run(" ".join([f"• {kw}" for kw in core_competencies]))
             cv.set_font_style(para, cv.font_sizes['body'], color=cv.colors['text'])
@@ -588,15 +585,15 @@ async def persist_cv(
         if experience:
             cv.add_section_heading("Professional Experience")
             for job in experience:
-                # Prefer 'responsibilities', fallback to 'bullets', fallback to empty list
                 responsibilities = job.get("responsibilities")
                 if responsibilities is None:
                     responsibilities = job.get("bullets", [])
+                responsibilities = extract_list_content(responsibilities)
                 cv.add_experience_block(
-                    title=job.get("job_title", ""),
-                    company=job.get("company", ""),
+                    title=job.get("job_title", "") or job.get("title", ""),
+                    company=job.get("company_name", "") or job.get("company", ""),
                     location=job.get("location", ""),
-                    dates=job.get("dates", ""),
+                    dates=job.get("dates", "") or f"{job.get('start_date', '')} – {job.get('end_date', '')}",
                     description=responsibilities
                 )
         # Education
@@ -623,8 +620,7 @@ async def persist_cv(
             personal_info["company"] = company_name
         cover_letter_id = None
         if payload.get("cover_letter"):
-            # ... existing cover letter logic ...
-            cover_letter_text = payload["cover_letter"]
+            cover_letter_text = extract_content(payload.get("cover_letter", ""))
             cover_doc = Document()
             cover_doc.add_heading("Cover Letter", 0)
             for line in cover_letter_text.splitlines():
