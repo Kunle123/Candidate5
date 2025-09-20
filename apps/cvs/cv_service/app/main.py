@@ -371,6 +371,13 @@ def serialize_application_history(entry):
         "created_at": entry.created_at.isoformat() if entry.created_at else None,
     }
 
+def generate_filename(name, filetype, company):
+    initials = "".join([part[0] for part in name.split() if part]).upper() or "CV"
+    company_clean = re.sub(r'[^A-Za-z0-9]', '', company or 'Company')
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+    suffix = "CV" if filetype == "cv" else "CLetter"
+    return f"{initials}_{suffix}_{company_clean}_{timestamp}.docx"
+
 # Routes
 @app.get("/")
 async def root():
