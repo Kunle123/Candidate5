@@ -28,6 +28,7 @@ from docx.oxml import OxmlElement
 import httpx
 from sqlalchemy.exc import NoResultFound
 import traceback
+import re
 
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
@@ -1086,17 +1087,28 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
     """
     Return the persisted DOCX as a base64-encoded string in JSON (proxy-friendly).
     """
-    import base64
     from .models import CV
     user_id = auth["user_id"]
     cv = db.query(CV).filter(CV.id == cv_id, CV.user_id == user_id).first()
     if not cv or not cv.docx_file:
         raise HTTPException(status_code=404, detail="CV or DOCX file not found")
+    # Generate filename
+    name = cv.name or "CV"
+    filetype = cv.type or "cv"
+    # Try to get company from personal_info
+    company = None
+    try:
+        if cv.personal_info:
+            info = json.loads(cv.personal_info) if isinstance(cv.personal_info, str) else cv.personal_info
+            company = info.get("company") or info.get("company_name")
+    except Exception:
+        pass
+    filename = generate_filename(name, filetype, company)
     return StreamingResponse(
         io.BytesIO(cv.docx_file),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={
-            "Content-Disposition": f'attachment; filename="cv_{cv_id}.docx"'
+            "Content-Disposition": f'attachment; filename="{filename}"'
         }
     )
 
@@ -1304,11 +1316,15 @@ async def download_application_cv(id: str = Path(...), auth: dict = Depends(veri
     app = db.query(Application).filter(Application.id == id, Application.user_id == user_id).first()
     if not app or not app.cv_docx_file:
         raise HTTPException(status_code=404, detail="Application CV or DOCX file not found")
+    # Generate filename (fallbacks if info missing)
+    name = getattr(app, "candidate_name", "CV")
+    company = getattr(app, "company_name", None)
+    filename = generate_filename(name, "cv", company)
     return StreamingResponse(
         io.BytesIO(app.cv_docx_file),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={
-            "Content-Disposition": f'attachment; filename="application_cv_{id}.docx"'
+            "Content-Disposition": f'attachment; filename="{filename}"'
         }
     )
 
