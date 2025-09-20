@@ -574,6 +574,11 @@ async def persist_cv(
             para = cv.doc.add_paragraph(summary)
             cv.set_font_style(para, cv.font_sizes['body'], color=cv.colors['text'])
             para.paragraph_format.space_after = Pt(12)
+        # Relevant Achievements
+        relevant_achievements = extract_list_content(payload.get("relevant_achievements", []))
+        if relevant_achievements:
+            cv.add_section_heading("Relevant Achievements")
+            cv.add_bullet_points(relevant_achievements)
         # Core Competencies
         if core_competencies:
             cv.add_section_heading("Core Competencies")
@@ -1165,6 +1170,11 @@ async def generate_docx_from_json(
             para = cv.doc.add_paragraph(summary)
             cv.set_font_style(para, cv.font_sizes['body'], color=cv.colors['text'])
             para.paragraph_format.space_after = Pt(12)
+        # Relevant Achievements
+        relevant_achievements = extract_list_content(payload.get("relevant_achievements", []))
+        if relevant_achievements:
+            cv.add_section_heading("Relevant Achievements")
+            cv.add_bullet_points(relevant_achievements)
         # Core Competencies
         if core_competencies:
             cv.add_section_heading("Core Competencies")
