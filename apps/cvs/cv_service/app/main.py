@@ -1115,19 +1115,23 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
         filetype = cv.type or "cv"
         company = None
         user_name = None
-        try:
-            if cv.personal_info:
-                info = json.loads(cv.personal_info) if isinstance(cv.personal_info, str) else cv.personal_info
-                user_name = info.get("name")
-                company = info.get("company") or info.get("company_name")
-        except Exception as e:
-            logger.warning(f"Error parsing personal_info for cv_id={cv_id}: {e}")
+        logger.info(f"Filename generation: cv.name={cv.name}, personal_info={cv.personal_info}")
         # Prefer top-level cv.name if present and not generic
         if cv.name and cv.name.lower() not in ["cv", "generated cv", "candidate"]:
             user_name = cv.name
+        else:
+            # Fallback to personal_info['name'] if present
+            try:
+                if cv.personal_info:
+                    info = json.loads(cv.personal_info) if isinstance(cv.personal_info, str) else cv.personal_info
+                    user_name = info.get("name")
+                    company = info.get("company") or info.get("company_name")
+            except Exception as e:
+                logger.warning(f"Error parsing personal_info for cv_id={cv_id}: {e}")
         if not user_name:
             user_name = "CV"
         filename = generate_filename(user_name, filetype, company)
+        logger.info(f"Generated filename: {filename}")
         return StreamingResponse(
             io.BytesIO(cv.docx_file),
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
