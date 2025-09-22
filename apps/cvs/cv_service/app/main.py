@@ -33,7 +33,7 @@ import re
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
 from . import models
-from apps.user_service.app.models import UserProfile  # Import the user model
+from .models import UserProfile  # Use the local duplicate model
 
 # Configure logging
 logging.basicConfig(
@@ -677,7 +677,7 @@ async def persist_cv(
             if company_name:
                 cover_personal_info["company"] = company_name
             from .models import CV
-            cover_letter_obj = CV(
+            cover_letter_obj = models.CV(
                 id=uuid.uuid4(),
                 user_id=auth["user_id"],
                 name="Generated Cover Letter",
@@ -698,7 +698,7 @@ async def persist_cv(
             logger.info(f"[DEBUG] Cover letter persisted with id: {cover_letter_id}")
         from .models import CV
         logger.info("[DEBUG] Persisting CV to DB")
-        new_cv = CV(
+        new_cv = models.CV(
             id=uuid.uuid4(),
             user_id=auth["user_id"],
             name=payload.get("name", "CV"),  # <-- Save the real candidate name
@@ -850,7 +850,7 @@ async def generate_cover_letter_docx(
             personal_info["company"] = company_name
         # Persist to DB (as a separate CV record for now)
         from .models import CV
-        new_cv = CV(
+        new_cv = models.CV(
             id=uuid.uuid4(),
             user_id=auth["user_id"],
             name="Generated Cover Letter",
@@ -1298,16 +1298,7 @@ async def create_application(
     salary = payload.get("salary")
     applied_at = payload.get("applied_at")
     job_description = payload.get("job_description")
-    entry = ApplicationHistory(
-        user_id=user_id,
-        job_title=job_title,
-        company_name=company_name,
-        contact_name=contact_name,
-        contact_number=contact_number,
-        salary=salary,
-        applied_at=applied_at,
-        job_description=job_description
-    )
+    entry = models.ApplicationHistory(user_id=user_id, **payload.dict())
     db.add(entry)
     db.commit()
     db.refresh(entry)
