@@ -689,7 +689,7 @@ async def persist_cv(
         new_cv = CV(
             id=uuid.uuid4(),
             user_id=auth["user_id"],
-            name="Generated CV",
+            name=payload.get("name", "CV"),  # <-- Save the real candidate name
             description="CV generated via API",
             is_default=False,
             version=1,
