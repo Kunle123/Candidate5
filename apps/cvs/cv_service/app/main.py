@@ -1124,6 +1124,18 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
     # Fetch user details from users table
     user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
     user_name = user.name if user and user.name else "CV"
+    contact_info = []
+    if user:
+        contact_info = [
+            user.address_line1,
+            user.city_state_postal,
+            user.email,
+            user.phone_number,
+            user.linkedin
+        ]
+        contact_info = [x for x in contact_info if x]
+    # Log contact_info
+    logger.info(f"[DOWNLOAD] contact_info for user_id={user_id}: {contact_info}")
     company = None
     try:
         if cv.personal_info:
@@ -1132,11 +1144,12 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
     except Exception as e:
         logger.warning(f"Error parsing personal_info for cv_id={cv_id}: {e}")
     filename = generate_filename(user_name, cv.type or "cv", company)
+    logger.info(f"[DOWNLOAD] Generated filename for cv_id={cv_id}: {filename}")
     return StreamingResponse(
         io.BytesIO(cv.docx_file),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={
-            "Content-Disposition": f'attachment; filename=\"{filename}\"'
+            "Content-Disposition": f'attachment; filename="{filename}"'
         }
     )
 
