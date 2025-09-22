@@ -1112,17 +1112,19 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
             logger.error(f"CV or DOCX file not found for cv_id={cv_id}, user_id={user_id}")
             raise HTTPException(status_code=404, detail="CV or DOCX file not found")
         # Generate filename
-        name = cv.name or "CV"
         filetype = cv.type or "cv"
-        # Try to get company from personal_info
         company = None
+        user_name = None
         try:
             if cv.personal_info:
                 info = json.loads(cv.personal_info) if isinstance(cv.personal_info, str) else cv.personal_info
                 company = info.get("company") or info.get("company_name")
+                user_name = info.get("name")
         except Exception as e:
             logger.warning(f"Error parsing personal_info for cv_id={cv_id}: {e}")
-        filename = generate_filename(name, filetype, company)
+        if not user_name:
+            user_name = cv.name or "CV"
+        filename = generate_filename(user_name, filetype, company)
         return StreamingResponse(
             io.BytesIO(cv.docx_file),
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
