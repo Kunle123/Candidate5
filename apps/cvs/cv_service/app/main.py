@@ -1122,7 +1122,11 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
     if not cv or not cv.docx_file:
         raise HTTPException(status_code=404, detail="CV or DOCX file not found")
     # Fetch user details from users table
-    user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except Exception:
+        user_uuid = user_id  # fallback for non-UUID ids
+    user = db.query(UserProfile).filter(UserProfile.id == user_uuid).first()
     logger.info(f"[DOWNLOAD] Raw user object for user_id={user_id}: {user.__dict__ if user else None}")
     user_name = user.name if user and user.name else "CV"
     contact_info = []
