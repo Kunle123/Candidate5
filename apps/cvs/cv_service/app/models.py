@@ -271,3 +271,14 @@ class ApplicationHistory(Base):
     contact_number = Column(String(64), nullable=True)
     organisation = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now()) 
+
+class UserProfile(Base):
+    __tablename__ = 'users'
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    name = Column(String)
+    address_line1 = Column(String)
+    city_state_postal = Column(String)
+    email = Column(String)
+    phone_number = Column(String)
+    linkedin = Column(String)
+    # Add other fields as needed for header info 
