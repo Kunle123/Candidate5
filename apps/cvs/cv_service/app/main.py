@@ -520,7 +520,9 @@ async def inject_pii_placeholders(payload, auth_header):
         payload["contact_info"] = [
             address,
             city,
-            f"{email} | {phone} | {linkedin}"
+            email,
+            phone,
+            linkedin
         ]
     return payload
 
