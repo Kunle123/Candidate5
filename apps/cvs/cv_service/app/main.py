@@ -33,6 +33,7 @@ import re
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
 from . import models
+from apps.user_service.app.models import UserProfile  # Import the user model
 
 # Configure logging
 logging.basicConfig(
@@ -569,13 +570,24 @@ async def persist_cv(
             logger.warning("[CV PERSIST] contact_info must be an array of strings after PII injection.")
             raise HTTPException(status_code=400, detail="'contact_info' must be an array of strings after PII injection")
     # --- Existing logic ---
+    # Fetch user details for canonical contact info
+    user = db.query(UserProfile).filter(UserProfile.id == auth["user_id"]).first()
+    contact_info = []
+    if user:
+        contact_info = [
+            user.address_line1,
+            user.city_state_postal,
+            user.email,
+            user.phone_number,
+            user.linkedin
+        ]
+        contact_info = [x for x in contact_info if x]
     try:
         logger.info(f"[DEBUG] Starting CV DOCX generation (hierarchical JSON)")
         cv = ProfessionalCVFormatter()
         # --- Use explicit structured fields ---
-        name = payload.get("name", "")
+        name = user.name if user and user.name else payload.get("name", "")
         job_title = payload.get("job_title", "")
-        contact_info = payload.get("contact_info", [])
         summary = extract_content(payload.get("summary", ""))
         core_competencies = extract_list_content(payload.get("core_competencies", []))
         experience = payload.get("experience", [])
@@ -1106,44 +1118,27 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
     """
     from .models import CV
     user_id = auth["user_id"]
+    cv = db.query(CV).filter(CV.id == cv_id, CV.user_id == user_id).first()
+    if not cv or not cv.docx_file:
+        raise HTTPException(status_code=404, detail="CV or DOCX file not found")
+    # Fetch user details from users table
+    user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
+    user_name = user.name if user and user.name else "CV"
+    company = None
     try:
-        cv = db.query(CV).filter(CV.id == cv_id, CV.user_id == user_id).first()
-        if not cv or not cv.docx_file:
-            logger.error(f"CV or DOCX file not found for cv_id={cv_id}, user_id={user_id}")
-            raise HTTPException(status_code=404, detail="CV or DOCX file not found")
-        # Generate filename
-        filetype = cv.type or "cv"
-        company = None
-        user_name = None
-        logger.info(f"Filename generation: cv.name={cv.name}, personal_info={cv.personal_info}")
-        # Prefer top-level cv.name if present and not generic
-        if cv.name and cv.name.lower() not in ["cv", "generated cv", "candidate"]:
-            user_name = cv.name
-        else:
-            # Fallback to personal_info['name'] if present
-            try:
-                if cv.personal_info:
-                    info = json.loads(cv.personal_info) if isinstance(cv.personal_info, str) else cv.personal_info
-                    user_name = info.get("name")
-                    company = info.get("company") or info.get("company_name")
-            except Exception as e:
-                logger.warning(f"Error parsing personal_info for cv_id={cv_id}: {e}")
-        if not user_name:
-            user_name = "CV"
-        filename = generate_filename(user_name, filetype, company)
-        logger.info(f"Generated filename: {filename}")
-        return StreamingResponse(
-            io.BytesIO(cv.docx_file),
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}"'
-            }
-        )
+        if cv.personal_info:
+            info = json.loads(cv.personal_info) if isinstance(cv.personal_info, str) else cv.personal_info
+            company = info.get("company") or info.get("company_name")
     except Exception as e:
-        logger.error(f"Error in /api/cv/{{cv_id}}/download: {e}", exc_info=True)
-        import traceback
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail="Failed to download CV DOCX")
+        logger.warning(f"Error parsing personal_info for cv_id={cv_id}: {e}")
+    filename = generate_filename(user_name, cv.type or "cv", company)
+    return StreamingResponse(
+        io.BytesIO(cv.docx_file),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename=\"{filename}\"'
+        }
+    )
 
 @app.post("/api/cv/generate-docx")
 async def generate_docx_from_json(
