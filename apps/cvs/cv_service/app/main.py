@@ -340,6 +340,16 @@ def serialize_cv(cv, include_relationships=True, db=None):
     result["cover_letter_download_url"] = cover_letter_download_url
     return result
 
+def extract_content(item):
+    if isinstance(item, dict) and "content" in item:
+        return item["content"]
+    return item
+
+def extract_list_content(items):
+    if not isinstance(items, list):
+        return []
+    return [extract_content(i) for i in items]
+
 class ApplicationHistoryIn(BaseModel):
     job_title: str
     company_name: str
