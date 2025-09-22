@@ -1,0 +1,49 @@
+{
+  "name": "{{CANDIDATE_NAME}}",
+  "contact_info": ["{{CONTACT_INFO}}"],
+  "summary": {"content": "Experienced software engineer with a strong background in backend development and cloud infrastructure.", "priority": 1},
+  "experience": [
+    {
+      "job_title": "Backend Developer",
+      "company_name": "Tech Solutions Ltd.",
+      "dates": "Jan 2020 – Present",
+      "responsibilities": [
+        {"content": "Developed RESTful APIs using FastAPI and Python.", "priority": 1},
+        {"content": "Implemented CI/CD pipelines with GitHub Actions.", "priority": 2},
+        {"content": "Optimized PostgreSQL queries for performance.", "priority": 3}
+      ]
+    },
+    {
+      "job_title": "Software Engineer",
+      "company_name": "Innovatech",
+      "dates": "Jun 2017 – Dec 2019",
+      "responsibilities": [
+        {"content": "Built scalable microservices in Node.js.", "priority": 1},
+        {"content": "Maintained AWS cloud infrastructure.", "priority": 2}
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "BSc Computer Science",
+      "institution": "University of Example",
+      "year": "2017"
+    }
+  ],
+  "certifications": [
+    {"content": "AWS Certified Solutions Architect", "priority": 1}
+  ],
+  "cover_letter": {"content": "Dear Hiring Manager, I am excited to apply for this position and bring my expertise in backend systems and cloud technologies to your team.", "priority": 1},
+  "job_title": "Backend Developer",
+  "company_name": "Tech Solutions Ltd.",
+  "core_competencies": [
+    {"content": "Python", "priority": 1},
+    {"content": "FastAPI", "priority": 1},
+    {"content": "PostgreSQL", "priority": 2},
+    {"content": "AWS", "priority": 2}
+  ],
+  "relevant_achievements": [
+    {"content": "Reduced API response times by 40% through query optimization.", "priority": 1},
+    {"content": "Led migration to cloud infrastructure, improving scalability.", "priority": 2}
+  ]
+}
