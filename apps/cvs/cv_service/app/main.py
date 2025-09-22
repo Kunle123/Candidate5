@@ -1112,7 +1112,7 @@ async def download_cv(cv_id: str, auth: dict = Depends(verify_token), db: Sessio
     )
 
 @app.get("/api/cv/{cv_id}/download")
-async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session)):
+async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token), db: Session = Depends(get_db_session), request: Request = None):
     """
     Return the persisted DOCX as a base64-encoded string in JSON (proxy-friendly).
     """
@@ -1121,26 +1121,33 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
     cv = db.query(CV).filter(CV.id == cv_id, CV.user_id == user_id).first()
     if not cv or not cv.docx_file:
         raise HTTPException(status_code=404, detail="CV or DOCX file not found")
-    # Fetch user details from users table
-    try:
-        user_uuid = uuid.UUID(user_id)
-    except Exception:
-        user_uuid = user_id  # fallback for non-UUID ids
-    user = db.query(UserProfile).filter(UserProfile.id == user_uuid).first()
-    logger.info(f"[DOWNLOAD] Raw user object for user_id={user_id}: {user.__dict__ if user else None}")
-    user_name = user.name if user and user.name else "CV"
+    # Fetch user details from user service API
+    import httpx
+    USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8000/api/user/profile")
+    auth_header = request.headers.get("authorization") if request else None
+    user_profile = None
+    if auth_header:
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(USER_SERVICE_URL, headers={"Authorization": auth_header})
+                if resp.status_code == 200:
+                    user_profile = resp.json()
+                else:
+                    logger.warning(f"[DOWNLOAD] Failed to fetch user profile from user service: {resp.status_code} {resp.text}")
+        except Exception as e:
+            logger.warning(f"[DOWNLOAD] Exception fetching user profile: {e}")
+    user_name = user_profile.get("name") if user_profile and user_profile.get("name") else "CV"
     contact_info = []
-    if user:
+    if user_profile:
         contact_info = [
-            user.address_line1,
-            user.city_state_postal,
-            user.email,
-            user.phone_number,
-            user.linkedin
+            user_profile.get("address_line1"),
+            user_profile.get("city_state_postal"),
+            user_profile.get("email"),
+            user_profile.get("phone_number"),
+            user_profile.get("linkedin")
         ]
         contact_info = [x for x in contact_info if x]
-    # Log contact_info
-    logger.info(f"[DOWNLOAD] contact_info for user_id={user_id}: {contact_info}")
+    logger.info(f"[DOWNLOAD] contact_info from user service for user_id={user_id}: {contact_info}")
     company = None
     try:
         if cv.personal_info:
