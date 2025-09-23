@@ -182,47 +182,10 @@ class ProfessionalCVFormatter:
         title_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
         title_para.paragraph_format.space_after = Pt(8)
         if contact_info:
-            # Add an extra empty column for spacing/debugging
-            table = self.doc.add_table(rows=1, cols=len(contact_info) + 1)
-            table.alignment = WD_TABLE_ALIGNMENT.CENTER
-            for i, info in enumerate(contact_info):
-                cell = table.cell(0, i)
-                cell.text = info
-                cell_para = cell.paragraphs[0]
-                self.set_font_style(cell_para, self.font_sizes['small'], color=self.colors['light_text'])
-                cell_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-                # Add visible border for debugging
-                tc = cell._tc
-                tcPr = tc.get_or_add_tcPr()
-                borders = OxmlElement('w:tcBorders')
-                for border_name in ('top', 'left', 'bottom', 'right'):
-                    border = OxmlElement(f'w:{border_name}')
-                    border.set(qn('w:val'), 'single')
-                    border.set(qn('w:sz'), '8')
-                    border.set(qn('w:space'), '0')
-                    border.set(qn('w:color'), 'FF0000')  # Red for visibility
-                    borders.append(border)
-                tcPr.append(borders)
-                # Log cell text for debugging
-                import logging
-                logging.getLogger("cv_service").info(f"[DOCX HEADER] Cell {i}: '{info}'")
-            # Add an extra empty cell at the end
-            empty_cell = table.cell(0, len(contact_info))
-            empty_cell.text = ""
-            empty_para = empty_cell.paragraphs[0]
-            self.set_font_style(empty_para, self.font_sizes['small'], color=self.colors['light_text'])
-            empty_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            tc = empty_cell._tc
-            tcPr = tc.get_or_add_tcPr()
-            borders = OxmlElement('w:tcBorders')
-            for border_name in ('top', 'left', 'bottom', 'right'):
-                border = OxmlElement(f'w:{border_name}')
-                border.set(qn('w:val'), 'single')
-                border.set(qn('w:sz'), '8')
-                border.set(qn('w:space'), '0')
-                border.set(qn('w:color'), 'FF0000')
-                borders.append(border)
-            tcPr.append(borders)
+            contact_line = " | ".join(contact_info)
+            para = self.doc.add_paragraph(contact_line)
+            para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            self.set_font_style(para, self.font_sizes['small'], color=self.colors['light_text'])
         self.add_horizontal_line()
     def add_section_heading(self, text):
         para = self.doc.add_paragraph()
