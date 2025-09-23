@@ -181,11 +181,13 @@ class ProfessionalCVFormatter:
         self.set_font_style(title_para, self.font_sizes['title'], color=self.colors['secondary'])
         title_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
         title_para.paragraph_format.space_after = Pt(8)
-        if contact_info:
-            contact_line = " | ".join(contact_info)
-            para = self.doc.add_paragraph(contact_line)
-            para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            self.set_font_style(para, self.font_sizes['small'], color=self.colors['light_text'])
+        import logging
+        logging.getLogger("cv_service").info(f"[DOCX HEADER FINAL] contact_info: {contact_info}")
+        contact_line = " | ".join(contact_info) if contact_info else "NO CONTACT INFO"
+        logging.getLogger("cv_service").info(f"[DOCX HEADER FINAL] contact_line: {contact_line}")
+        para = self.doc.add_paragraph(contact_line)
+        para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        self.set_font_style(para, self.font_sizes['small'], color=self.colors['light_text'])
         self.add_horizontal_line()
     def add_section_heading(self, text):
         para = self.doc.add_paragraph()
