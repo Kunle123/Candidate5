@@ -569,24 +569,37 @@ async def persist_cv(
         if not isinstance(payload["contact_info"], list) or not all(isinstance(x, str) for x in payload["contact_info"]):
             logger.warning("[CV PERSIST] contact_info must be an array of strings after PII injection.")
             raise HTTPException(status_code=400, detail="'contact_info' must be an array of strings after PII injection")
-    # --- Existing logic ---
-    # Fetch user details for canonical contact info
-    user = db.query(UserProfile).filter(UserProfile.id == auth["user_id"]).first()
+    # --- Fetch canonical user profile from user service API ---
+    import httpx
+    USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8000/api/user/profile")
+    user_profile = None
+    if auth_header:
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(USER_SERVICE_URL, headers={"Authorization": auth_header})
+                if resp.status_code == 200:
+                    user_profile = resp.json()
+                else:
+                    logger.warning(f"[CV PERSIST] Failed to fetch user profile from user service: {resp.status_code} {resp.text}")
+        except Exception as e:
+            logger.warning(f"[CV PERSIST] Exception fetching user profile: {e}")
+    name = user_profile.get("name") if user_profile and user_profile.get("name") else payload.get("name", "")
     contact_info = []
-    if user:
+    if user_profile:
         contact_info = [
-            user.address_line1,
-            user.city_state_postal,
-            user.email,
-            user.phone_number,
-            user.linkedin
+            user_profile.get("address_line1"),
+            user_profile.get("city_state_postal"),
+            user_profile.get("email"),
+            user_profile.get("phone_number"),
+            user_profile.get("linkedin")
         ]
         contact_info = [x for x in contact_info if x]
+    logger.info(f"[CV PERSIST] contact_info from user service for user_id={auth['user_id']}: {contact_info}")
+    # --- DOCX Generation ---
     try:
         logger.info(f"[DEBUG] Starting CV DOCX generation (hierarchical JSON)")
         cv = ProfessionalCVFormatter()
         # --- Use explicit structured fields ---
-        name = user.name if user and user.name else payload.get("name", "")
         job_title = payload.get("job_title", "")
         summary = extract_content(payload.get("summary", ""))
         core_competencies = extract_list_content(payload.get("core_competencies", []))
