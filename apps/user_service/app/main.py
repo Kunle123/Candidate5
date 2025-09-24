@@ -192,7 +192,7 @@ def reset_user_credits(user: UserProfileORM, db: Session):
     # Reset monthly credits if new month
     if not user.last_monthly_reset or user.last_monthly_reset.month != now.month or user.last_monthly_reset.year != now.year:
         if user.subscription_type in ['monthly', 'annual']:
-            user.monthly_credits_remaining = 50
+            user.monthly_credits_remaining = 100  # Upgraded from 50 to 100
         else:
             user.monthly_credits_remaining = 3
         user.last_monthly_reset = now
