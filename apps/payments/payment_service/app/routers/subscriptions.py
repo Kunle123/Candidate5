@@ -266,23 +266,35 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
         subscription = subscriptions.data[0]
 
         # 3. Get the plan details (as before)
-        plan_id = subscription.metadata.get("plan_id", "basic") if hasattr(subscription, "metadata") else "basic"
+        plan_id = None
+        try:
+            plan_id = subscription.metadata.get("plan_id", "basic") if hasattr(subscription, "metadata") else "basic"
+        except Exception as e:
+            logger.error(f"Error extracting plan_id from subscription metadata: {str(e)}")
+            return {"status": "error", "error": f"Plan ID extraction failed: {str(e)}"}
+
         plan = None
         for p in SUBSCRIPTION_PLANS:
             if p.id == plan_id:
                 plan = p
                 break
         if not plan:
-            plan = SUBSCRIPTION_PLANS[0]  # Default to first plan
+            logger.error(f"Plan not found for plan_id={plan_id}, returning error.")
+            return {"status": "error", "error": f"Plan not found for plan_id={plan_id}"}
 
         # Create the response
-        return UserSubscription(
-            id=subscription.id,
-            status=subscription.status,
-            current_period_end=datetime.fromtimestamp(subscription.current_period_end),
-            plan=plan,
-            is_active=subscription.status == "active"
-        )
+        try:
+            return UserSubscription(
+                id=subscription.id,
+                status=subscription.status,
+                current_period_end=datetime.fromtimestamp(subscription.current_period_end),
+                plan=plan,
+                is_active=subscription.status == "active"
+            )
+        except Exception as e:
+            logger.error(f"Error constructing UserSubscription response: {str(e)}")
+            return {"status": "error", "error": f"Response construction failed: {str(e)}"}
+
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in get_user_subscription: {str(e)}")
         return {"status": "error", "error": str(e)}
