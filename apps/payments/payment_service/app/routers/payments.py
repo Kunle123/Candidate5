@@ -64,8 +64,17 @@ class TopupRequest(BaseModel):
 async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme)):
     """Get all payment methods for a user"""
     try:
+        # Decode the JWT to get the user's email
+        user_email = None
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            user_email = payload.get("email")
+            if not user_email:
+                raise HTTPException(status_code=400, detail="User email not found in token.")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid authentication token.")
         # First, check if the user has a customer ID in Stripe
-        customers = stripe.Customer.list(email=user_id, limit=1)
+        customers = stripe.Customer.list(email=user_email, limit=1)
         
         if not customers.data:
             return []
@@ -114,8 +123,17 @@ async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme))
 async def get_payment_history(user_id: str, token: str = Depends(oauth2_scheme)):
     """Get payment history for a user"""
     try:
+        # Decode the JWT to get the user's email
+        user_email = None
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            user_email = payload.get("email")
+            if not user_email:
+                raise HTTPException(status_code=400, detail="User email not found in token.")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid authentication token.")
         # First, check if the user has a customer ID in Stripe
-        customers = stripe.Customer.list(email=user_id, limit=1)
+        customers = stripe.Customer.list(email=user_email, limit=1)
         
         if not customers.data:
             return []
@@ -202,15 +220,24 @@ async def add_payment_method(
     email = req.email
     return_url = req.return_url
     try:
+        # Decode the JWT to get the user's email
+        user_email = None
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            user_email = payload.get("email")
+            if not user_email:
+                raise HTTPException(status_code=400, detail="User email not found in token.")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid authentication token.")
         # First, get or create a customer in Stripe
-        customers = stripe.Customer.list(email=email, limit=1)
+        customers = stripe.Customer.list(email=user_email, limit=1)
         customer_id = None
         if customers.data:
             customer_id = customers.data[0].id
         else:
             # Create a new customer
             customer = stripe.Customer.create(
-                email=email,  # Use the actual email
+                email=user_email,  # Use the actual email
                 metadata={"user_id": user_id}  # Always use UUID here
             )
             customer_id = customer.id
@@ -264,6 +291,15 @@ async def delete_payment_method(
 ):
     """Delete a payment method"""
     try:
+        # Decode the JWT to get the user's email
+        user_email = None
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            user_email = payload.get("email")
+            if not user_email:
+                raise HTTPException(status_code=400, detail="User email not found in token.")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid authentication token.")
         # Delete the payment method
         payment_method = stripe.PaymentMethod.detach(payment_method_id)
         
@@ -290,8 +326,17 @@ async def set_default_payment_method(
 ):
     """Set a payment method as default"""
     try:
+        # Decode the JWT to get the user's email
+        user_email = None
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            user_email = payload.get("email")
+            if not user_email:
+                raise HTTPException(status_code=400, detail="User email not found in token.")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid authentication token.")
         # First, get the customer in Stripe
-        customers = stripe.Customer.list(email=user_id, limit=1)
+        customers = stripe.Customer.list(email=user_email, limit=1)
         
         if not customers.data:
             raise HTTPException(
@@ -366,14 +411,23 @@ async def create_topup_checkout_session(
         topup_price_id = os.getenv("TOPUP_PLAN_PRICE_ID")
         if not topup_price_id:
             raise HTTPException(status_code=500, detail="Top-up price ID not configured")
+        # Decode the JWT to get the user's email
+        user_email = None
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            user_email = payload.get("email")
+            if not user_email:
+                raise HTTPException(status_code=400, detail="User email not found in token.")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid authentication token.")
         # Find or create Stripe customer
-        customers = stripe.Customer.list(email=req.email, limit=1)
+        customers = stripe.Customer.list(email=user_email, limit=1)
         customer_id = None
         if customers.data:
             customer_id = customers.data[0].id
         else:
             customer = stripe.Customer.create(
-                email=req.email,
+                email=user_email,
                 metadata={"user_id": req.user_id}
             )
             customer_id = customer.id
