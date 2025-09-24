@@ -134,14 +134,16 @@ async def create_checkout_session(
 ):
     """Create a Stripe Checkout session for subscription purchase"""
     try:
-        # Decode the JWT to get the user's email
+        # Decode the JWT to get the user's email and user_id
         from jose import jwt, JWTError
         user_email = None
+        jwt_user_id = None
         try:
             payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
             user_email = payload.get("email")
-            if not user_email:
-                raise HTTPException(status_code=400, detail="User email not found in token.")
+            jwt_user_id = payload.get("id")  # or "user_id" depending on your JWT
+            if not user_email or not jwt_user_id:
+                raise HTTPException(status_code=400, detail="User email or id not found in token.")
         except JWTError:
             raise HTTPException(status_code=401, detail="Invalid authentication token.")
         # Find or create Stripe customer
@@ -149,7 +151,7 @@ async def create_checkout_session(
         if customers.data:
             customer_id = customers.data[0].id
         else:
-            customer = stripe.Customer.create(email=user_email, metadata={"user_id": request.user_id})
+            customer = stripe.Customer.create(email=user_email, metadata={"user_id": jwt_user_id})
             customer_id = customer.id
         # Prevent duplicate subscriptions for the same plan
         active_subs = stripe.Subscription.list(customer=customer_id, status="active", limit=10)
@@ -173,7 +175,7 @@ async def create_checkout_session(
                 detail=f"Subscription plan with price_id {request.plan_id} not found"
             )
         # Log the plan and metadata being used for the checkout session
-        logger.info(f"Creating Stripe Checkout Session with price_id: {plan.price_id}, amount: {plan.amount}, metadata: {{'user_id': {request.user_id}, 'plan_id': {plan.price_id}}}, email: {user_email}")
+        logger.info(f"Creating Stripe Checkout Session with price_id: {plan.price_id}, amount: {plan.amount}, metadata: {{'user_id': {jwt_user_id}, 'plan_id': {plan.price_id}}}, email: {user_email}")
         # Prepare session parameters
         session_params = {
             "payment_method_types": ["card"],
@@ -184,13 +186,13 @@ async def create_checkout_session(
                 },
             ],
             "metadata": {
-                "user_id": request.user_id,
+                "user_id": jwt_user_id,
                 "plan_id": plan.price_id
             },
             "mode": "subscription",
             "subscription_data": {
                 "metadata": {
-                    "user_id": request.user_id,
+                    "user_id": jwt_user_id,
                     "plan_id": plan.price_id
                 }
             },
@@ -295,10 +297,22 @@ async def cancel_subscription(
 ):
     """Cancel a user's subscription"""
     try:
+        # Decode the JWT to get the user_id
+        from jose import jwt, JWTError
+        jwt_user_id = None
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            jwt_user_id = payload.get("id")  # or "user_id" depending on your JWT
+            if not jwt_user_id:
+                raise HTTPException(status_code=400, detail="User id not found in token.")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid authentication token.")
+
         # Cancel the subscription at the end of the current billing period
         subscription = stripe.Subscription.modify(
             subscription_id,
-            cancel_at_period_end=True
+            cancel_at_period_end=True,
+            expand=["latest_invoice.payment_intent"]
         )
         
         return {
