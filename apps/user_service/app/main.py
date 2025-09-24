@@ -14,9 +14,16 @@ import jwt
 import requests
 from sqlalchemy import and_
 from datetime import date
+from dateutil.relativedelta import relativedelta
+from dateutil.parser import parse as parse_date
+import sys
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG,  # Set to DEBUG for detailed logs
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="User Service", description="User profile, settings, jobs, applications, and feedback endpoints.")
@@ -128,6 +135,7 @@ class UseCreditsRequest(BaseModel):
 class UpdateSubscriptionRequest(BaseModel):
     user_id: str
     subscription_type: str  # 'free', 'monthly', 'annual'
+    next_credit_reset: Optional[str] = None
 
 class TopupCreditsRequest(BaseModel):
     user_id: str
@@ -189,13 +197,18 @@ def reset_user_credits(user: UserProfileORM, db: Session):
         else:
             user.daily_credits_remaining = 0
         user.last_daily_reset = now
-    # Reset monthly credits if new month
-    if not user.last_monthly_reset or user.last_monthly_reset.month != now.month or user.last_monthly_reset.year != now.year:
-        if user.subscription_type in ['monthly', 'annual']:
-            user.monthly_credits_remaining = 100  # Upgraded from 50 to 100
-        else:
+    # Rolling monthly reset using next_credit_reset
+    if user.subscription_type in ['monthly', 'annual']:
+        if user.next_credit_reset and now >= user.next_credit_reset:
+            user.monthly_credits_remaining = 100
+            # Advance next_credit_reset by one month
+            user.next_credit_reset += relativedelta(months=1)
+            user.last_monthly_reset = now
+    else:
+        # Fallback: calendar month reset for free users
+        if not user.last_monthly_reset or user.last_monthly_reset.month != now.month or user.last_monthly_reset.year != now.year:
             user.monthly_credits_remaining = 3
-        user.last_monthly_reset = now
+            user.last_monthly_reset = now
     # Remove expired top-up credits
     expired_topups = db.query(TopupCredits).filter(
         and_(TopupCredits.user_id == user.id, TopupCredits.topup_credits_expiry < now)
@@ -531,13 +544,20 @@ def update_user_subscription(req: UpdateSubscriptionRequest, db: Session = Depen
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     user.subscription_type = req.subscription_type
-    # Reset credits as per plan
     now = datetime.utcnow()
+    # Accept next_credit_reset if provided
+    if req.next_credit_reset:
+        try:
+            user.next_credit_reset = parse_date(req.next_credit_reset)
+            logger.info(f"Set next_credit_reset for user {user.id} to {user.next_credit_reset}")
+        except Exception as e:
+            logger.error(f"Failed to parse next_credit_reset: {e}")
+    # Reset credits as per plan
     if req.subscription_type == 'monthly':
-        user.monthly_credits_remaining = 50
+        user.monthly_credits_remaining = 100
         user.daily_credits_remaining = 3
     elif req.subscription_type == 'annual':
-        user.monthly_credits_remaining = 50
+        user.monthly_credits_remaining = 100
         user.daily_credits_remaining = 5
     else:
         user.monthly_credits_remaining = 3
@@ -545,6 +565,7 @@ def update_user_subscription(req: UpdateSubscriptionRequest, db: Session = Depen
     user.last_monthly_reset = now
     user.last_daily_reset = now
     db.commit()
+    logger.info(f"Updated user {user.id}: subscription_type={user.subscription_type}, next_credit_reset={user.next_credit_reset}")
     return {"status": "success", "subscription_type": user.subscription_type}
 
 @router.post("/user/topup/add", status_code=200)

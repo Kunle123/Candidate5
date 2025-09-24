@@ -21,6 +21,7 @@ class UserProfile(Base):
     last_daily_reset = Column(DateTime, nullable=True)
     last_monthly_reset = Column(DateTime, nullable=True)
     subscription_type = Column(String, nullable=False, default='free')  # Always a constant
+    next_credit_reset = Column(DateTime, nullable=True)  # New: per-user rolling reset
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow) 
 
