@@ -10,4 +10,4 @@ httpx
 pydantic
 python-dotenv
 stripe
-PyJWT 
+PyJWT python-dateutil
