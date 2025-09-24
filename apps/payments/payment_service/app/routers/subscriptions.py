@@ -174,31 +174,35 @@ async def create_checkout_session(
             )
         # Log the plan and metadata being used for the checkout session
         logger.info(f"Creating Stripe Checkout Session with price_id: {plan.price_id}, amount: {plan.amount}, metadata: {{'user_id': {request.user_id}, 'plan_id': {plan.price_id}}}, email: {user_email}")
-        # Create a Stripe Checkout session
-        checkout_session = stripe.checkout.Session.create(
-            customer=customer_id,
-            customer_email=user_email,
-            payment_method_types=["card"],
-            line_items=[
+        # Prepare session parameters
+        session_params = {
+            "payment_method_types": ["card"],
+            "line_items": [
                 {
                     "price": plan.price_id,
                     "quantity": 1,
                 },
             ],
-            metadata={
-                "user_id": request.user_id,  # Always use UUID here
-                "plan_id": plan.price_id    # Use Stripe price ID for plan_id
+            "metadata": {
+                "user_id": request.user_id,
+                "plan_id": plan.price_id
             },
-            mode="subscription",
-            subscription_data={
+            "mode": "subscription",
+            "subscription_data": {
                 "metadata": {
                     "user_id": request.user_id,
                     "plan_id": plan.price_id
                 }
             },
-            success_url=f"{request.return_url}?success=true&session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{request.return_url}?canceled=true",
-        )
+            "success_url": f"{request.return_url}?success=true&session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": f"{request.return_url}?canceled=true",
+        }
+        if customer_id:
+            session_params["customer"] = customer_id
+        else:
+            session_params["customer_email"] = user_email
+        # Create a Stripe Checkout session
+        checkout_session = stripe.checkout.Session.create(**session_params)
         return SubscriptionResponse(
             session_id=checkout_session.id,
             checkout_url=checkout_session.url
