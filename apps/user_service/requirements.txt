@@ -10,3 +10,4 @@ pydantic
 uvicorn[standard]
 email-validator
 PyJWT>=2.0 
+python-dateutil 
