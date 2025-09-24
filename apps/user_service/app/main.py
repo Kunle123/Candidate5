@@ -52,6 +52,7 @@ class UserProfileResponse(BaseModel):
     phone_number: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    subscription_type: Optional[str] = None
     model_config = {
         "from_attributes": True
     }
@@ -237,7 +238,10 @@ def get_user_profile(user_id: str = Depends(get_current_user), db: Session = Dep
             logger.warning(f"User profile not found for user_id: {user_id}")
             raise HTTPException(status_code=404, detail="User profile not found")
         logger.info(f"Successfully retrieved profile for user_id: {user_id}")
-        return user
+        # Explicitly include subscription_type in the response
+        response = UserProfileResponse(**user.__dict__)
+        response.subscription_type = user.subscription_type
+        return response
     except HTTPException:
         raise
     except Exception as e:
@@ -379,9 +383,11 @@ def get_user_credits(user_id: str = Depends(get_current_user), db: Session = Dep
 @router.get("/user/{user_id}", response_model=UserProfileResponse)
 def get_user_profile_by_id(user_id: str, db: Session = Depends(get_db)):
     user = db.query(UserProfileORM).filter(UserProfileORM.id == user_id).first()
-    if user:
-        return user
-    raise HTTPException(status_code=404, detail="User not found")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    response = UserProfileResponse(**user.__dict__)
+    response.subscription_type = user.subscription_type
+    return response
 
 @router.get("/users/me", response_model=UserProfileResponse)
 def get_my_profile(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
