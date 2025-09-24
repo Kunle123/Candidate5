@@ -242,13 +242,14 @@ def get_user_email_from_id(user_id: str) -> str:
 async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme)):
     try:
         user_email = get_user_email_from_id(user_id)
+        logger.info(f"Looking up Stripe customer for user_id={user_id}, email={user_email}")
         if not user_email:
             logger.info(f"No user email found for user_id {user_id}, returning None.")
-            return None
+            return {"status": "none"}
         customers = stripe.Customer.list(email=user_email, limit=1)
         if not customers.data:
             logger.info(f"No Stripe customer found for email {user_email}, returning None.")
-            return None
+            return {"status": "none"}
         customer_id = customers.data[0].id
 
         subscriptions = stripe.Subscription.list(
@@ -260,7 +261,7 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
 
         if not subscriptions.data:
             logger.info(f"No active Stripe subscription found for customer {customer_id}, returning None.")
-            return None
+            return {"status": "none"}
 
         subscription = subscriptions.data[0]
 
@@ -282,13 +283,12 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
             plan=plan,
             is_active=subscription.status == "active"
         )
-
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in get_user_subscription: {str(e)}")
-        return None
+        return {"status": "error", "error": str(e)}
     except Exception as e:
         logger.error(f"Error in get_user_subscription: {str(e)}")
-        return None
+        return {"status": "error", "error": str(e)}
 
 @router.post("/cancel/{subscription_id}")
 async def cancel_subscription(
