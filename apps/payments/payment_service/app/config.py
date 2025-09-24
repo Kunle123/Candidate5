@@ -18,7 +18,9 @@ class Settings(BaseSettings):
     MONTHLY_PLAN_AMOUNT: Optional[int] = None
     ANNUAL_PLAN_AMOUNT: Optional[int] = None
     TOPUP_PLAN_AMOUNT: Optional[int] = None
-    
+    # JWT Configuration
+    JWT_SECRET: str
+    JWT_ALGORITHM: str = "HS256"
     # Server Configuration
     HOST: str = "0.0.0.0"
     PORT: int = int(os.getenv("PORT", 8005))
