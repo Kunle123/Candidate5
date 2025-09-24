@@ -210,10 +210,12 @@ async def create_checkout_session(
             detail=f"Error creating checkout session: {str(e)}"
         )
     except Exception as e:
-        logger.error(f"Error in create_checkout_session: {str(e)}")
+        import traceback
+        logger.error(f"Error in create_checkout_session: {str(e)}\n{traceback.format_exc()}")
+        # Return the error message in the response for debugging (remove in production)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred"
+            detail=f"{str(e)}\n{traceback.format_exc()}"
         )
 
 # Helper function to get user email from user_id (placeholder, to be replaced with real implementation)
