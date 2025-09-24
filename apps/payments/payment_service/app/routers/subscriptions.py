@@ -144,6 +144,23 @@ async def create_checkout_session(
                 raise HTTPException(status_code=400, detail="User email not found in token.")
         except JWTError:
             raise HTTPException(status_code=401, detail="Invalid authentication token.")
+        # Find or create Stripe customer
+        customers = stripe.Customer.list(email=user_email, limit=1)
+        if customers.data:
+            customer_id = customers.data[0].id
+        else:
+            customer = stripe.Customer.create(email=user_email, metadata={"user_id": request.user_id})
+            customer_id = customer.id
+        # Prevent duplicate subscriptions for the same plan
+        active_subs = stripe.Subscription.list(customer=customer_id, status="active", limit=10)
+        for sub in active_subs.data:
+            plan_id = None
+            if hasattr(sub, "metadata") and sub.metadata:
+                plan_id = sub.metadata.get("plan_id")
+            if not plan_id and hasattr(sub, "items") and sub.items and sub.items.data:
+                plan_id = sub.items.data[0].price.id
+            if plan_id == request.plan_id:
+                raise HTTPException(status_code=400, detail="You already have an active subscription for this plan.")
         # Find the plan by price_id (Stripe price ID)
         plan = None
         for p in SUBSCRIPTION_PLANS:
@@ -159,6 +176,7 @@ async def create_checkout_session(
         logger.info(f"Creating Stripe Checkout Session with price_id: {plan.price_id}, amount: {plan.amount}, metadata: {{'user_id': {request.user_id}, 'plan_id': {plan.price_id}}}, email: {user_email}")
         # Create a Stripe Checkout session
         checkout_session = stripe.checkout.Session.create(
+            customer=customer_id,
             customer_email=user_email,
             payment_method_types=["card"],
             line_items=[
