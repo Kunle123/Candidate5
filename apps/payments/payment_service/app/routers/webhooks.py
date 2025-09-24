@@ -354,6 +354,13 @@ async def notify_subscription_update(user_id, subscription, is_deleted=False, is
         if is_payment_failed and status == "active":
             status = "past_due"
         print(f"🔥 NOTIFY: Final status: {status}")
+        # Extract next_credit_reset from Stripe subscription (current_period_end)
+        next_credit_reset = None
+        if hasattr(subscription, "current_period_end"):
+            try:
+                next_credit_reset = datetime.utcfromtimestamp(subscription.current_period_end)
+            except Exception:
+                next_credit_reset = None
         # Create notification payload for user service
         user_service_url = os.getenv("USER_SERVICE_URL", "https://api-gw-production.up.railway.app")
         update_credits_url = f"{user_service_url}/api/user/subscription/update"
@@ -361,6 +368,8 @@ async def notify_subscription_update(user_id, subscription, is_deleted=False, is
             "user_id": user_id,
             "subscription_type": subscription_type
         }
+        if next_credit_reset:
+            payload["next_credit_reset"] = next_credit_reset.isoformat()
         logger.info(f"Sending credit update to user service: {update_credits_url} with payload: {payload}")
         print(f"🔥 NOTIFY: Sending credit update to: {update_credits_url} with payload: {payload}")
         # Call user service to update credits
