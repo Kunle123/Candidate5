@@ -134,24 +134,32 @@ async def create_checkout_session(
 ):
     """Create a Stripe Checkout session for subscription purchase"""
     try:
+        # Decode the JWT to get the user's email
+        from jose import jwt, JWTError
+        user_email = None
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            user_email = payload.get("email")
+            if not user_email:
+                raise HTTPException(status_code=400, detail="User email not found in token.")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid authentication token.")
         # Find the plan by price_id (Stripe price ID)
         plan = None
         for p in SUBSCRIPTION_PLANS:
             if p.price_id == request.plan_id:
                 plan = p
                 break
-        
         if not plan:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Subscription plan with price_id {request.plan_id} not found"
             )
-        
         # Log the plan and metadata being used for the checkout session
-        logger.info(f"Creating Stripe Checkout Session with price_id: {plan.price_id}, amount: {plan.amount}, metadata: {{'user_id': {request.user_id}, 'plan_id': {plan.price_id}}}")
+        logger.info(f"Creating Stripe Checkout Session with price_id: {plan.price_id}, amount: {plan.amount}, metadata: {{'user_id': {request.user_id}, 'plan_id': {plan.price_id}}}, email: {user_email}")
         # Create a Stripe Checkout session
         checkout_session = stripe.checkout.Session.create(
-            customer_email=request.email,
+            customer_email=user_email,
             payment_method_types=["card"],
             line_items=[
                 {
@@ -173,12 +181,10 @@ async def create_checkout_session(
             success_url=f"{request.return_url}?success=true&session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{request.return_url}?canceled=true",
         )
-        
         return SubscriptionResponse(
             session_id=checkout_session.id,
             checkout_url=checkout_session.url
         )
-    
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in create_checkout_session: {str(e)}")
         raise HTTPException(
