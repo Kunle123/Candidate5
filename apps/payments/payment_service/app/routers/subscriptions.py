@@ -9,6 +9,7 @@ import stripe
 import json
 import httpx
 from app.config import settings
+from fastapi.responses import JSONResponse
 
 # Configure logger
 logger = logging.getLogger("payment_service")
@@ -245,11 +246,11 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
         logger.info(f"Looking up Stripe customer for user_id={user_id}, email={user_email}")
         if not user_email:
             logger.info(f"No user email found for user_id {user_id}, returning None.")
-            return {"status": "none"}
+            return JSONResponse(content={"status": "none"})
         customers = stripe.Customer.list(email=user_email, limit=1)
         if not customers.data:
             logger.info(f"No Stripe customer found for email {user_email}, returning None.")
-            return {"status": "none"}
+            return JSONResponse(content={"status": "none"})
         customer_id = customers.data[0].id
 
         subscriptions = stripe.Subscription.list(
@@ -261,7 +262,7 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
 
         if not subscriptions.data:
             logger.info(f"No active Stripe subscription found for customer {customer_id}, returning None.")
-            return {"status": "none"}
+            return JSONResponse(content={"status": "none"})
 
         subscription = subscriptions.data[0]
 
@@ -271,7 +272,7 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
             plan_id = subscription.metadata.get("plan_id", "basic") if hasattr(subscription, "metadata") else "basic"
         except Exception as e:
             logger.error(f"Error extracting plan_id from subscription metadata: {str(e)}")
-            return {"status": "error", "error": f"Plan ID extraction failed: {str(e)}"}
+            return JSONResponse(content={"status": "error", "error": f"Plan ID extraction failed: {str(e)}"})
 
         plan = None
         for p in SUBSCRIPTION_PLANS:
@@ -280,7 +281,7 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
                 break
         if not plan:
             logger.error(f"Plan not found for plan_id={plan_id}, returning error.")
-            return {"status": "error", "error": f"Plan not found for plan_id={plan_id}"}
+            return JSONResponse(content={"status": "error", "error": f"Plan not found for plan_id={plan_id}"})
 
         # Create the response
         try:
@@ -293,14 +294,14 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
             )
         except Exception as e:
             logger.error(f"Error constructing UserSubscription response: {str(e)}")
-            return {"status": "error", "error": f"Response construction failed: {str(e)}"}
+            return JSONResponse(content={"status": "error", "error": f"Response construction failed: {str(e)}"})
 
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error in get_user_subscription: {str(e)}")
-        return {"status": "error", "error": str(e)}
+        return JSONResponse(content={"status": "error", "error": str(e)})
     except Exception as e:
         logger.error(f"Error in get_user_subscription: {str(e)}")
-        return {"status": "error", "error": str(e)}
+        return JSONResponse(content={"status": "error", "error": str(e)})
 
 @router.post("/cancel/{subscription_id}")
 async def cancel_subscription(
