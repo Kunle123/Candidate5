@@ -281,7 +281,7 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
 
         plan = None
         for p in SUBSCRIPTION_PLANS:
-            if p.id == plan_id:
+            if p.price_id == plan_id:
                 plan = p
                 break
         if not plan:
