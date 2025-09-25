@@ -291,10 +291,20 @@ async def get_user_subscription(user_id: str, token: str = Depends(oauth2_scheme
         # Create the response
         try:
             current_period_end = getattr(subscription, "current_period_end", None)
+            # Fallback: try items.data[0].current_period_end
+            if current_period_end is None:
+                items = getattr(subscription, "items", None)
+                if items and hasattr(items, "data") and items.data and hasattr(items.data[0], "current_period_end"):
+                    current_period_end = items.data[0].current_period_end
+            # Fallback: use start_date or created
             if current_period_end is not None:
                 current_period_end = datetime.fromtimestamp(current_period_end)
             else:
-                current_period_end = None
+                start_date = getattr(subscription, "start_date", None) or getattr(subscription, "created", None)
+                if start_date is not None:
+                    current_period_end = datetime.fromtimestamp(start_date)
+                else:
+                    current_period_end = None
             return UserSubscription(
                 id=subscription.id,
                 status=subscription.status,
