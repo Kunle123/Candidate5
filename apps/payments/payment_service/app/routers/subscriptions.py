@@ -47,7 +47,7 @@ class SubscriptionResponse(BaseModel):
 class UserSubscription(BaseModel):
     id: str
     status: str
-    current_period_end: datetime
+    current_period_end: Optional[datetime] = None
     plan: SubscriptionPlan
     is_active: bool
 
