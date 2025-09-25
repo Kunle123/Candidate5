@@ -99,6 +99,11 @@ SUBSCRIPTION_PLANS = [
     ),
 ]
 
+# Log loaded subscription plans at startup for debugging
+logger.info("Loaded subscription plans from environment:")
+for plan in SUBSCRIPTION_PLANS:
+    logger.info(f"{plan.name}: price_id={plan.price_id}, amount={plan.amount}")
+
 @router.get("/plans", response_model=List[SubscriptionPlan])
 async def get_subscription_plans():
     """Get all available subscription plans (public endpoint, returns Stripe price ID as 'id')."""
