@@ -108,6 +108,14 @@ class AssistantActionRequest(BaseModel):
 # --- Work Experience Endpoints ---
 @router.post("/users/{user_id}/work_experience", response_model=WorkExperienceOut)
 def add_work_experience(user_id: str, data: WorkExperienceCreate, db: Session = Depends(get_db)):
+    # Ensure user exists in user_arc_data
+    from .models import UserArcData
+    user = db.query(UserArcData).filter_by(user_id=user_id).first()
+    if not user:
+        user = UserArcData(user_id=user_id, arc_data={})
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     max_index = db.query(WorkExperience).filter_by(user_id=user_id).order_by(WorkExperience.order_index.desc()).first()
     next_index = (max_index.order_index + 1) if max_index else 0
     order_index = data.order_index if data.order_index is not None else next_index
