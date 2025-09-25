@@ -27,10 +27,10 @@ stripe.api_key = settings.STRIPE_API_KEY
 class PaymentMethod(BaseModel):
     id: str
     type: str
-    card_last4: Optional[str] = None
-    card_brand: Optional[str] = None
-    card_exp_month: Optional[int] = None
-    card_exp_year: Optional[int] = None
+    brand: Optional[str] = None
+    last4: Optional[str] = None
+    exp_month: Optional[int] = None
+    exp_year: Optional[int] = None
     is_default: bool = False
 
 class PaymentHistory(BaseModel):
@@ -77,6 +77,7 @@ async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme))
         customers = stripe.Customer.list(email=user_email, limit=1)
         
         if not customers.data:
+            # No Stripe customer found for this email, return empty list
             return []
         
         customer_id = customers.data[0].id
@@ -97,10 +98,10 @@ async def get_payment_methods(user_id: str, token: str = Depends(oauth2_scheme))
                 result.append(PaymentMethod(
                     id=pm.id,
                     type=pm.type,
-                    card_last4=pm.card.last4,
-                    card_brand=pm.card.brand,
-                    card_exp_month=pm.card.exp_month,
-                    card_exp_year=pm.card.exp_year,
+                    brand=pm.card.brand,
+                    last4=pm.card.last4,
+                    exp_month=pm.card.exp_month,
+                    exp_year=pm.card.exp_year,
                     is_default=(pm.id == default_payment_method_id)
                 ))
         
