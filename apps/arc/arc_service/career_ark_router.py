@@ -1230,6 +1230,8 @@ def get_anti_fabrication_rules():
 def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
     import openai
     import json
+    import time
+    import logging
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
     chunk_type = chunk.get("type", "recent_roles")
     prompt = get_chunk_prompt(chunk_type)
@@ -1242,6 +1244,9 @@ def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, O
         "antiFabricationRules": anti_fabrication_rules,
         "instructions": prompt
     }
+    logger = logging.getLogger("arc_service")
+    start_time = time.time()
+    logger.info(f"[TIMING] Chunk '{chunk_type}' processing started.")
     thread = client.beta.threads.create()
     thread_id = thread.id
     client.beta.threads.messages.create(
@@ -1253,28 +1258,30 @@ def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, O
         thread_id=thread_id,
         assistant_id=OPENAI_ASSISTANT_ID
     )
-    import time
     for _ in range(180):
         run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
         if run_status.status in ("completed", "failed", "cancelled", "expired"):
             break
         time.sleep(1)
     if run_status.status != "completed":
+        logger.info(f"[TIMING] Chunk '{chunk_type}' processing failed after {time.time() - start_time:.2f}s.")
         return {"error": f"Assistant run did not complete: {run_status.status}"}
     messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
     if not messages.data:
+        logger.info(f"[TIMING] Chunk '{chunk_type}' processing got no response after {time.time() - start_time:.2f}s.")
         return {"error": "No response from assistant"}
     content = messages.data[0].content[0].text.value
-    import logging
-    logger = logging.getLogger("arc_service")
     if not content or not content.strip() or not content.strip().startswith("{"):
         logger.error(f"[OPENAI EMPTY OR INVALID RESPONSE] Content: {repr(content)}")
+        logger.info(f"[TIMING] Chunk '{chunk_type}' processing got invalid response after {time.time() - start_time:.2f}s.")
         return {"error": "Assistant response is empty or not valid JSON", "raw": content}
     try:
         content_json = json.loads(content)
     except Exception as e:
-        logger.error(f"[OPENAI INVALID JSON] {e}. Content: {content}")
-        return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
+        logger.error(f"[OPENAI JSON PARSE ERROR] {e} | Content: {repr(content)}")
+        logger.info(f"[TIMING] Chunk '{chunk_type}' processing JSON parse error after {time.time() - start_time:.2f}s.")
+        return {"error": f"JSON parse error: {e}", "raw": content}
+    logger.info(f"[TIMING] Chunk '{chunk_type}' processing completed in {time.time() - start_time:.2f}s.")
     return content_json
 
 # Helper: Assemble chunk results (simple concatenation for now)
@@ -1327,6 +1334,11 @@ def assemble_chunks(chunk_results):
 def assemble_unified_cv(chunk_results, global_context, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
     import openai
     import json
+    import time
+    import logging
+    logger = logging.getLogger("arc_service")
+    start_time = time.time()
+    logger.info("[TIMING] Final assembly step started.")
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
     assembly_prompt = get_assembly_prompt()
     # Prepare the message for assembly
@@ -1348,22 +1360,25 @@ def assemble_unified_cv(chunk_results, global_context, profile, job_description,
         thread_id=thread_id,
         assistant_id=OPENAI_ASSISTANT_ID
     )
-    import time
     for _ in range(180):
         run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
         if run_status.status in ("completed", "failed", "cancelled", "expired"):
             break
         time.sleep(1)
     if run_status.status != "completed":
+        logger.info(f"[TIMING] Final assembly step failed after {time.time() - start_time:.2f}s.")
         return {"error": f"Assembly run did not complete: {run_status.status}"}
     messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
     if not messages.data:
+        logger.info(f"[TIMING] Final assembly step got no response after {time.time() - start_time:.2f}s.")
         return {"error": "No response from assistant (assembly)"}
     content = messages.data[0].content[0].text.value
     try:
         content_json = json.loads(content)
     except Exception as e:
+        logger.info(f"[TIMING] Final assembly step JSON parse error after {time.time() - start_time:.2f}s.")
         return {"error": f"Assembly response is not valid JSON: {str(e)}", "raw": content}
+    logger.info(f"[TIMING] Final assembly step completed in {time.time() - start_time:.2f}s.")
     return content_json
 
 # --- Update the adaptive endpoint to use two-stage processing ---
@@ -1372,9 +1387,11 @@ async def generate_assistant_adaptive(request: Request):
     import os
     import json
     import logging
+    import time
     logger = logging.getLogger("arc_service")
     data = await request.json()
     logger.info(f"[ADAPTIVE DEBUG] Incoming payload: {json.dumps(data)[:1000]}")
+    overall_start = time.time()
 
     if "work_experience" in data:
         profile = data.copy()
@@ -1420,6 +1437,7 @@ async def generate_assistant_adaptive(request: Request):
     # 5. Final assembly: single unified CV and cover letter
     assembled = assemble_unified_cv(chunk_results, global_context, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID)
     logger.info(f"[ADAPTIVE DEBUG] Final assembled output: {json.dumps(assembled, default=str)[:1000]}")
+    logger.info(f"[TIMING] Total adaptive endpoint processing time: {time.time() - overall_start:.2f}s.")
     return {
         **assembled,
         "strategy": strategy,
