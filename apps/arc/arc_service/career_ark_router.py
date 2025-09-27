@@ -1,4 +1,25 @@
-# Dummy change to trigger redeployment
+# ---
+# Example curl command to test /generate-assistant-adaptive endpoint:
+#
+# curl -X POST https://your-api/cv/generate-assistant-adaptive \
+#   -H "Authorization: Bearer <token>" \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#     "profile": { ... },  # (Insert your full profile object here)
+#     "job_description": "Applicants must be eligible to work in the specified location... (rest of your job description) ..."
+#   }'
+#
+# Replace { ... } with your full profile JSON (see below for a truncated example), and <token> with your JWT.
+#
+# For your specific test, use:
+#
+# curl -X POST https://your-api/cv/generate-assistant-adaptive \
+#   -H "Authorization: Bearer <token>" \
+#   -H "Content-Type: application/json" \
+#   --data-binary @payloads/adaptive_test_payload.json
+#
+# Where payloads/adaptive_test_payload.json contains your full test object (profile + job_description only).
+# ---
 from fastapi import APIRouter, HTTPException, Path, Body, Depends, UploadFile, File, Request
 from sqlalchemy.orm import Session
 from .models import WorkExperience, Education, Skill, Project, Certification, Training, UserArcData, CVTask
@@ -883,6 +904,193 @@ async def generate_assistant(request: Request):
     except Exception as e:
         logger.error(f"[ERROR] Error in generate_assistant: {str(e)}")
         return {"error": f"Error generating CV: {str(e)}"}
+
+# --- Adaptive Chunking for Assistant CV Generation ---
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+
+# Helper: Analyze payload
+
+def analyze_payload(profile):
+    import json
+    payload_size = len(json.dumps(profile))
+    role_count = len(profile.get("work_experience", []))
+    career_years = calculate_career_span(profile.get("work_experience", []))
+    return {
+        "sizeKB": round(payload_size / 1024),
+        "roleCount": role_count,
+        "careerYears": career_years,
+    }
+
+def calculate_career_span(work_experience):
+    from datetime import datetime
+    if not work_experience:
+        return 0
+    dates = []
+    for role in work_experience:
+        try:
+            dates.append(datetime.strptime(role["start_date"], "%Y-%m"))
+        except Exception:
+            continue
+    if not dates:
+        return 0
+    earliest = min(dates)
+    latest = max([datetime.strptime(role.get("end_date", datetime.now().strftime("%Y-%m")), "%Y-%m") for role in work_experience if role.get("start_date")])
+    return max(1, round((latest - earliest).days / 365.25))
+
+# Helper: Select chunking strategy
+
+def select_chunking_strategy(analysis):
+    sizeKB = analysis["sizeKB"]
+    roleCount = analysis["roleCount"]
+    careerYears = analysis["careerYears"]
+    if sizeKB <= 15 or roleCount <= 5 or careerYears <= 5:
+        return {"strategy": "single_chunk", "chunkCount": 1}
+    if sizeKB <= 25 or roleCount <= 10 or careerYears <= 10:
+        return {"strategy": "dual_chunk", "chunkCount": 2}
+    if sizeKB <= 35 or roleCount <= 15 or careerYears <= 20:
+        return {"strategy": "triple_chunk", "chunkCount": 3}
+    return {"strategy": "multi_chunk", "chunkCount": min(max(2, (roleCount + 4) // 5), 5)}
+
+# Helper: Create chunks
+
+def create_adaptive_chunks(profile, job_description, strategy):
+    roles = profile.get("work_experience", [])
+    chunkCount = strategy["chunkCount"]
+    if chunkCount == 1:
+        return [{
+            "type": "complete_career",
+            "roles": roles,
+            "priorityRange": [1, 5],
+            "focus": "comprehensive_optimization"
+        }]
+    if chunkCount == 2:
+        mid = (len(roles) + 1) // 2
+        return [
+            {"type": "recent_primary", "roles": roles[:mid], "priorityRange": [1, 3], "focus": "detailed_optimization"},
+            {"type": "supporting_timeline", "roles": roles[mid:], "priorityRange": [3, 5], "focus": "timeline_completion"}
+        ]
+    if chunkCount == 3:
+        n = len(roles)
+        c1 = max(1, n * 4 // 10)
+        c2 = max(1, n * 4 // 10)
+        return [
+            {"type": "recent_roles", "roles": roles[:c1], "priorityRange": [1, 3], "focus": "maximum_optimization"},
+            {"type": "supporting_roles", "roles": roles[c1:c1+c2], "priorityRange": [2, 4], "focus": "supporting_evidence"},
+            {"type": "timeline_roles", "roles": roles[c1+c2:], "priorityRange": [3, 5], "focus": "career_continuity"}
+        ]
+    # Multi-chunk (4+)
+    n = len(roles)
+    chunk_size = max(1, n // chunkCount)
+    chunks = []
+    for i in range(chunkCount):
+        start = i * chunk_size
+        end = n if i == chunkCount - 1 else (i + 1) * chunk_size
+        chunk_type = ["recent_primary", "recent_secondary", "mid_career", "early_career", "legacy"][i] if i < 5 else f"chunk_{i+1}"
+        chunks.append({
+            "type": chunk_type,
+            "roles": roles[start:end],
+            "priorityRange": [max(1, i+1), min(5, i+3)],
+            "focus": "adaptive"
+        })
+    return chunks
+
+# Helper: Process a single chunk with OpenAI (threaded for parallelism)
+def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
+    import openai
+    import json
+    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    # Compose message for this chunk
+    message = {
+        "profile": {**profile, "work_experience": chunk["roles"]},
+        "job_description": job_description,
+        "priorityRange": chunk["priorityRange"],
+        "focus": chunk["focus"],
+        "chunk_type": chunk["type"]
+    }
+    thread = client.beta.threads.create()
+    thread_id = thread.id
+    client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content=json.dumps(message)
+    )
+    run = client.beta.threads.runs.create(
+        thread_id=thread_id,
+        assistant_id=OPENAI_ASSISTANT_ID
+    )
+    import time
+    for _ in range(180):
+        run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+        if run_status.status in ("completed", "failed", "cancelled", "expired"):
+            break
+        time.sleep(1)
+    if run_status.status != "completed":
+        return {"error": f"Assistant run did not complete: {run_status.status}"}
+    messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
+    if not messages.data:
+        return {"error": "No response from assistant"}
+    content = messages.data[0].content[0].text.value
+    try:
+        content_json = json.loads(content)
+    except Exception as e:
+        return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
+    return content_json
+
+# Helper: Assemble chunk results (simple concatenation for now)
+def assemble_chunks(chunk_results):
+    # This can be made more sophisticated (e.g., merge sections, deduplicate, etc.)
+    cv_sections = [r.get("cv") or r.get("content") or "" for r in chunk_results if isinstance(r, dict)]
+    cover_letters = [r.get("cover_letter") or "" for r in chunk_results if isinstance(r, dict)]
+    return {
+        "cv": "\n\n".join(cv_sections),
+        "cover_letter": "\n\n".join(cover_letters)
+    }
+
+@router.post("/generate-assistant-adaptive")
+async def generate_assistant_adaptive(request: Request):
+    """
+    Generate a tailored CV and cover letter using adaptive chunking and OpenAI Assistant API.
+    Accepts: {"profile": {...}, "job_description": "..."}
+    Returns: {"cv": "...", "cover_letter": "...", "strategy": {...}, "chunks": ...}
+    """
+    import os
+    import json
+    data = await request.json()
+    profile = data.get("profile")
+    job_description = data.get("job_description")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
+    if not OPENAI_API_KEY or not OPENAI_ASSISTANT_ID:
+        return {"error": "OpenAI API key or Assistant ID not set"}
+    # 1. Analyze
+    analysis = analyze_payload(profile)
+    strategy = select_chunking_strategy(analysis)
+    # 2. Create chunks
+    chunks = create_adaptive_chunks(profile, job_description, strategy)
+    # 3. Process chunks in parallel
+    loop = asyncio.get_event_loop()
+    with ThreadPoolExecutor(max_workers=strategy["chunkCount"]) as executor:
+        tasks = [
+            loop.run_in_executor(
+                executor,
+                process_chunk_with_openai,
+                chunk,
+                profile,
+                job_description,
+                OPENAI_API_KEY,
+                OPENAI_ASSISTANT_ID
+            ) for chunk in chunks
+        ]
+        chunk_results = await asyncio.gather(*tasks)
+    # 4. Assemble
+    assembled = assemble_chunks(chunk_results)
+    return {
+        **assembled,
+        "strategy": strategy,
+        "analysis": analysis,
+        "chunks": chunk_results
+    }
 
 import tempfile
 from .assistant_manager import CVAssistantManager
