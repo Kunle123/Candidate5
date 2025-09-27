@@ -1448,6 +1448,7 @@ from .assistant_manager import CVAssistantManager
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import pyclamd
+import re
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -1487,48 +1488,12 @@ async def validate_upload(file: UploadFile):
     #     raise HTTPException(status_code=500, detail=f"Malware scan failed: {e}")
     return contents, tmp_path
 
-@router.post("/importassistant")
-@limiter.limit("5/minute")
-async def import_cv_assistant(
-    request: Request,  # Required for SlowAPI
-    file: UploadFile = File(...),
-    user_id: str = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Import a CV file, extract its text, send it to the OpenAI Assistant for parsing, persist to DB, and return structured JSON.
-    """
-    # 1. Validate and scan upload
-    contents, tmp_path = await validate_upload(file)
-    # 2. Extract text from file (support PDF, DOCX, TXT)
-    ext = file.filename.split('.')[-1].lower()
-    if ext == "pdf":
-        import pdfplumber
-        with pdfplumber.open(tmp_path) as pdf:
-            text = "\n".join(page.extract_text() or "" for page in pdf.pages)
-    elif ext in ("docx", "doc"):
-        from docx import Document
-        doc = Document(tmp_path)
-        text = "\n".join([p.text for p in doc.paragraphs])
-    elif ext == "txt":
-        text = contents.decode("utf-8", errors="ignore")
-    else:
-        os.unlink(tmp_path)
-        raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF, DOCX, and TXT are supported.")
-    os.unlink(tmp_path)
-    if not text.strip():
-        raise HTTPException(status_code=400, detail="No text could be extracted from the file.")
-    # 3. Process with OpenAI Assistant
-    try:
-        from .assistant_manager import CVAssistantManager
-        assistant = CVAssistantManager()
-        parsed_data = assistant.process_cv(text)
-        save_parsed_cv_to_db(parsed_data, user_id, db)
-        return {"success": True, "data": parsed_data}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"CV processing failed: {e}")
+def extract_json_from_markdown(content):
+    match = re.search(r"```(?:json)?\s*([^\s`]+?)\s*```", content, re.IGNORECASE)
+    if match:
+        return match.group(1)
+    return content
 
-# --- ENHANCED KEYWORD EXTRACTION FOR /cv/preview ---
 async def extract_comprehensive_keywords(job_description):
     import logging
     prompt = f'''
@@ -1542,7 +1507,8 @@ Extract 12-20 keywords from this job posting for comprehensive ATS optimization.
             model="gpt-4o-2024-08-06",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=800,
-            temperature=0.1
+            temperature=0.1,
+            response_format={"type": "json_object"}
         )
         content = response.choices[0].message.content
         logging.getLogger("arc").info(f"[OPENAI RAW CONTENT] {content}")
@@ -1553,9 +1519,9 @@ Extract 12-20 keywords from this job posting for comprehensive ATS optimization.
         try:
             return json.loads(content)
         except Exception as e:
-            logging.getLogger("arc").error(f"[OPENAI INVALID JSON] {e}. Raw content: {content}")
+            logging.getLogger("arc").error(f"[OPENAI INVALID JSON] {e}. Content: {content}")
             logging.getLogger("arc").error(f"[OPENAI FULL RESPONSE] {response}")
-            raise HTTPException(status_code=500, detail=f"OpenAI returned invalid JSON: {e}. Raw content: {content}")
+            raise HTTPException(status_code=500, detail=f"OpenAI returned invalid JSON: {e}. Content: {content}")
     except Exception as e:
         logging.getLogger("arc").error(f"[OPENAI EXCEPTION] {e}")
         raise HTTPException(status_code=500, detail=f"Keyword extraction failed: {e}")
