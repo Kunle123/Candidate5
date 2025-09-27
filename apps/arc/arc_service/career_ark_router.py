@@ -39,6 +39,7 @@ from .ai_utils import parse_cv_with_ai_chunk, save_parsed_cv_to_db
 from .schemas import ProfileCreate, ProfileUpdate, ProfileOut, WorkExperienceCreate, WorkExperienceUpdate, WorkExperienceOut, EducationCreate, EducationUpdate, EducationOut, SkillCreate, SkillOut, ProjectCreate, ProjectUpdate, ProjectOut, CertificationCreate, CertificationUpdate, CertificationOut, TrainingCreate, TrainingUpdate, Role
 from openai import OpenAI
 from fastapi.routing import APIRoute
+from fastapi.responses import JSONResponse
 
 # --- Add OpenAI Assistants API imports ---
 import openai
