@@ -1625,6 +1625,7 @@ def map_profile_to_job_comprehensive(profile, job_analysis):
     return mapping
 
 # --- REPLACE MOCK LOGIC IN /cv/preview ---
+import time
 @router.post("/cv/preview")
 async def cv_keyword_preview(request: Request):
     """
