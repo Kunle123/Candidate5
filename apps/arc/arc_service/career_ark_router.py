@@ -871,18 +871,38 @@ def analyze_payload(profile):
 
 def calculate_career_span(work_experience):
     from datetime import datetime
+    import logging
+    logger = logging.getLogger("arc_service")
     dates = []
     for role in work_experience:
-        try:
-            if role.get("start_date"):
-                dates.append(datetime.strptime(role["start_date"], "%Y-%m-%d"))
-        except Exception:
-            continue
+        start = role.get("start_date")
+        end = role.get("end_date")
+        # Try multiple formats for start_date
+        for fmt in ("%Y-%m-%d", "%Y-%m", "%b %Y", "%Y"):
+            try:
+                if start:
+                    start_dt = datetime.strptime(start, fmt)
+                    dates.append(start_dt)
+                    break
+            except Exception:
+                continue
+        # Try multiple formats for end_date, skip 'Present'
+        if end and end.lower() not in ("present", "current", "now"):
+            for fmt in ("%Y-%m-%d", "%Y-%m", "%b %Y", "%Y"):
+                try:
+                    end_dt = datetime.strptime(end, fmt)
+                    dates.append(end_dt)
+                    break
+                except Exception:
+                    continue
     if not dates:
+        logger.warning(f"[CAREER SPAN] No valid dates found in work_experience: {work_experience}")
         return 0
     earliest = min(dates)
     latest = max(dates)
-    return round((latest - earliest).days / 365.25)
+    years = round((latest - earliest).days / 365.25)
+    logger.info(f"[CAREER SPAN] Earliest: {earliest}, Latest: {latest}, Years: {years}")
+    return years
 
 def select_chunking_strategy(analysis):
     sizeKB = analysis["sizeKB"]
