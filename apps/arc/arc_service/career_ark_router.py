@@ -924,19 +924,37 @@ def analyze_payload(profile):
 
 def calculate_career_span(work_experience):
     from datetime import datetime
-    if not work_experience:
-        return 0
     dates = []
     for role in work_experience:
-        try:
-            dates.append(datetime.strptime(role["start_date"], "%Y-%m"))
-        except Exception:
-            continue
+        start = role.get("start_date")
+        end = role.get("end_date")
+        # Parse start date if possible
+        parsed = False
+        if start and isinstance(start, str) and start.lower() != "present":
+            for fmt in ("%b %Y", "%Y-%m", "%Y"):
+                try:
+                    dates.append(datetime.strptime(start, fmt))
+                    parsed = True
+                    break
+                except Exception:
+                    continue
+        # Parse end date if possible, else use now
+        parsed_end = False
+        if end and isinstance(end, str) and end.lower() != "present":
+            for fmt in ("%b %Y", "%Y-%m", "%Y"):
+                try:
+                    dates.append(datetime.strptime(end, fmt))
+                    parsed_end = True
+                    break
+                except Exception:
+                    continue
+        if not parsed_end:
+            dates.append(datetime.now())
     if not dates:
         return 0
     earliest = min(dates)
-    latest = max([datetime.strptime(role.get("end_date", datetime.now().strftime("%Y-%m")), "%Y-%m") for role in work_experience if role.get("start_date")])
-    return max(1, round((latest - earliest).days / 365.25))
+    latest = max(dates)
+    return round((latest - earliest).days / 365.25)
 
 # Helper: Select chunking strategy
 
