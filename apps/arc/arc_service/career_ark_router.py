@@ -1528,7 +1528,103 @@ async def import_cv_assistant(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"CV processing failed: {e}")
 
-# --- NEW: Keyword Preview Endpoint ---
+# --- ENHANCED KEYWORD EXTRACTION FOR /cv/preview ---
+async def extract_comprehensive_keywords(job_description):
+    prompt = f'''
+Extract 12-20 keywords from this job posting for comprehensive ATS optimization.
+
+Job Description: {job_description}
+
+Extract keywords in these categories:
+1. TECHNICAL SKILLS (4-6 keywords):
+2. FUNCTIONAL SKILLS (3-5 keywords):
+3. SOFT SKILLS (2-4 keywords):
+4. INDUSTRY TERMS (2-4 keywords):
+5. EXPERIENCE QUALIFIERS (1-3 keywords):
+
+REQUIREMENTS:
+- Extract EXACTLY 12-20 keywords total
+- Prioritize keywords that appear multiple times
+- Include both exact phrases and individual terms
+- Focus on keywords that would be searched by recruiters
+- Avoid generic words like "experience" or "skills"
+
+Output format:
+{
+  "technical_skills": [ ... ],
+  "functional_skills": [ ... ],
+  "soft_skills": [ ... ],
+  "industry_terms": [ ... ],
+  "experience_qualifiers": [ ... ],
+  "total_keywords": 16,
+  "keyword_priority": {
+    "high": [ ... ],
+    "medium": [ ... ],
+    "low": [ ... ]
+  }
+}
+'''
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        raise HTTPException(status_code=500, detail="OpenAI API key not set")
+    client = openai.OpenAI(api_key=openai_api_key)
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=800,
+            temperature=0.1
+        )
+        content = response.choices[0].message.content
+        import json
+        return json.loads(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Keyword extraction failed: {e}")
+
+# --- ENHANCED KEYWORD MAPPING ---
+def map_profile_to_job_comprehensive(profile, job_analysis):
+    profile_text = str(profile).lower()
+    all_keywords = (
+        job_analysis.get("technical_skills", []) +
+        job_analysis.get("functional_skills", []) +
+        job_analysis.get("soft_skills", []) +
+        job_analysis.get("industry_terms", []) +
+        job_analysis.get("experience_qualifiers", [])
+    )
+    mapping = {
+        "green_keywords": [],
+        "amber_keywords": [],
+        "red_keywords": [],
+        "keyword_coverage": {
+            "total_keywords": len(all_keywords),
+            "matched_keywords": 0,
+            "coverage_percentage": 0
+        }
+    }
+    for keyword in all_keywords:
+        keyword_lower = keyword.lower()
+        if keyword_lower in profile_text:
+            mapping["green_keywords"].append({"keyword": keyword, "evidence": "Found in profile"})
+            mapping["keyword_coverage"]["matched_keywords"] += 1
+        else:
+            # Simple related skill logic: check for partial match
+            related = None
+            for word in keyword_lower.split():
+                if word in profile_text and len(word) > 3:
+                    related = word
+                    break
+            if related:
+                mapping["amber_keywords"].append({"keyword": keyword, "related_skill": related, "transfer_rationale": f"{related} is related to {keyword}"})
+                mapping["keyword_coverage"]["matched_keywords"] += 1
+            else:
+                mapping["red_keywords"].append({"keyword": keyword, "gap_severity": "medium", "mitigation": f"Consider gaining experience or training in {keyword}"})
+    if mapping["keyword_coverage"]["total_keywords"] > 0:
+        mapping["keyword_coverage"]["coverage_percentage"] = round(
+            mapping["keyword_coverage"]["matched_keywords"] / mapping["keyword_coverage"]["total_keywords"] * 100
+        )
+    return mapping
+
+# --- REPLACE MOCK LOGIC IN /cv/preview ---
 @router.post("/cv/preview")
 async def cv_keyword_preview(request: Request):
     """
@@ -1539,35 +1635,27 @@ async def cv_keyword_preview(request: Request):
     data = await request.json()
     profile = data.get("profile")
     job_description = data.get("jobDescription") or data.get("job_description")
-    # --- Placeholder logic for preview ---
-    # In production, call OpenAI for quick job analysis and keyword mapping
+    start = time.time()
+    # 1. Extract comprehensive keywords from job description
+    job_analysis = await extract_comprehensive_keywords(job_description)
+    # 2. Map profile to keywords for RAG status
+    keyword_mapping = map_profile_to_job_comprehensive(profile, job_analysis)
+    # 3. Build preview response
     preview = {
         "preview_ready": True,
-        "processing_time": "8 seconds",
+        "processing_time": f"{round(time.time() - start, 2)} seconds",
         "job_analysis": {
-            "job_title": "Senior Oracle Developer",
-            "company": "TechCorp Financial",
-            "experience_level": "Senior",
-            "industry": "Financial Services",
-            "primary_keywords": ["Oracle Database", "SQL", "ERP Systems", "Cloud", "Project Management"]
+            "job_title": job_analysis.get("job_title", ""),
+            "company": job_analysis.get("company", ""),
+            "experience_level": job_analysis.get("experience_level", ""),
+            "industry": job_analysis.get("industry", ""),
+            "primary_keywords": job_analysis.get("technical_skills", []) + job_analysis.get("functional_skills", [])
         },
-        "keyword_analysis": {
-            "green_keywords": [
-                {"keyword": "Oracle Database", "evidence": "5 years experience", "strength": "strong"},
-                {"keyword": "SQL", "evidence": "Extensive use", "strength": "expert"}
-            ],
-            "amber_keywords": [
-                {"keyword": "ERP Systems", "related_skill": "Oracle Fusion", "transfer_rationale": "Oracle Fusion is an ERP system"}
-            ],
-            "red_keywords": [
-                {"keyword": "SAP", "gap_severity": "medium", "mitigation": "Emphasize ERP principles and Oracle expertise"}
-            ],
-            "alignment_score": 78
-        },
+        "keyword_analysis": keyword_mapping,
         "processing_strategy": {
-            "chunking_approach": "triple_chunk",
+            "chunking_approach": "auto",
             "estimated_time": "28 seconds",
-            "optimization_focus": ["Oracle expertise", "Database leadership", "Financial systems"]
+            "optimization_focus": job_analysis.get("keyword_priority", {}).get("high", [])
         },
         "user_options": {
             "proceed_with_generation": True,
