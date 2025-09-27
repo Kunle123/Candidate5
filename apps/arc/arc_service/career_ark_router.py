@@ -871,14 +871,14 @@ async def generate_assistant(request: Request):
         import json
         logger.info(f"[OPENAI PAYLOAD] Sending to OpenAI: {json.dumps(user_message)}")
         if not thread_id:
-        thread = client.beta.threads.create()
-        thread_id = thread.id
+            thread = client.beta.threads.create()
+            thread_id = thread.id
         # Now always have a valid thread_id
-            client.beta.threads.messages.create(
-                thread_id=thread_id,
-                role="user",
+        client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
             content=json.dumps(user_message)  # Send as proper JSON
-            )
+        )
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
             assistant_id=OPENAI_ASSISTANT_ID
