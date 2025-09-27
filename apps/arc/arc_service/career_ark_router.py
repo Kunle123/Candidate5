@@ -1195,6 +1195,19 @@ OUTPUT FORMAT:
 }
 '''
 
+# --- Anti-Fabrication Rules Helper ---
+def get_anti_fabrication_rules():
+    return {
+        "policy": [
+            "NEVER invent achievements, metrics, or experiences not in the profile",
+            "ONLY rephrase existing content for job alignment",
+            "Use intelligent keyword substitution where factually supported",
+            "Maintain 100% accuracy to source profile data",
+            "Base all analysis on factual evidence from source materials",
+            "Do not fabricate or hallucinate any information"
+        ]
+    }
+
 # --- Update process_chunk_with_openai to output only raw content ---
 def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
     import openai
