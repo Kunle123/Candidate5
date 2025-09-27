@@ -1039,9 +1039,45 @@ def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, O
 
 # Helper: Assemble chunk results (simple concatenation for now)
 def assemble_chunks(chunk_results):
-    # This can be made more sophisticated (e.g., merge sections, deduplicate, etc.)
-    cv_sections = [r.get("cv") or r.get("content") or "" for r in chunk_results if isinstance(r, dict)]
-    cover_letters = [r.get("cover_letter") or "" for r in chunk_results if isinstance(r, dict)]
+    import logging
+    logger = logging.getLogger("arc_service")
+    cv_sections = []
+    cover_letters = []
+    for idx, r in enumerate(chunk_results):
+        logger.info(f"[ADAPTIVE DEBUG] Chunk {idx} result type: {type(r)} value: {repr(r)[:300]}")
+        cv_val = r.get("cv") if isinstance(r, dict) else None
+        if isinstance(cv_val, dict):
+            logger.info(f"[ADAPTIVE DEBUG] cv_val is dict, converting to string: {cv_val}")
+            cv_val = str(cv_val)
+        elif isinstance(cv_val, list):
+            logger.info(f"[ADAPTIVE DEBUG] cv_val is list, joining: {cv_val}")
+            cv_val = "\n".join(str(x) for x in cv_val)
+        elif cv_val is not None and not isinstance(cv_val, str):
+            cv_val = str(cv_val)
+        if cv_val:
+            cv_sections.append(cv_val)
+        content_val = r.get("content") if isinstance(r, dict) else None
+        if content_val:
+            if isinstance(content_val, dict):
+                logger.info(f"[ADAPTIVE DEBUG] content_val is dict, converting to string: {content_val}")
+                content_val = str(content_val)
+            elif isinstance(content_val, list):
+                logger.info(f"[ADAPTIVE DEBUG] content_val is list, joining: {content_val}")
+                content_val = "\n".join(str(x) for x in content_val)
+            elif not isinstance(content_val, str):
+                content_val = str(content_val)
+            cv_sections.append(content_val)
+        cover_val = r.get("cover_letter") if isinstance(r, dict) else None
+        if isinstance(cover_val, dict):
+            logger.info(f"[ADAPTIVE DEBUG] cover_val is dict, converting to string: {cover_val}")
+            cover_val = str(cover_val)
+        elif isinstance(cover_val, list):
+            logger.info(f"[ADAPTIVE DEBUG] cover_val is list, joining: {cover_val}")
+            cover_val = "\n".join(str(x) for x in cover_val)
+        elif cover_val is not None and not isinstance(cover_val, str):
+            cover_val = str(cover_val)
+        if cover_val:
+            cover_letters.append(cover_val)
     return {
         "cv": "\n\n".join(cv_sections),
         "cover_letter": "\n\n".join(cover_letters)
