@@ -1531,39 +1531,7 @@ async def import_cv_assistant(
 # --- ENHANCED KEYWORD EXTRACTION FOR /cv/preview ---
 async def extract_comprehensive_keywords(job_description):
     prompt = f'''
-Extract 12-20 keywords from this job posting for comprehensive ATS optimization.
-
-Job Description: {job_description}
-
-Extract keywords in these categories:
-1. TECHNICAL SKILLS (4-6 keywords):
-2. FUNCTIONAL SKILLS (3-5 keywords):
-3. SOFT SKILLS (2-4 keywords):
-4. INDUSTRY TERMS (2-4 keywords):
-5. EXPERIENCE QUALIFIERS (1-3 keywords):
-
-REQUIREMENTS:
-- Extract EXACTLY 12-20 keywords total
-- Prioritize keywords that appear multiple times
-- Include both exact phrases and individual terms
-- Focus on keywords that would be searched by recruiters
-- Avoid generic words like "experience" or "skills"
-
-Output format:
-{
-  "technical_skills": [ ... ],
-  "functional_skills": [ ... ],
-  "soft_skills": [ ... ],
-  "industry_terms": [ ... ],
-  "experience_qualifiers": [ ... ],
-  "total_keywords": 16,
-  "keyword_priority": {
-    "high": [ ... ],
-    "medium": [ ... ],
-    "low": [ ... ]
-  }
-}
-'''
+Extract 12-20 keywords from this job posting for comprehensive ATS optimization.\n\nJob Description: {job_description}\n\nExtract keywords in these categories:\n1. TECHNICAL SKILLS (4-6 keywords):\n2. FUNCTIONAL SKILLS (3-5 keywords):\n3. SOFT SKILLS (2-4 keywords):\n4. INDUSTRY TERMS (2-4 keywords):\n5. EXPERIENCE QUALIFIERS (1-3 keywords):\n\nREQUIREMENTS:\n- Extract EXACTLY 12-20 keywords total\n- Prioritize keywords that appear multiple times\n- Include both exact phrases and individual terms\n- Focus on keywords that would be searched by recruiters\n- Avoid generic words like "experience" or "skills"\n\nOutput format:\n{{\n  "technical_skills": [ ... ],\n  "functional_skills": [ ... ],\n  "soft_skills": [ ... ],\n  "industry_terms": [ ... ],\n  "experience_qualifiers": [ ... ],\n  "total_keywords": 16,\n  "keyword_priority": {{\n    "high": [ ... ],\n    "medium": [ ... ],\n    "low": [ ... ]\n  }}\n}}\n'''
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if not openai_api_key:
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
