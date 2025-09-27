@@ -870,16 +870,15 @@ async def generate_assistant(request: Request):
             user_message["language"] = language
         import json
         logger.info(f"[OPENAI PAYLOAD] Sending to OpenAI: {json.dumps(user_message)}")
-        # If no thread_id, create a new thread (first request)
         if not thread_id:
-        thread = client.beta.threads.create()
-        thread_id = thread.id
+            thread = client.beta.threads.create()
+            thread_id = thread.id
         # Now always have a valid thread_id
-            client.beta.threads.messages.create(
-                thread_id=thread_id,
-                role="user",
+        client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
             content=json.dumps(user_message)  # Send as proper JSON
-            )
+        )
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
             assistant_id=OPENAI_ASSISTANT_ID
@@ -901,11 +900,7 @@ async def generate_assistant(request: Request):
         except Exception as e:
             return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
         content_json["thread_id"] = thread_id
-        return content_json
-    except Exception as e:
-        logger.error(f"[ERROR] Error in generate_assistant: {str(e)}")
-        return {"error": f"Error generating CV: {str(e)}"}
-
+        return content_json       
 # --- DYNAMIC ADAPTIVE CHUNKING STRATEGY ---
 def analyze_payload(profile):
     import json
