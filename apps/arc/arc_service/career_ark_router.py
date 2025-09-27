@@ -1092,19 +1092,28 @@ async def generate_assistant_adaptive(request: Request):
     """
     import os
     import json
+    import logging
+    logger = logging.getLogger("arc_service")
     data = await request.json()
+    logger.info(f"[ADAPTIVE DEBUG] Incoming payload: {json.dumps(data)[:1000]}")
     profile = data.get("profile")
     job_description = data.get("job_description")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
     if not OPENAI_API_KEY or not OPENAI_ASSISTANT_ID:
+        logger.error("[ADAPTIVE DEBUG] OpenAI API key or Assistant ID not set")
         return {"error": "OpenAI API key or Assistant ID not set"}
     # 1. Analyze
     analysis = analyze_payload(profile)
     strategy = select_chunking_strategy(analysis)
+    logger.info(f"[ADAPTIVE DEBUG] Payload analysis: {analysis}")
+    logger.info(f"[ADAPTIVE DEBUG] Chunking strategy: {strategy}")
     # 2. Create chunks
     chunks = create_adaptive_chunks(profile, job_description, strategy)
+    logger.info(f"[ADAPTIVE DEBUG] Chunks created: {json.dumps(chunks)[:1000]}")
     # 3. Process chunks in parallel
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
     loop = asyncio.get_event_loop()
     with ThreadPoolExecutor(max_workers=strategy["chunkCount"]) as executor:
         tasks = [
@@ -1119,8 +1128,10 @@ async def generate_assistant_adaptive(request: Request):
             ) for chunk in chunks
         ]
         chunk_results = await asyncio.gather(*tasks)
+    logger.info(f"[ADAPTIVE DEBUG] Chunk results: {json.dumps(chunk_results, default=str)[:2000]}")
     # 4. Assemble
     assembled = assemble_chunks(chunk_results)
+    logger.info(f"[ADAPTIVE DEBUG] Final assembled output: {json.dumps(assembled, default=str)[:1000]}")
     return {
         **assembled,
         "strategy": strategy,
