@@ -1513,7 +1513,7 @@ Extract 12-20 keywords from this job posting for comprehensive ATS optimization.
         import json
         try:
             return json.loads(content)
-    except Exception as e:
+        except Exception as e:
             logging.getLogger("arc").error(f"[OPENAI INVALID JSON] {e}. Content: {content}")
             logging.getLogger("arc").error(f"[OPENAI FULL RESPONSE] {response}")
             raise HTTPException(status_code=500, detail=f"OpenAI returned invalid JSON: {e}. Content: {content}")
