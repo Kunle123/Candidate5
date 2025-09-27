@@ -1247,9 +1247,15 @@ def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, O
     if not messages.data:
         return {"error": "No response from assistant"}
     content = messages.data[0].content[0].text.value
+    import logging
+    logger = logging.getLogger("arc_service")
+    if not content or not content.strip() or not content.strip().startswith("{"):
+        logger.error(f"[OPENAI EMPTY OR INVALID RESPONSE] Content: {repr(content)}")
+        return {"error": "Assistant response is empty or not valid JSON", "raw": content}
     try:
         content_json = json.loads(content)
     except Exception as e:
+        logger.error(f"[OPENAI INVALID JSON] {e}. Content: {content}")
         return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
     return content_json
 
