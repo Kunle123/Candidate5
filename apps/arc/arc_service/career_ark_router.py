@@ -905,126 +905,363 @@ async def generate_assistant(request: Request):
         logger.error(f"[ERROR] Error in generate_assistant: {str(e)}")
         return {"error": f"Error generating CV: {str(e)}"}
 
-# --- Adaptive Chunking for Assistant CV Generation ---
-from concurrent.futures import ThreadPoolExecutor
-import asyncio
-
-# Helper: Analyze payload
-
+# --- DYNAMIC ADAPTIVE CHUNKING STRATEGY ---
 def analyze_payload(profile):
     import json
     payload_size = len(json.dumps(profile))
     role_count = len(profile.get("work_experience", []))
     career_years = calculate_career_span(profile.get("work_experience", []))
+    def calculate_complexity(profile):
+        # Simple complexity metric: size * role count * career years
+        return (payload_size / 1024) * (role_count / 5) * (career_years / 10)
     return {
         "sizeKB": round(payload_size / 1024),
         "roleCount": role_count,
         "careerYears": career_years,
+        "complexity": calculate_complexity(profile)
     }
 
 def calculate_career_span(work_experience):
     from datetime import datetime
     dates = []
     for role in work_experience:
-        start = role.get("start_date")
-        end = role.get("end_date")
-        # Parse start date if possible
-        parsed = False
-        if start and isinstance(start, str) and start.lower() != "present":
-            for fmt in ("%b %Y", "%Y-%m", "%Y"):
-                try:
-                    dates.append(datetime.strptime(start, fmt))
-                    parsed = True
-                    break
-                except Exception:
-                    continue
-        # Parse end date if possible, else use now
-        parsed_end = False
-        if end and isinstance(end, str) and end.lower() != "present":
-            for fmt in ("%b %Y", "%Y-%m", "%Y"):
-                try:
-                    dates.append(datetime.strptime(end, fmt))
-                    parsed_end = True
-                    break
-                except Exception:
-                    continue
-        if not parsed_end:
-            dates.append(datetime.now())
+        try:
+            if role.get("start_date"):
+                dates.append(datetime.strptime(role["start_date"], "%Y-%m-%d"))
+        except Exception:
+            continue
     if not dates:
         return 0
     earliest = min(dates)
     latest = max(dates)
     return round((latest - earliest).days / 365.25)
 
-# Helper: Select chunking strategy
-
 def select_chunking_strategy(analysis):
     sizeKB = analysis["sizeKB"]
     roleCount = analysis["roleCount"]
     careerYears = analysis["careerYears"]
+    # Small payload - no chunking needed
     if sizeKB <= 15 or roleCount <= 5 or careerYears <= 5:
-        return {"strategy": "single_chunk", "chunkCount": 1}
+        return {"strategy": "single_chunk", "chunkCount": 1, "expectedTime": "15-25 seconds"}
+    # Medium payload - 2 chunks
     if sizeKB <= 25 or roleCount <= 10 or careerYears <= 10:
-        return {"strategy": "dual_chunk", "chunkCount": 2}
+        return {"strategy": "dual_chunk", "chunkCount": 2, "expectedTime": "20-30 seconds"}
+    # Large payload - 3 chunks
     if sizeKB <= 35 or roleCount <= 15 or careerYears <= 20:
-        return {"strategy": "triple_chunk", "chunkCount": 3}
-    return {"strategy": "multi_chunk", "chunkCount": min(max(2, (roleCount + 4) // 5), 5)}
+        return {"strategy": "triple_chunk", "chunkCount": 3, "expectedTime": "25-35 seconds"}
+    # Very large payload - 4+ chunks
+    return {
+        "strategy": "multi_chunk",
+        "chunkCount": min(max(4, round(roleCount / 5)), 5),
+        "expectedTime": "30-45 seconds"
+    }
 
-# Helper: Create chunks
+def create_single_chunk(profile, job_description):
+    return [{
+        "type": "complete_career",
+        "roles": profile.get("work_experience", []),
+        "priorityRange": [1, 5],
+        "focus": "comprehensive_optimization",
+        "expectedSize": "10-15KB"
+    }]
 
-def create_adaptive_chunks(profile, job_description, strategy):
+def create_dual_chunks(profile, job_description):
     roles = profile.get("work_experience", [])
-    chunkCount = strategy["chunkCount"]
-    if chunkCount == 1:
-        return [{
-            "type": "complete_career",
-            "roles": roles,
-            "priorityRange": [1, 5],
-            "focus": "comprehensive_optimization"
-        }]
-    if chunkCount == 2:
-        mid = (len(roles) + 1) // 2
-        return [
-            {"type": "recent_primary", "roles": roles[:mid], "priorityRange": [1, 3], "focus": "detailed_optimization"},
-            {"type": "supporting_timeline", "roles": roles[mid:], "priorityRange": [3, 5], "focus": "timeline_completion"}
-        ]
-    if chunkCount == 3:
-        n = len(roles)
-        c1 = max(1, n * 4 // 10)
-        c2 = max(1, n * 4 // 10)
-        return [
-            {"type": "recent_roles", "roles": roles[:c1], "priorityRange": [1, 3], "focus": "maximum_optimization"},
-            {"type": "supporting_roles", "roles": roles[c1:c1+c2], "priorityRange": [2, 4], "focus": "supporting_evidence"},
-            {"type": "timeline_roles", "roles": roles[c1+c2:], "priorityRange": [3, 5], "focus": "career_continuity"}
-        ]
-    # Multi-chunk (4+)
+    mid_point = (len(roles) + 1) // 2
+    return [
+        {
+            "type": "recent_primary",
+            "roles": roles[:mid_point],
+            "priorityRange": [1, 3],
+            "focus": "detailed_optimization",
+            "expectedSize": "12-18KB"
+        },
+        {
+            "type": "supporting_timeline",
+            "roles": roles[mid_point:],
+            "priorityRange": [3, 5],
+            "focus": "timeline_completion",
+            "expectedSize": "10-15KB"
+        }
+    ]
+
+def create_triple_chunks(profile, job_description):
+    roles = profile.get("work_experience", [])
     n = len(roles)
-    chunk_size = max(1, n // chunkCount)
+    recent_count = max(1, round(n * 0.4))
+    supporting_count = max(1, round(n * 0.4))
+    return [
+        {
+            "type": "recent_roles",
+            "roles": roles[:recent_count],
+            "priorityRange": [1, 3],
+            "focus": "maximum_optimization",
+            "expectedSize": "12-20KB"
+        },
+        {
+            "type": "supporting_roles",
+            "roles": roles[recent_count:recent_count+supporting_count],
+            "priorityRange": [2, 4],
+            "focus": "supporting_evidence",
+            "expectedSize": "15-25KB"
+        },
+        {
+            "type": "timeline_roles",
+            "roles": roles[recent_count+supporting_count:],
+            "priorityRange": [3, 5],
+            "focus": "career_continuity",
+            "expectedSize": "8-15KB"
+        }
+    ]
+
+def create_multi_chunks(profile, job_description):
+    roles = profile.get("work_experience", [])
+    n = len(roles)
+    chunk_count = min(max(4, round(n / 5)), 5)
+    chunk_size = max(1, (n + chunk_count - 1) // chunk_count)
     chunks = []
-    for i in range(chunkCount):
+    chunk_types = ["recent_primary", "recent_secondary", "mid_career", "early_career", "legacy"]
+    for i in range(chunk_count):
         start = i * chunk_size
-        end = n if i == chunkCount - 1 else (i + 1) * chunk_size
-        chunk_type = ["recent_primary", "recent_secondary", "mid_career", "early_career", "legacy"][i] if i < 5 else f"chunk_{i+1}"
+        end = n if i == chunk_count - 1 else (i + 1) * chunk_size
         chunks.append({
-            "type": chunk_type,
+            "type": chunk_types[i] if i < len(chunk_types) else f"chunk_{i+1}",
             "roles": roles[start:end],
-            "priorityRange": [max(1, i+1), min(5, i+3)],
-            "focus": "adaptive"
+            "priorityRange": [min(i+1, 5), min(i+3, 5)],
+            "focus": [
+                "critical_optimization",
+                "high_priority_support",
+                "skill_progression",
+                "timeline_foundation",
+                "legacy"
+            ][i] if i < 5 else "adaptive",
+            "expectedSize": "10-20KB"
         })
     return chunks
 
-# Helper: Process a single chunk with OpenAI (threaded for parallelism)
+def create_adaptive_chunks(profile, job_description, strategy):
+    strat = strategy["strategy"]
+    if strat == "single_chunk":
+        return create_single_chunk(profile, job_description)
+    elif strat == "dual_chunk":
+        return create_dual_chunks(profile, job_description)
+    elif strat == "triple_chunk":
+        return create_triple_chunks(profile, job_description)
+    elif strat == "multi_chunk":
+        return create_multi_chunks(profile, job_description)
+    else:
+        return create_triple_chunks(profile, job_description)  # Fallback
+
+# --- PROMPT DEFINITIONS FOR CHUNKED CV GENERATION ---
+
+# --- Update chunk prompts to output only raw content ---
+def get_chunk_prompt(chunk_type: str) -> str:
+    """
+    Returns the appropriate prompt for the given chunk type.
+    """
+    if chunk_type == "global_context":
+        return '''You are a career analysis specialist. Analyze the provided career profile and job description to create global context standards that will ensure consistent CV generation across multiple processing chunks.
+
+### ANTI-FABRICATION POLICY
+- NEVER invent information not present in the profile
+- ONLY use data from the provided profile and job description
+- Base all analysis on factual evidence from source materials
+
+### TASK: CREATE GLOBAL CONTEXT
+
+**INPUT ANALYSIS:**
+1. **Job Requirements Analysis:**
+   - Extract GREEN keywords (exact matches in profile)
+   - Extract AMBER keywords (related skills in profile)
+   - Identify job seniority level (Entry/Mid/Senior/Executive)
+   - Determine industry context and company type
+
+2. **Career Profile Analysis:**
+   - Identify top 5 career achievements across all roles
+   - Analyze career progression and skill evolution
+   - Determine experience level and specializations
+   - Map keyword coverage across career timeline
+
+3. **Priority Standards Definition:**
+   - Define what constitutes Priority 1 content (highest job relevance)
+   - Define Priority 2-5 standards for consistent application
+   - Establish quality benchmarks for each priority level
+
+### OUTPUT FORMAT (JSON):
+{...}'''
+    if chunk_type == "recent_roles":
+        return '''You are a CV content processor specializing in RECENT CAREER ROLES (typically 2020-present). Your job is to generate RAW CONTENT ONLY - no complete CVs or cover letters.
+
+### ANTI-FABRICATION POLICY
+- NEVER invent achievements, metrics, or experiences not in the profile
+- ONLY rephrase existing content for job alignment
+- Use intelligent keyword substitution where factually supported
+- Maintain 100% accuracy to source profile data
+
+### GLOBAL CONTEXT INTEGRATION
+You will receive global context standards. Apply these consistently:
+- Use the provided job keyword analysis for optimization
+- Reference career highlights for achievement prioritization
+- Follow priority standards for consistent ranking
+- Maintain quality benchmarks across all content
+
+### PRIORITY ASSIGNMENT CONSTRAINTS
+**CRITICAL: You can ONLY assign priorities 1, 2, or 3 to content in this chunk**
+- **Priority 1:** Most job-relevant content in recent roles (GREEN keyword matches, key achievements)
+- **Priority 2:** Strong job alignment or significant recent achievements
+- **Priority 3:** Supporting recent experience or skill demonstrations
+
+### TASK: GENERATE RAW CONTENT ONLY
+**DO NOT generate:**
+- Complete CV structure
+- Cover letters
+- Summary sections
+- Final formatting
+
+**DO generate:**
+- Raw experience bullets with priorities
+- Raw achievement statements
+- Raw skill extractions
+- Raw competency mappings
+
+### OUTPUT FORMAT (JSON):
+{
+  "chunk_type": "recent_roles",
+  "raw_experience": [ ... ],
+  "raw_achievements": [ ... ],
+  "raw_skills": [ ... ],
+  "processing_notes": { ... }
+}
+'''
+    if chunk_type == "supporting_roles":
+        return '''You are a CV content processor specializing in SUPPORTING CAREER ROLES (typically 2010-2019). Your job is to generate RAW CONTENT ONLY - no complete CVs or cover letters.
+
+### ANTI-FABRICATION POLICY
+- NEVER invent achievements, metrics, or experiences not in the profile
+- ONLY rephrase existing content for job alignment
+- Use intelligent keyword substitution where factually supported
+- Maintain 100% accuracy to source profile data
+
+### PRIORITY ASSIGNMENT CONSTRAINTS
+**CRITICAL: You can ONLY assign priorities 2, 3, or 4 to content in this chunk**
+- **Priority 2:** Strong job alignment in supporting roles (AMBER keywords, skill progression)
+- **Priority 3:** Relevant experience and skill demonstrations
+- **Priority 4:** General professional experience and career development
+
+### TASK: GENERATE RAW CONTENT ONLY
+Focus on skill progression, career development, and supporting evidence for job suitability.
+
+### OUTPUT FORMAT (JSON):
+{
+  "chunk_type": "supporting_roles",
+  "raw_experience": [ ... ],
+  "raw_achievements": [ ... ],
+  "raw_skills": [ ... ],
+  "processing_notes": { ... }
+}
+'''
+    if chunk_type == "timeline_roles":
+        return '''You are a CV content processor specializing in TIMELINE COMPLETION ROLES (typically pre-2010). Your job is to generate RAW CONTENT ONLY - no complete CVs or cover letters.
+
+### PRIORITY ASSIGNMENT CONSTRAINTS
+**CRITICAL: You can ONLY assign priorities 3, 4, or 5 to content in this chunk**
+- **Priority 3:** Relevant early career achievements or foundational skills
+- **Priority 4:** General professional experience and career foundation
+- **Priority 5:** Timeline completion and basic responsibilities
+
+### TASK: GENERATE RAW CONTENT ONLY
+Focus on career foundation, early development, and timeline continuity.
+
+### OUTPUT FORMAT (JSON):
+{
+  "chunk_type": "timeline_roles",
+  "raw_experience": [ ... ],
+  "raw_achievements": [ ... ],
+  "raw_skills": [ ... ],
+  "processing_notes": { ... }
+}
+'''
+    if chunk_type == "final_assembly":
+        return '''You are a CV assembly specialist. Take the processed raw content chunks and create a single, unified CV with one cover letter.
+
+### ASSEMBLY REQUIREMENTS
+
+**INPUT:** Multiple processed chunks with raw content
+**OUTPUT:** Single unified CV with one cover letter
+
+**1. Content Merging:**
+- Combine all experience in reverse chronological order
+- Merge achievements (max 12, highest priority first)
+- Unify core competencies with priority rankings
+- Ensure no duplicates or gaps in timeline
+
+**2. Single Cover Letter Generation:**
+- Create ONE cover letter using highlights from ALL chunks
+- Draw from top achievements across entire career
+- Maintain job alignment using global context
+- Professional UK English throughout
+
+**3. CV Structure Assembly:**
+- Professional summary incorporating all career highlights
+- Complete experience section in chronological order
+- Unified achievements section (no duplicates)
+- Core competencies with evidence from all periods
+- Education and additional sections
+
+### FINAL OUTPUT FORMAT:
+{...}'''
+    # Default fallback
+    return "You are a CV content processor. Process the provided chunk as per the instructions."
+
+# --- New: Assembly prompt for final unified CV and cover letter ---
+def get_assembly_prompt() -> str:
+    return '''You are a CV assembly specialist. Take the processed raw content chunks and create a single, unified CV with one cover letter.
+
+INPUT: Multiple processed chunks with raw content
+OUTPUT: Single unified CV with one cover letter
+
+ASSEMBLY REQUIREMENTS:
+1. Merge all experience in chronological order
+2. Combine achievements (max 12, highest priority first)
+3. Unify core competencies with priority rankings
+4. Generate ONE cover letter using highlights from ALL chunks
+5. Ensure consistent formatting and no duplicates
+
+OUTPUT FORMAT:
+{
+  "cv": {
+    "name": "{{CANDIDATE_NAME}}",
+    "contact": "{{CONTACT_INFO}}",
+    "summary": { "content": "Professional summary from all chunks", "priority": 1 },
+    "relevant_achievements": [...],
+    "experience": [...],
+    "core_competencies": [...],
+    "education": [...]
+  },
+  "cover_letter": {
+    "content": "Single unified cover letter using highlights from all chunks",
+    "priority": 1
+  },
+  "job_title": "Extracted from job description",
+  "company_name": "Extracted from job description"
+}
+'''
+
+# --- Update process_chunk_with_openai to output only raw content ---
 def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
     import openai
     import json
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
-    # Compose message for this chunk
+    chunk_type = chunk.get("type", "recent_roles")
+    prompt = get_chunk_prompt(chunk_type)
+    anti_fabrication_rules = get_anti_fabrication_rules()
     message = {
-        "profile": {**profile, "work_experience": chunk["roles"]},
-        "job_description": job_description,
-        "priorityRange": chunk["priorityRange"],
-        "focus": chunk["focus"],
-        "chunk_type": chunk["type"]
+        "chunk": chunk,
+        "globalContext": {},  # Optionally pass global context if available
+        "jobDescription": job_description,
+        "profileContext": profile,
+        "antiFabricationRules": anti_fabrication_rules,
+        "instructions": prompt
     }
     thread = client.beta.threads.create()
     thread_id = thread.id
@@ -1101,13 +1338,52 @@ def assemble_chunks(chunk_results):
         "cover_letter": "\n\n".join(cover_letters)
     }
 
+# --- New: Final assembly step using OpenAI ---
+def assemble_unified_cv(chunk_results, global_context, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
+    import openai
+    import json
+    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    assembly_prompt = get_assembly_prompt()
+    # Prepare the message for assembly
+    message = {
+        "chunks": chunk_results,
+        "global_context": global_context,
+        "profile": profile,
+        "job_description": job_description,
+        "instructions": assembly_prompt
+    }
+    thread = client.beta.threads.create()
+    thread_id = thread.id
+    client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content=json.dumps(message)
+    )
+    run = client.beta.threads.runs.create(
+        thread_id=thread_id,
+        assistant_id=OPENAI_ASSISTANT_ID
+    )
+    import time
+    for _ in range(180):
+        run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+        if run_status.status in ("completed", "failed", "cancelled", "expired"):
+            break
+        time.sleep(1)
+    if run_status.status != "completed":
+        return {"error": f"Assembly run did not complete: {run_status.status}"}
+    messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
+    if not messages.data:
+        return {"error": "No response from assistant (assembly)"}
+    content = messages.data[0].content[0].text.value
+    try:
+        content_json = json.loads(content)
+    except Exception as e:
+        return {"error": f"Assembly response is not valid JSON: {str(e)}", "raw": content}
+    return content_json
+
+# --- Update the adaptive endpoint to use two-stage processing ---
 @router.post("/generate-assistant-adaptive")
 async def generate_assistant_adaptive(request: Request):
-    """
-    Generate a tailored CV and cover letter using adaptive chunking and OpenAI Assistant API.
-    Accepts: {"profile": {...}, "job_description": "..."}
-    Returns: {"cv": "...", "cover_letter": "...", "strategy": {...}, "chunks": ...}
-    """
     import os
     import json
     import logging
@@ -1115,13 +1391,10 @@ async def generate_assistant_adaptive(request: Request):
     data = await request.json()
     logger.info(f"[ADAPTIVE DEBUG] Incoming payload: {json.dumps(data)[:1000]}")
 
-    # Accept both {"profile": {...}, "job_description": "..."} and {"work_experience": [...], ... , "job_description": "..."}
     if "work_experience" in data:
-        # New structure: treat the whole payload as profile
         profile = data.copy()
         job_description = profile.pop("job_description", "")
     else:
-        # Old structure
         profile = data.get("profile")
         job_description = data.get("job_description", "")
 
@@ -1130,6 +1403,7 @@ async def generate_assistant_adaptive(request: Request):
     if not OPENAI_API_KEY or not OPENAI_ASSISTANT_ID:
         logger.error("[ADAPTIVE DEBUG] OpenAI API key or Assistant ID not set")
         return {"error": "OpenAI API key or Assistant ID not set"}
+
     # 1. Analyze
     analysis = analyze_payload(profile)
     strategy = select_chunking_strategy(analysis)
@@ -1138,7 +1412,9 @@ async def generate_assistant_adaptive(request: Request):
     # 2. Create chunks
     chunks = create_adaptive_chunks(profile, job_description, strategy)
     logger.info(f"[ADAPTIVE DEBUG] Chunks created: {json.dumps(chunks)[:1000]}")
-    # 3. Process chunks in parallel
+    # 3. Create global context (if needed)
+    global_context = {}  # Optionally, call OpenAI for global context if required
+    # 4. Process chunks for raw content only, passing job description and anti-fabrication rules
     import asyncio
     from concurrent.futures import ThreadPoolExecutor
     loop = asyncio.get_event_loop()
@@ -1156,8 +1432,8 @@ async def generate_assistant_adaptive(request: Request):
         ]
         chunk_results = await asyncio.gather(*tasks)
     logger.info(f"[ADAPTIVE DEBUG] Chunk results: {json.dumps(chunk_results, default=str)[:2000]}")
-    # 4. Assemble
-    assembled = assemble_chunks(chunk_results)
+    # 5. Final assembly: single unified CV and cover letter
+    assembled = assemble_unified_cv(chunk_results, global_context, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID)
     logger.info(f"[ADAPTIVE DEBUG] Final assembled output: {json.dumps(assembled, default=str)[:1000]}")
     return {
         **assembled,
@@ -1250,3 +1526,105 @@ async def import_cv_assistant(
         return {"success": True, "data": parsed_data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"CV processing failed: {e}")
+
+# --- NEW: Keyword Preview Endpoint ---
+@router.post("/cv/preview")
+async def cv_keyword_preview(request: Request):
+    """
+    Fast keyword preview and job analysis for user review before full CV generation.
+    Input: { profile, jobDescription }
+    Output: { preview_ready, processing_time, job_analysis, keyword_analysis, processing_strategy, user_options }
+    """
+    data = await request.json()
+    profile = data.get("profile")
+    job_description = data.get("jobDescription") or data.get("job_description")
+    # --- Placeholder logic for preview ---
+    # In production, call OpenAI for quick job analysis and keyword mapping
+    preview = {
+        "preview_ready": True,
+        "processing_time": "8 seconds",
+        "job_analysis": {
+            "job_title": "Senior Oracle Developer",
+            "company": "TechCorp Financial",
+            "experience_level": "Senior",
+            "industry": "Financial Services",
+            "primary_keywords": ["Oracle Database", "SQL", "ERP Systems", "Cloud", "Project Management"]
+        },
+        "keyword_analysis": {
+            "green_keywords": [
+                {"keyword": "Oracle Database", "evidence": "5 years experience", "strength": "strong"},
+                {"keyword": "SQL", "evidence": "Extensive use", "strength": "expert"}
+            ],
+            "amber_keywords": [
+                {"keyword": "ERP Systems", "related_skill": "Oracle Fusion", "transfer_rationale": "Oracle Fusion is an ERP system"}
+            ],
+            "red_keywords": [
+                {"keyword": "SAP", "gap_severity": "medium", "mitigation": "Emphasize ERP principles and Oracle expertise"}
+            ],
+            "alignment_score": 78
+        },
+        "processing_strategy": {
+            "chunking_approach": "triple_chunk",
+            "estimated_time": "28 seconds",
+            "optimization_focus": ["Oracle expertise", "Database leadership", "Financial systems"]
+        },
+        "user_options": {
+            "proceed_with_generation": True,
+            "modify_keyword_emphasis": True,
+            "adjust_focus_areas": True,
+            "custom_instructions": True
+        }
+    }
+    return JSONResponse(content=preview)
+
+# --- NEW: Full CV Generation Endpoint ---
+@router.post("/cv/generate")
+async def cv_full_generation(request: Request):
+    """
+    Full CV generation with user preferences and preview data.
+    Input: { profile, jobDescription, previewData, userPreferences }
+    Output: { ...full CV, cover letter, validation, update capabilities... }
+    """
+    data = await request.json()
+    profile = data.get("profile")
+    job_description = data.get("jobDescription") or data.get("job_description")
+    preview_data = data.get("previewData")
+    user_preferences = data.get("userPreferences", {})
+    # --- Placeholder logic for full CV generation ---
+    # In production, call chunked pipeline with user preferences and preview data
+    full_cv = {
+        "cv": {"name": "{{CANDIDATE_NAME}}", "summary": {"content": "Senior Oracle Developer...", "priority": 1}},
+        "cover_letter": {"content": "Dear Hiring Manager...", "job_alignment_score": 85, "keywords_naturally_included": ["Oracle Database", "SQL"]},
+        "validation_summary": {"factual_accuracy": "100%", "job_alignment": "maximum", "anti_fabrication_compliance": "full"},
+        "generation_metadata": {
+            "user_preferences_applied": user_preferences,
+            "keyword_optimization": preview_data.get("keyword_analysis") if preview_data else {},
+            "processing_strategy": preview_data.get("processing_strategy") if preview_data else {}
+        },
+        "update_capabilities": {
+            "supported_updates": ["emphasis_change", "keyword_optimization", "length_adjustment", "section_reorder", "content_focus"]
+        }
+    }
+    return JSONResponse(content=full_cv)
+
+# --- NEW: CV Update Endpoint ---
+@router.post("/cv/update")
+async def cv_update(request: Request):
+    """
+    User-driven CV update endpoint (emphasis, keywords, length, etc.).
+    Input: { currentCV, updateRequest, originalProfile, jobDescription }
+    Output: { ...updated CV... }
+    """
+    data = await request.json()
+    current_cv = data.get("currentCV")
+    update_request = data.get("updateRequest")
+    original_profile = data.get("originalProfile")
+    job_description = data.get("jobDescription") or data.get("job_description")
+    # --- Placeholder logic for update ---
+    # In production, call OpenAI with update prompt and current CV
+    updated_cv = {
+        "cv": {"name": "{{CANDIDATE_NAME}}", "summary": {"content": f"[UPDATED] {update_request}", "priority": 1}},
+        "update_applied": update_request,
+        "validation_summary": {"factual_accuracy": "100%", "job_alignment": "maximum", "anti_fabrication_compliance": "full"}
+    }
+    return JSONResponse(content=updated_cv)
