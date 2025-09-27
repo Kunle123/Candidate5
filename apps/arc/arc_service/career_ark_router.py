@@ -1096,8 +1096,17 @@ async def generate_assistant_adaptive(request: Request):
     logger = logging.getLogger("arc_service")
     data = await request.json()
     logger.info(f"[ADAPTIVE DEBUG] Incoming payload: {json.dumps(data)[:1000]}")
-    profile = data.get("profile")
-    job_description = data.get("job_description")
+
+    # Accept both {"profile": {...}, "job_description": "..."} and {"work_experience": [...], ... , "job_description": "..."}
+    if "work_experience" in data:
+        # New structure: treat the whole payload as profile
+        profile = data.copy()
+        job_description = profile.pop("job_description", "")
+    else:
+        # Old structure
+        profile = data.get("profile")
+        job_description = data.get("job_description", "")
+
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
     if not OPENAI_API_KEY or not OPENAI_ASSISTANT_ID:
