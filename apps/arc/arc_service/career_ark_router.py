@@ -872,14 +872,14 @@ async def generate_assistant(request: Request):
         logger.info(f"[OPENAI PAYLOAD] Sending to OpenAI: {json.dumps(user_message)}")
         # If no thread_id, create a new thread (first request)
         if not thread_id:
-            thread = client.beta.threads.create()
-            thread_id = thread.id
+        thread = client.beta.threads.create()
+        thread_id = thread.id
         # Now always have a valid thread_id
-        client.beta.threads.messages.create(
-            thread_id=thread_id,
-            role="user",
+            client.beta.threads.messages.create(
+                thread_id=thread_id,
+                role="user",
             content=json.dumps(user_message)  # Send as proper JSON
-        )
+            )
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
             assistant_id=OPENAI_ASSISTANT_ID
@@ -1518,7 +1518,7 @@ Extract 12-20 keywords from this job posting for comprehensive ATS optimization.
         import json
         try:
             return json.loads(content)
-        except Exception as e:
+    except Exception as e:
             logging.getLogger("arc").error(f"[OPENAI INVALID JSON] {e}. Content: {content}")
             logging.getLogger("arc").error(f"[OPENAI FULL RESPONSE] {response}")
             raise HTTPException(status_code=500, detail=f"OpenAI returned invalid JSON: {e}. Content: {content}")
@@ -1576,7 +1576,7 @@ async def cv_keyword_preview(request: Request):
     """
     Fast keyword preview and job analysis for user review before full CV generation.
     Input: { profile, jobDescription }
-    Output: { preview_ready, processing_time, job_analysis, keyword_analysis, processing_strategy, user_options }
+    Output: { preview_ready, processing_time, job_analysis, keyword_analysis, match_score, processing_strategy, user_options }
     """
     data = await request.json()
     profile = data.get("profile")
@@ -1586,7 +1586,8 @@ async def cv_keyword_preview(request: Request):
     job_analysis = await extract_comprehensive_keywords(job_description)
     # 2. Map profile to keywords for RAG status
     keyword_mapping = map_profile_to_job_comprehensive(profile, job_analysis)
-    # 3. Build preview response
+    # 3. Build preview response (leave fields blank/empty if missing, never use mock data)
+    match_score = keyword_mapping.get("keyword_coverage", {}).get("coverage_percentage", 0)
     preview = {
         "preview_ready": True,
         "processing_time": f"{round(time.time() - start, 2)} seconds",
@@ -1595,9 +1596,10 @@ async def cv_keyword_preview(request: Request):
             "company": job_analysis.get("company", ""),
             "experience_level": job_analysis.get("experience_level", ""),
             "industry": job_analysis.get("industry", ""),
-            "primary_keywords": job_analysis.get("technical_skills", []) + job_analysis.get("functional_skills", [])
+            "primary_keywords": (job_analysis.get("technical_skills") or []) + (job_analysis.get("functional_skills") or [])
         },
         "keyword_analysis": keyword_mapping,
+        "match_score": match_score,
         "processing_strategy": {
             "chunking_approach": "auto",
             "estimated_time": "28 seconds",
@@ -1620,27 +1622,58 @@ async def cv_full_generation(request: Request):
     Input: { profile, jobDescription, previewData, userPreferences }
     Output: { ...full CV, cover letter, validation, update capabilities... }
     """
+    import os
+    import json
+    import logging
+    from concurrent.futures import ThreadPoolExecutor
+    import asyncio
+    logger = logging.getLogger("arc_service")
     data = await request.json()
     profile = data.get("profile")
     job_description = data.get("jobDescription") or data.get("job_description")
     preview_data = data.get("previewData")
     user_preferences = data.get("userPreferences", {})
-    # --- Placeholder logic for full CV generation ---
-    # In production, call chunked pipeline with user preferences and preview data
-    full_cv = {
-        "cv": {"name": "{{CANDIDATE_NAME}}", "summary": {"content": "Senior Oracle Developer...", "priority": 1}},
-        "cover_letter": {"content": "Dear Hiring Manager...", "job_alignment_score": 85, "keywords_naturally_included": ["Oracle Database", "SQL"]},
-        "validation_summary": {"factual_accuracy": "100%", "job_alignment": "maximum", "anti_fabrication_compliance": "full"},
-        "generation_metadata": {
-            "user_preferences_applied": user_preferences,
-            "keyword_optimization": preview_data.get("keyword_analysis") if preview_data else {},
-            "processing_strategy": preview_data.get("processing_strategy") if preview_data else {}
-        },
-        "update_capabilities": {
-            "supported_updates": ["emphasis_change", "keyword_optimization", "length_adjustment", "section_reorder", "content_focus"]
-        }
+    # Use adaptive chunking pipeline
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
+    if not OPENAI_API_KEY or not OPENAI_ASSISTANT_ID:
+        logger.error("[CV GENERATE] OpenAI API key or Assistant ID not set")
+        return {"error": "OpenAI API key or Assistant ID not set"}
+    # 1. Analyze
+    analysis = analyze_payload(profile)
+    strategy = select_chunking_strategy(analysis)
+    logger.info(f"[CV GENERATE] Payload analysis: {analysis}")
+    logger.info(f"[CV GENERATE] Chunking strategy: {strategy}")
+    # 2. Create chunks
+    chunks = create_adaptive_chunks(profile, job_description, strategy)
+    logger.info(f"[CV GENERATE] Chunks created: {json.dumps(chunks)[:1000]}")
+    # 3. Create global context (if needed)
+    global_context = {}  # Optionally, call OpenAI for global context if required
+    # 4. Process chunks for raw content only, passing job description and anti-fabrication rules
+    loop = asyncio.get_event_loop()
+    with ThreadPoolExecutor(max_workers=strategy["chunkCount"]) as executor:
+        tasks = [
+            loop.run_in_executor(
+                executor,
+                process_chunk_with_openai,
+                chunk,
+                profile,
+                job_description,
+                OPENAI_API_KEY,
+                OPENAI_ASSISTANT_ID
+            ) for chunk in chunks
+        ]
+        chunk_results = await asyncio.gather(*tasks)
+    logger.info(f"[CV GENERATE] Chunk results: {json.dumps(chunk_results, default=str)[:2000]}")
+    # 5. Final assembly: single unified CV and cover letter
+    assembled = assemble_unified_cv(chunk_results, global_context, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID)
+    logger.info(f"[CV GENERATE] Final assembled output: {json.dumps(assembled, default=str)[:1000]}")
+    return {
+        **assembled,
+        "strategy": strategy,
+        "analysis": analysis,
+        "chunks": chunk_results
     }
-    return JSONResponse(content=full_cv)
 
 # --- NEW: CV Update Endpoint ---
 @router.post("/cv/update")
