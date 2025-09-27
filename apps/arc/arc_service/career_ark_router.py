@@ -1054,7 +1054,9 @@ def get_chunk_prompt(chunk_type: str) -> str:
    - Establish quality benchmarks for each priority level
 
 ### OUTPUT FORMAT (JSON):
-{...}'''
+{...}
+
+Respond ONLY with a valid JSON object.'''
     if chunk_type == "recent_roles":
         return '''You are a CV content processor specializing in RECENT CAREER ROLES (typically 2020-present). Your job is to generate RAW CONTENT ONLY - no complete CVs or cover letters.
 
@@ -1098,7 +1100,8 @@ You will receive global context standards. Apply these consistently:
   "raw_skills": [ ... ],
   "processing_notes": { ... }
 }
-'''
+
+Respond ONLY with a valid JSON object.'''
     if chunk_type == "supporting_roles":
         return '''You are a CV content processor specializing in SUPPORTING CAREER ROLES (typically 2010-2019). Your job is to generate RAW CONTENT ONLY - no complete CVs or cover letters.
 
@@ -1125,7 +1128,8 @@ Focus on skill progression, career development, and supporting evidence for job 
   "raw_skills": [ ... ],
   "processing_notes": { ... }
 }
-'''
+
+Respond ONLY with a valid JSON object.'''
     if chunk_type == "timeline_roles":
         return '''You are a CV content processor specializing in TIMELINE COMPLETION ROLES (typically pre-2010). Your job is to generate RAW CONTENT ONLY - no complete CVs or cover letters.
 
@@ -1146,7 +1150,8 @@ Focus on career foundation, early development, and timeline continuity.
   "raw_skills": [ ... ],
   "processing_notes": { ... }
 }
-'''
+
+Respond ONLY with a valid JSON object.'''
     if chunk_type == "final_assembly":
         return '''You are a CV assembly specialist. Take the processed raw content chunks and create a single, unified CV with one cover letter.
 
@@ -1175,9 +1180,11 @@ Focus on career foundation, early development, and timeline continuity.
 - Education and additional sections
 
 ### FINAL OUTPUT FORMAT:
-{...}'''
+{...}
+
+Respond ONLY with a valid JSON object.'''
     # Default fallback
-    return "You are a CV content processor. Process the provided chunk as per the instructions."
+    return "You are a CV content processor. Process the provided chunk as per the instructions. Respond ONLY with a valid JSON object."
 
 # --- New: Assembly prompt for final unified CV and cover letter ---
 def get_assembly_prompt() -> str:
@@ -1211,7 +1218,8 @@ OUTPUT FORMAT:
   "job_title": "Extracted from job description",
   "company_name": "Extracted from job description"
 }
-'''
+
+Respond ONLY with a valid JSON object.'''
 
 # --- Anti-Fabrication Rules Helper ---
 def get_anti_fabrication_rules():
