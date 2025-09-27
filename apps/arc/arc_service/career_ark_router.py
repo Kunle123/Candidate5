@@ -888,20 +888,18 @@ def select_chunking_strategy(analysis):
     sizeKB = analysis["sizeKB"]
     roleCount = analysis["roleCount"]
     careerYears = analysis["careerYears"]
-    # Small payload - no chunking needed
-    if sizeKB <= 15 or roleCount <= 5 or careerYears <= 5:
-        return {"strategy": "single_chunk", "chunkCount": 1, "expectedTime": "15-25 seconds"}
-    # Medium payload - 2 chunks
-    if sizeKB <= 25 or roleCount <= 10 or careerYears <= 10:
-        return {"strategy": "dual_chunk", "chunkCount": 2, "expectedTime": "20-30 seconds"}
-    # Large payload - 3 chunks
-    if sizeKB <= 35 or roleCount <= 15 or careerYears <= 20:
-        return {"strategy": "triple_chunk", "chunkCount": 3, "expectedTime": "25-35 seconds"}
-    # Very large payload - 4+ chunks
+    # Much more aggressive chunking:
+    if sizeKB <= 5 or roleCount <= 2 or careerYears <= 2:
+        return {"strategy": "single_chunk", "chunkCount": 1, "expectedTime": "10-15 seconds"}
+    if sizeKB <= 10 or roleCount <= 4 or careerYears <= 4:
+        return {"strategy": "dual_chunk", "chunkCount": 2, "expectedTime": "15-20 seconds"}
+    if sizeKB <= 15 or roleCount <= 7 or careerYears <= 7:
+        return {"strategy": "triple_chunk", "chunkCount": 3, "expectedTime": "20-25 seconds"}
+    # Everything else: multi-chunk (max 5)
     return {
         "strategy": "multi_chunk",
         "chunkCount": min(max(4, round(roleCount / 5)), 5),
-        "expectedTime": "30-45 seconds"
+        "expectedTime": "25-45 seconds"
     }
 
 def create_single_chunk(profile, job_description):
