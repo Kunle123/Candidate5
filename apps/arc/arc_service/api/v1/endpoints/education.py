@@ -8,9 +8,7 @@ from db.models import Education
 from db.repository import EducationRepository
 from schemas.education import EducationCreate, EducationUpdate, EducationOut
 from app.db.models import UserArcData
-
-class EducationRepository(BaseRepository):
-    pass
+from app.db.repository import BaseRepository
 
 router = APIRouter()
 
