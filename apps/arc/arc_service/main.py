@@ -9,3 +9,7 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/")
 def read_root():
     return {"message": "CV Generator API"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
