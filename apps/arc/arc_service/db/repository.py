@@ -41,6 +41,12 @@ class BaseRepository(Generic[ModelType]):
 
 class WorkExperienceRepository(BaseRepository):
     def get_ordered_by_user(self, user_id: str):
+        # Convert to UUID if it's a string
+        if isinstance(user_id, str):
+            try:
+                user_id = UUID(user_id)
+            except Exception:
+                pass  # fallback, let SQLAlchemy handle if not a valid UUID
         return self.db.query(self.model).filter(
             self.model.user_id == user_id
         ).order_by(self.model.order_index).all()
