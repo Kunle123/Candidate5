@@ -833,7 +833,7 @@ async def generate_assistant(request: Request):
             thread_id=thread_id,
             assistant_id=OPENAI_ASSISTANT_ID
         )
-            for _ in range(180):
+        for _ in range(180):
             run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
             if run_status.status in ("completed", "failed", "cancelled", "expired"):
                 break
