@@ -190,9 +190,15 @@ async def proxy_arc(request: StarletteRequest, full_path: str):
     path = f"/api/arc{full_path}"
     return await proxy(request, arc_service_url, path)
 
+# @app.api_route("/api/career-ark{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+# async def proxy_career_ark(request: StarletteRequest, full_path: str):
+#     path = f"/api/career-ark{full_path}"
+#     return await proxy(request, arc_service_url, path)
+
 @app.api_route("/api/career-ark{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
-async def proxy_career_ark(request: StarletteRequest, full_path: str):
-    path = f"/api/career-ark{full_path}"
+async def proxy_career_ark_stripped(request: StarletteRequest, full_path: str):
+    # Strip the /api/career-ark prefix before forwarding
+    path = full_path if full_path.startswith("/") else "/" + full_path
     return await proxy(request, arc_service_url, path)
 
 @app.get("/")
