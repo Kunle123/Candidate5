@@ -805,19 +805,19 @@ async def generate_assistant(request: Request):
         # --- Thread-aware CV & cover letter generation ---
         # Always include profile and job_description in the payload, even for follow-up requests
         if action == "generate_cv":
-        user_message = {
-            "action": action,
-            "profile": profile,
-            "job_description": job_description
-        }
-        if keywords:
-            user_message["keywords"] = keywords
-        if cv_length:
-            user_message["cv_length"] = cv_length
-        if additional_keypoints:
-            user_message["additional_keypoints"] = additional_keypoints
-        if previous_cv:
-            user_message["previous_cv"] = previous_cv
+            user_message = {
+                "action": action,
+                "profile": profile,
+                "job_description": job_description
+            }
+            if keywords:
+                user_message["keywords"] = keywords
+            if cv_length:
+                user_message["cv_length"] = cv_length
+            if additional_keypoints:
+                user_message["additional_keypoints"] = additional_keypoints
+            if previous_cv:
+                user_message["previous_cv"] = previous_cv
             if num_pages is not None:
                 user_message["numPages"] = num_pages
             if language is not None:
@@ -829,27 +829,27 @@ async def generate_assistant(request: Request):
                 role="user",
                 content=json.dumps(user_message)
             )
-        run = client.beta.threads.runs.create(
-            thread_id=thread_id,
-            assistant_id=OPENAI_ASSISTANT_ID
-        )
+            run = client.beta.threads.runs.create(
+                thread_id=thread_id,
+                assistant_id=OPENAI_ASSISTANT_ID
+            )
             for _ in range(180):
-            run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
-            if run_status.status in ("completed", "failed", "cancelled", "expired"):
-                break
-            time.sleep(1)
-        if run_status.status != "completed":
-            return {"error": f"Assistant run did not complete: {run_status.status}"}
-        messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
-        if not messages.data:
-            return {"error": "No response from assistant"}
-        content = messages.data[0].content[0].text.value
-        try:
-            content_json = json.loads(content)
-        except Exception as e:
-            return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
-        content_json["thread_id"] = thread_id
-        return content_json
+                run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+                if run_status.status in ("completed", "failed", "cancelled", "expired"):
+                    break
+                time.sleep(1)
+            if run_status.status != "completed":
+                return {"error": f"Assistant run did not complete: {run_status.status}"}
+            messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
+            if not messages.data:
+                return {"error": "No response from assistant"}
+            content = messages.data[0].content[0].text.value
+            try:
+                content_json = json.loads(content)
+            except Exception as e:
+                return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
+            content_json["thread_id"] = thread_id
+            return content_json
     except Exception as e:
         import traceback
         return {"error": f"Internal server error: {str(e)}", "trace": traceback.format_exc()}
