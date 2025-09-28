@@ -7,6 +7,7 @@ from db.database import get_db
 from db.models import WorkExperience
 from db.repository import WorkExperienceRepository
 from schemas.work_experience import WorkExperienceCreate, WorkExperienceUpdate, WorkExperienceOut
+from app.db.models import UserArcData
 
 router = APIRouter()
 
@@ -17,8 +18,16 @@ def get_work_experience_repository(db: Session = Depends(get_db)) -> WorkExperie
 def create_work_experience(
     user_id: str,
     data: WorkExperienceCreate,
-    repo: WorkExperienceRepository = Depends(get_work_experience_repository)
+    repo: WorkExperienceRepository = Depends(get_work_experience_repository),
+    db: Session = Depends(get_db)
 ):
+    # Ensure user exists in user_arc_data
+    user = db.query(UserArcData).filter_by(user_id=user_id).first()
+    if not user:
+        user = UserArcData(user_id=user_id, arc_data={})
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     existing = repo.get_ordered_by_user(user_id)
     next_index = len(existing)
     work_exp_data = data.dict()
