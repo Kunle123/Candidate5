@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy import Column, String, DateTime, JSON, Enum, ForeignKey, Integer, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
-from .db import Base
+from .db.database import Base
 import enum
 
 class TaskStatusEnum(str, enum.Enum):

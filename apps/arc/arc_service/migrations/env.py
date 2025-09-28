@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
-from apps.arc.arc_service.models import Base
+from apps.arc.arc_service.db.database import Base
 
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config
