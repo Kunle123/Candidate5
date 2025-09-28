@@ -1,0 +1,10 @@
+from fastapi import FastAPI
+from app.api.v1.router import api_router
+
+app = FastAPI(title="CV Generator API", openapi_url="/api/v1/openapi.json")
+
+app.include_router(api_router, prefix="/api/v1")
+
+@app.get("/")
+def read_root():
+    return {"message": "CV Generator API"}
