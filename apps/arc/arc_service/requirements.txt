@@ -16,3 +16,4 @@ PyJWT
 spacy 
 slowapi 
 pyclamd 
+httpx 
