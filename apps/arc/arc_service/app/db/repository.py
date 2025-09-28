@@ -2,7 +2,7 @@ from typing import Generic, TypeVar, Type, Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.declarative import DeclarativeMeta
 from uuid import UUID
-from db.models import WorkExperience
+from app.db.models import WorkExperience
 
 ModelType = TypeVar("ModelType", bound=DeclarativeMeta)
 

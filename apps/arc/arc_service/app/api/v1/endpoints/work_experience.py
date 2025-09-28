@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
 
-from db.database import get_db
-from db.models import WorkExperience
-from db.repository import WorkExperienceRepository
-from schemas.work_experience import WorkExperienceCreate, WorkExperienceUpdate, WorkExperienceOut
+from app.db.database import get_db
+from app.db.models import WorkExperience
+from app.db.repository import WorkExperienceRepository
+from app.schemas.work_experience import WorkExperienceCreate, WorkExperienceUpdate, WorkExperienceOut
 
 router = APIRouter()
 
