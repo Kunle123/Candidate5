@@ -818,16 +818,16 @@ async def generate_assistant(request: Request):
             user_message["additional_keypoints"] = additional_keypoints
         if previous_cv:
             user_message["previous_cv"] = previous_cv
-            if num_pages is not None:
-                user_message["numPages"] = num_pages
-            if language is not None:
-                user_message["language"] = language
-            import json
-            logger.info(f"[OPENAI PAYLOAD] Sending to OpenAI: {json.dumps(user_message)}")
+                if num_pages is not None:
+                    user_message["numPages"] = num_pages
+                if language is not None:
+                    user_message["language"] = language
+                import json
+                logger.info(f"[OPENAI PAYLOAD] Sending to OpenAI: {json.dumps(user_message)}")
             client.beta.threads.messages.create(
                 thread_id=thread_id,
                 role="user",
-                content=json.dumps(user_message)
+                    content=json.dumps(user_message)
             )
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
