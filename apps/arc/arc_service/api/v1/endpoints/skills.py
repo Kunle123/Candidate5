@@ -6,7 +6,7 @@ from uuid import UUID
 from db.database import get_db
 from db.models import Skill
 from db.repository import BaseRepository
-from schemas import SkillCreate, SkillOut
+from app.schemas import SkillCreate, SkillOut
 from app.db.models import UserArcData
 
 router = APIRouter()
