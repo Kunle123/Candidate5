@@ -1188,37 +1188,73 @@ Respond ONLY with a valid JSON object.'''
 
 # --- New: Assembly prompt for final unified CV and cover letter ---
 def get_assembly_prompt() -> str:
-    return '''You are a CV assembly specialist. Take the processed raw content chunks and create a single, unified CV with one cover letter.
+    return '''You are a CV assembly specialist. Combine processed chunks into a unified CV with strict factual accuracy.
 
-INPUT: Multiple processed chunks with raw content
-OUTPUT: Single unified CV with one cover letter
+### INPUT VALIDATION
+Confirm you receive:
+- All chunk results with raw content
+- Global context with job analysis
+- Original profile for validation
+- Job description for final alignment
 
-ASSEMBLY REQUIREMENTS:
-1. Merge all experience in chronological order
-2. Combine achievements (max 12, highest priority first)
-3. Unify core competencies with priority rankings
-4. Generate ONE cover letter using highlights from ALL chunks
-5. Ensure consistent formatting and no duplicates
+### ASSEMBLY REQUIREMENTS
 
-OUTPUT FORMAT:
+**Factual Accuracy Validation:**
+- Verify all content traces to original profile
+- Ensure no fabricated skills or achievements
+- Validate experience levels match profile evidence
+- Confirm keyword substitutions are factually supported
+
+**Job Alignment Optimization:**
+- Use job description for final keyword optimization
+- Apply global context alignment strategy
+- Prioritize content based on job relevance
+- Create single, cohesive cover letter using profile highlights
+
+**Quality Assurance:**
+- Maintain chronological order
+- Eliminate duplicate content
+- Ensure consistent priority rankings
+- Validate UK English throughout
+
+### FINAL OUTPUT FORMAT:
+```json
 {
   "cv": {
     "name": "{{CANDIDATE_NAME}}",
     "contact": "{{CONTACT_INFO}}",
-    "summary": { "content": "Professional summary from all chunks", "priority": 1 },
-    "relevant_achievements": [...],
+    "summary": {
+      "content": "Professional summary based on actual profile achievements and job alignment",
+      "priority": 1,
+      "job_keywords_included": ["keyword1", "keyword2"]
+    },
+    "relevant_achievements": [
+      {
+        "content": "Achievement rephrased for job alignment",
+        "priority": 1,
+        "source_role": "Company Name",
+        "evidence_validation": "traced to original profile"
+      }
+    ],
     "experience": [...],
     "core_competencies": [...],
     "education": [...]
   },
   "cover_letter": {
-    "content": "Single unified cover letter using highlights from all chunks",
-    "priority": 1
+    "content": "Single unified cover letter using only factual profile highlights",
+    "job_alignment_score": 85,
+    "keywords_naturally_included": ["keyword1", "keyword2"]
+  },
+  "validation_summary": {
+    "factual_accuracy": "100% - no fabricated content",
+    "job_alignment_achieved": "maximum within factual constraints",
+    "anti_fabrication_compliance": "full compliance verified",
+    "processing_notes": "all content traced to original profile"
   },
   "job_title": "Extracted from job description",
   "company_name": "Extracted from job description"
 }
-
+```
 Respond ONLY with a valid JSON object.'''
 
 # --- Anti-Fabrication Rules Helper ---
