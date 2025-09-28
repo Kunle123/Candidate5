@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.v1.router import api_router
+from app.api.v1.router import api_router
 
 app = FastAPI(title="CV Generator API", openapi_url="/api/v1/openapi.json")
 
