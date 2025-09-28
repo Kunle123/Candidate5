@@ -5,7 +5,7 @@ from uuid import UUID
 
 from db.database import get_db
 from db.models import Education
-from db.repository import BaseRepository
+from db.repository import EducationRepository
 from schemas.education import EducationCreate, EducationUpdate, EducationOut
 from app.db.models import UserArcData
 

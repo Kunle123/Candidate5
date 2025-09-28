@@ -2,7 +2,7 @@ from typing import Generic, TypeVar, Type, Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.declarative import DeclarativeMeta
 from uuid import UUID
-from db.models import WorkExperience
+from db.models import WorkExperience, Education
 
 ModelType = TypeVar("ModelType", bound=DeclarativeMeta)
 
@@ -76,6 +76,45 @@ class WorkExperienceRepository(BaseRepository):
             for e in affected:
                 e.order_index += 1
         
+        entry.order_index = new_order_index
+        self.db.commit()
+        self.db.refresh(entry)
+        return entry
+
+class EducationRepository(BaseRepository):
+    def get_ordered_by_user(self, user_id: str):
+        # Convert to UUID if it's a string
+        if isinstance(user_id, str):
+            try:
+                user_id = UUID(user_id)
+            except Exception:
+                pass  # fallback, let SQLAlchemy handle if not a valid UUID
+        return self.db.query(self.model).filter(
+            self.model.user_id == user_id
+        ).order_by(self.model.order_index).all()
+
+    def reorder(self, id: UUID, new_order_index: int):
+        entry = self.get(id)
+        if not entry:
+            return None
+        old_index = entry.order_index
+        user_id = entry.user_id
+        if new_order_index > old_index:
+            affected = self.db.query(self.model).filter(
+                self.model.user_id == user_id,
+                self.model.order_index > old_index,
+                self.model.order_index <= new_order_index
+            ).all()
+            for e in affected:
+                e.order_index -= 1
+        else:
+            affected = self.db.query(self.model).filter(
+                self.model.user_id == user_id,
+                self.model.order_index < old_index,
+                self.model.order_index >= new_order_index
+            ).all()
+            for e in affected:
+                e.order_index += 1
         entry.order_index = new_order_index
         self.db.commit()
         self.db.refresh(entry)
