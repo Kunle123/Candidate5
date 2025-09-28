@@ -1,3 +1,7 @@
+from pydantic import BaseModel
+from typing import Optional
+from uuid import UUID
+
 # --- Education Schemas ---
 class EducationCreate(BaseModel):
     institution: str
