@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import work_experience
+from api.v1.endpoints import work_experience
 
 api_router = APIRouter()
 
