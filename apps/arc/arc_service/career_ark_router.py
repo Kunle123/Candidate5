@@ -805,19 +805,19 @@ async def generate_assistant(request: Request):
         # --- Thread-aware CV & cover letter generation ---
         # Always include profile and job_description in the payload, even for follow-up requests
         if action == "generate_cv":
-            user_message = {
-                "action": action,
-                "profile": profile,
-                "job_description": job_description
-            }
-            if keywords:
-                user_message["keywords"] = keywords
-            if cv_length:
-                user_message["cv_length"] = cv_length
-            if additional_keypoints:
-                user_message["additional_keypoints"] = additional_keypoints
-            if previous_cv:
-                user_message["previous_cv"] = previous_cv
+        user_message = {
+            "action": action,
+            "profile": profile,
+            "job_description": job_description
+        }
+        if keywords:
+            user_message["keywords"] = keywords
+        if cv_length:
+            user_message["cv_length"] = cv_length
+        if additional_keypoints:
+            user_message["additional_keypoints"] = additional_keypoints
+        if previous_cv:
+            user_message["previous_cv"] = previous_cv
             if num_pages is not None:
                 user_message["numPages"] = num_pages
             if language is not None:
@@ -829,27 +829,27 @@ async def generate_assistant(request: Request):
                 role="user",
                 content=json.dumps(user_message)
             )
-            run = client.beta.threads.runs.create(
-                thread_id=thread_id,
-                assistant_id=OPENAI_ASSISTANT_ID
-            )
+        run = client.beta.threads.runs.create(
+            thread_id=thread_id,
+            assistant_id=OPENAI_ASSISTANT_ID
+        )
             for _ in range(180):
-                run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
-                if run_status.status in ("completed", "failed", "cancelled", "expired"):
-                    break
-                time.sleep(1)
-            if run_status.status != "completed":
-                return {"error": f"Assistant run did not complete: {run_status.status}"}
-            messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
-            if not messages.data:
-                return {"error": "No response from assistant"}
-            content = messages.data[0].content[0].text.value
-            try:
-                content_json = json.loads(content)
-            except Exception as e:
-                return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
-            content_json["thread_id"] = thread_id
-            return content_json
+            run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+            if run_status.status in ("completed", "failed", "cancelled", "expired"):
+                break
+            time.sleep(1)
+        if run_status.status != "completed":
+            return {"error": f"Assistant run did not complete: {run_status.status}"}
+        messages = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=1)
+        if not messages.data:
+            return {"error": "No response from assistant"}
+        content = messages.data[0].content[0].text.value
+        try:
+            content_json = json.loads(content)
+        except Exception as e:
+            return {"error": f"Assistant response is not valid JSON: {str(e)}", "raw": content}
+        content_json["thread_id"] = thread_id
+        return content_json
     except Exception as e:
         import traceback
         return {"error": f"Internal server error: {str(e)}", "trace": traceback.format_exc()}
@@ -1515,7 +1515,119 @@ def extract_json_from_markdown(content):
 async def extract_comprehensive_keywords(job_description):
     import logging
     prompt = f'''
-Extract 12-20 keywords from this job posting for comprehensive ATS optimization.\n\nJob Description: {job_description}\n\nExtract keywords in these categories:\n1. TECHNICAL SKILLS (4-6 keywords):\n2. FUNCTIONAL SKILLS (3-5 keywords):\n3. SOFT SKILLS (2-4 keywords):\n4. INDUSTRY TERMS (2-4 keywords):\n5. EXPERIENCE QUALIFIERS (1-3 keywords):\n\nREQUIREMENTS:\n- Extract EXACTLY 12-20 keywords total\n- Prioritize keywords that appear multiple times\n- Include both exact phrases and individual terms\n- Focus on keywords that would be searched by recruiters\n- Avoid generic words like "experience" or "skills"\n\nRespond ONLY with a valid JSON object matching the schema below.\n\nOutput format:\n{{\n  "technical_skills": [ ... ],\n  "functional_skills": [ ... ],\n  "soft_skills": [ ... ],\n  "industry_terms": [ ... ],\n  "experience_qualifiers": [ ... ],\n  "total_keywords": 16,\n  "keyword_priority": {{\n    "high": [ ... ],\n    "medium": [ ... ],\n    "low": [ ... ]\n  }}\n}}\n'''
+    You are a job analysis and keyword extraction specialist. Analyze this job posting and extract both job metadata AND exactly 12-20 keywords for comprehensive ATS optimization.
+
+    Job Description: {job_description}
+
+    ### JOB METADATA EXTRACTION (REQUIRED)
+
+    **Extract the following information from the job description:**
+    - **job_title:** The main job title being advertised (e.g., "Senior Software Developer", "Project Manager")
+    - **company:** The company or organization name, if mentioned (use "Not specified" if not found)
+    - **experience_level:** Required experience level (e.g., "Senior", "Mid-level", "Entry-level", "5+ years", "Executive")
+    - **industry:** The industry or business sector (e.g., "Technology", "Financial Services", "Healthcare", "Manufacturing")
+
+    ### KEYWORD EXTRACTION REQUIREMENTS
+
+    **TOTAL TARGET: 12-20 keywords (no more, no less)**
+
+    **CATEGORY DISTRIBUTION:**
+    1. **TECHNICAL SKILLS (4-6 keywords):**
+       - Software, tools, platforms, technologies
+       - Programming languages, frameworks
+       - Technical methodologies, certifications
+       - Systems, databases, cloud platforms
+
+    2. **FUNCTIONAL SKILLS (3-5 keywords):**
+       - Core job responsibilities and functions
+       - Business processes, analysis types
+       - Management or operational capabilities
+       - Industry-specific functions
+
+    3. **SOFT SKILLS (2-4 keywords):**
+       - Leadership, communication, teamwork
+       - Problem-solving, analytical thinking
+       - Project management, collaboration
+       - Adaptability, innovation
+
+    4. **INDUSTRY TERMS (2-4 keywords):**
+       - Sector-specific terminology
+       - Business domains, market segments
+       - Regulatory, compliance, or standards terms
+       - Company type or business model terms
+
+    5. **EXPERIENCE QUALIFIERS (1-3 keywords):**
+       - Years of experience requirements
+       - Seniority levels, team size
+       - Budget responsibility, scale indicators
+       - Geographic or scope qualifiers
+
+    ### EXTRACTION GUIDELINES
+
+    **PRIORITIZATION RULES:**
+    - Keywords mentioned multiple times = higher priority
+    - Keywords in job title or requirements section = higher priority
+    - Specific technical terms = higher priority than generic terms
+    - Measurable qualifications = higher priority
+
+    **KEYWORD SELECTION CRITERIA:**
+    - ✅ Terms a recruiter would search for in an ATS
+    - ✅ Specific skills, tools, or qualifications
+    - ✅ Industry-standard terminology
+    - ✅ Measurable experience indicators
+    - ❌ Generic words like "experience," "skills," "ability"
+    - ❌ Common verbs like "manage," "develop," "work"
+    - ❌ Overly broad terms like "technology," "business"
+
+    ### METADATA EXTRACTION GUIDELINES
+
+    **Job Title Extraction:**
+    - Look for phrases like "Job Title:", "Position:", "Role:", or titles in headers
+    - Extract the most specific title mentioned (e.g., "Senior Software Developer" not just "Developer")
+    - If multiple titles mentioned, use the primary/main one
+
+    **Company Extraction:**
+    - Look for company names, organization names, or "Company:" labels
+    - Extract full company name if available
+    - Use "Not specified" if no company name is found
+
+    **Experience Level Extraction:**
+    - Look for phrases like "X+ years", "Senior", "Junior", "Entry-level", "Executive"
+    - Extract the most specific requirement (e.g., "5+ years" rather than just "experienced")
+    - Combine seniority level with years if both present (e.g., "Senior (5+ years)")
+
+    **Industry Extraction:**
+    - Identify the business sector or industry context
+    - Use standard industry terms (e.g., "Technology", "Financial Services", "Healthcare")
+    - Infer from company type, job requirements, or explicit mentions
+
+    ### OUTPUT FORMAT
+
+    **Respond ONLY with a valid JSON object matching this exact schema:**
+
+    {{
+      "job_title": "Senior Oracle Developer",
+      "company": "TechCorp Financial",
+      "experience_level": "Senior (5+ years)",
+      "industry": "Financial Services",
+      "technical_skills": ["Oracle Database", "SQL Server", "Python", "AWS", "Agile Methodology"],
+      "functional_skills": ["Data Analysis", "Project Management", "Business Intelligence", "Process Improvement"],
+      "soft_skills": ["Leadership", "Communication", "Problem Solving"],
+      "industry_terms": ["Financial Services", "Regulatory Compliance", "Risk Management"],
+      "experience_qualifiers": ["5+ years experience", "Team Leadership"],
+      "total_keywords": 16,
+      "keyword_priority": {{
+        "high": ["Oracle Database", "SQL Server", "Data Analysis", "5+ years experience"],
+        "medium": ["Python", "AWS", "Project Management", "Leadership", "Financial Services"],
+        "low": ["Communication", "Problem Solving", "Risk Management"]
+      }},
+      "extraction_validation": {{
+        "job_metadata_extracted": true,
+        "keywords_in_range": true,
+        "categories_balanced": true
+      }}
+    }}
+    '''
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if not openai_api_key:
         raise HTTPException(status_code=500, detail="OpenAI API key not set")
@@ -1536,7 +1648,7 @@ Extract 12-20 keywords from this job posting for comprehensive ATS optimization.
         import json
         try:
             return json.loads(content)
-        except Exception as e:
+    except Exception as e:
             logging.getLogger("arc").error(f"[OPENAI INVALID JSON] {e}. Content: {content}")
             logging.getLogger("arc").error(f"[OPENAI FULL RESPONSE] {response}")
             raise HTTPException(status_code=500, detail=f"OpenAI returned invalid JSON: {e}. Content: {content}")
