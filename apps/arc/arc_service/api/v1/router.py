@@ -2,6 +2,9 @@ from fastapi import APIRouter
 from api.v1.endpoints import work_experience
 from api.v1.endpoints import education
 from api.v1.endpoints import skills
+from api.v1.endpoints import projects
+from api.v1.endpoints import certifications
+from api.v1.endpoints import training
 
 api_router = APIRouter()
 
@@ -18,4 +21,19 @@ api_router.include_router(
 api_router.include_router(
     skills.router,
     tags=["skills"]
+)
+
+api_router.include_router(
+    projects.router,
+    tags=["projects"]
+)
+
+api_router.include_router(
+    certifications.router,
+    tags=["certifications"]
+)
+
+api_router.include_router(
+    training.router,
+    tags=["training"]
 )
