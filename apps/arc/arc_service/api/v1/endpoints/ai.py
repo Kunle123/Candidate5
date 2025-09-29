@@ -83,8 +83,8 @@ async def cv_full_generation(request: Request):
             token = auth_header.split(" ", 1)[1]
         if not token:
             return JSONResponse(status_code=401, content={"error": "Authorization token required to fetch profile by user_id."})
-        # Import get_user_profile from career_ark_router
-        from apps.arc.arc_service.career_ark_router import get_user_profile
+        # Import get_user_profile using a relative import
+        from ...career_ark_router import get_user_profile
         try:
             profile = await get_user_profile(user_id, token)
         except Exception as e:
