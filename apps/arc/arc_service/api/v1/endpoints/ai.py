@@ -8,7 +8,8 @@ from services.ai_service import (
     select_chunking_strategy,
     create_adaptive_chunks,
     process_chunk_with_openai,
-    assemble_unified_cv
+    assemble_unified_cv,
+    update_cv_with_openai
 )
 import os
 import json
@@ -119,11 +120,5 @@ async def cv_update(request: Request):
     update_request = data.get("updateRequest")
     original_profile = data.get("originalProfile")
     job_description = data.get("jobDescription") or data.get("job_description")
-    # --- Placeholder logic for update ---
-    # In production, call OpenAI with update prompt and current CV
-    updated_cv = {
-        "cv": {"name": "{{CANDIDATE_NAME}}", "summary": {"content": f"[UPDATED] {update_request}", "priority": 1}},
-        "update_applied": update_request,
-        "validation_summary": {"factual_accuracy": "100%", "job_alignment": "maximum", "anti_fabrication_compliance": "full"}
-    }
+    updated_cv = update_cv_with_openai(current_cv, update_request, original_profile, job_description)
     return JSONResponse(content=updated_cv)

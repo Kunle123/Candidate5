@@ -276,3 +276,89 @@ def assemble_unified_cv(chunk_results, global_context, profile, job_description,
     except Exception as e:
         logging.error(f"[OPENAI ASSEMBLY ERROR] {e}")
         return {"error": f"Assembly OpenAI error: {e}"}
+
+def update_cv_with_openai(current_cv, update_request, original_profile, job_description):
+    # Determine which prompt to use based on the update_request
+    update_request_lower = (update_request or "").lower()
+    if any(word in update_request_lower for word in ["emphasis", "focus", "highlight"]):
+        prompt = f'''
+Adjust the emphasis in this CV based on the user request: "{update_request}"
+
+Current CV: {json.dumps(current_cv)}
+Original Profile: {json.dumps(original_profile)}
+
+Rules:
+- Only use content from the original profile
+- Reorder and rephrase existing content to match the emphasis request
+- Do not fabricate new achievements or skills
+- Maintain factual accuracy
+- Preserve the overall CV structure
+
+Return the updated CV in the same JSON format.
+'''
+    elif any(word in update_request_lower for word in ["keyword", "optimiz", "ats"]):
+        prompt = f'''
+Optimize keywords in this CV based on: "{update_request}"
+
+Current CV: {json.dumps(current_cv)}
+Job Description: {job_description}
+
+Rules:
+- Use intelligent keyword substitution where factually supported
+- Maintain all factual accuracy
+- Focus on natural keyword integration
+- Do not add skills not demonstrated in the original content
+
+Return the updated CV with optimized keywords.
+'''
+    elif any(word in update_request_lower for word in ["length", "shorten", "expand", "longer", "shorter"]):
+        prompt = f'''
+Adjust the length of this CV based on: "{update_request}"
+
+Current CV: {json.dumps(current_cv)}
+
+Rules:
+- If shortening: Remove lower priority content first
+- If expanding: Add more detail to existing achievements
+- Maintain factual accuracy
+- Preserve the most important information
+
+Return the length-adjusted CV.
+'''
+    else:
+        # Default to emphasis adjustment if not clear
+        prompt = f'''
+Adjust the emphasis in this CV based on the user request: "{update_request}"
+
+Current CV: {json.dumps(current_cv)}
+Original Profile: {json.dumps(original_profile)}
+
+Rules:
+- Only use content from the original profile
+- Reorder and rephrase existing content to match the emphasis request
+- Do not fabricate new achievements or skills
+- Maintain factual accuracy
+- Preserve the overall CV structure
+
+Return the updated CV in the same JSON format.
+'''
+    # Append the critical validation checklist
+    prompt += '''\n\nCRITICAL VALIDATION CHECKLIST:\n- ✓ Job description used for keyword optimization throughout\n- ✓ All skills have evidence in original profile\n- ✓ All achievements traced to profile content\n- ✓ No exaggerated experience levels or capabilities\n- ✓ Single CV and single cover letter generated\n- ✓ Maximum job alignment within factual boundaries\n- ✓ Anti-fabrication compliance verified at every stage\n- ✓ 12-20 keywords extracted for comprehensive coverage\n- ✓ Realistic ATS scoring (0-100% range)\n- ✓ UK English maintained throughout\n'''
+    try:
+        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        if not OPENAI_API_KEY:
+            raise HTTPException(status_code=500, detail="OpenAI API key not set")
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a CV update specialist. Respond ONLY with a valid JSON object."},
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+        content = response.choices[0].message.content
+        return json.loads(content)
+    except Exception as e:
+        logging.error(f"[OPENAI CV UPDATE ERROR] {e}")
+        return {"error": f"CV update OpenAI error: {e}"}
