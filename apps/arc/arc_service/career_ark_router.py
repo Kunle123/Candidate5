@@ -47,8 +47,6 @@ import openai
 # Utility function to fetch user profile from user service
 import httpx
 
-from arc_service.utils.profile_fetch import get_user_profile
-
 router = APIRouter()
 
 @router.get("/cv/status/{task_id}")
@@ -623,7 +621,6 @@ async def get_all_sections(profile_id: UUID, request: Request):
         token = auth_header.split(" ", 1)[1]
     if not token:
         raise HTTPException(status_code=401, detail="Authorization token required to fetch profile.")
-    from arc_service.utils.profile_fetch import get_user_profile
     try:
         profile = await get_user_profile(str(profile_id), token)
     except Exception as e:
