@@ -4,6 +4,9 @@ from fastapi import HTTPException
 import openai
 import os
 import json
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import time
 
 # --- ENHANCED KEYWORD MAPPING ---
 def map_profile_to_job_comprehensive(profile, job_analysis):
@@ -177,3 +180,99 @@ async def extract_comprehensive_keywords(job_description):
     except Exception as e:
         logging.error(f"[OPENAI EXCEPTION] {e}")
         raise HTTPException(status_code=500, detail=f"Keyword extraction failed: {e}")
+
+def analyze_payload(profile):
+    # Example: count roles, estimate size, etc.
+    work_experience = profile.get("work_experience", [])
+    size_kb = len(json.dumps(profile).encode("utf-8")) / 1024
+    role_count = len(work_experience)
+    # Estimate career years
+    years = set()
+    for role in work_experience:
+        start = role.get("start_date", "")
+        end = role.get("end_date", "")
+        for date in (start, end):
+            if date and date.isdigit():
+                years.add(int(date[:4]))
+    career_years = max(years) - min(years) + 1 if years else 0
+    return {"sizeKB": size_kb, "roleCount": role_count, "careerYears": career_years}
+
+def select_chunking_strategy(analysis):
+    # Example: simple thresholds
+    if analysis["roleCount"] <= 3 and analysis["sizeKB"] < 20:
+        return {"chunkCount": 1, "strategy": "single"}
+    elif analysis["roleCount"] <= 6:
+        return {"chunkCount": 2, "strategy": "dual"}
+    elif analysis["roleCount"] <= 10:
+        return {"chunkCount": 3, "strategy": "triple"}
+    else:
+        return {"chunkCount": 4, "strategy": "multi"}
+
+def create_adaptive_chunks(profile, job_description, strategy):
+    # Example: split work_experience into N chunks
+    work_experience = profile.get("work_experience", [])
+    chunk_count = strategy["chunkCount"]
+    chunk_size = max(1, len(work_experience) // chunk_count)
+    chunks = []
+    for i in range(chunk_count):
+        chunk_roles = work_experience[i*chunk_size:(i+1)*chunk_size]
+        chunk = {
+            "roles": chunk_roles,
+            "profile": profile,
+            "job_description": job_description,
+            "chunk_index": i
+        }
+        chunks.append(chunk)
+    return chunks
+
+def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
+    # Example: call OpenAI for each chunk
+    prompt = f"""
+    You are a CV content processor. Process the provided chunk as per the instructions. Respond ONLY with a valid JSON object.
+    Chunk: {json.dumps(chunk)}
+    Profile: {json.dumps(profile)}
+    Job Description: {job_description}
+    """
+    try:
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a CV content processor. Respond ONLY with a valid JSON object."},
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+        content = response.choices[0].message.content
+        return json.loads(content)
+    except Exception as e:
+        logging.error(f"[OPENAI CHUNK ERROR] {e}")
+        return {"error": str(e)}
+
+def assemble_unified_cv(chunk_results, global_context, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
+    # Final assembly step using OpenAI
+    assembly_prompt = "You are a CV assembly specialist. Combine processed chunks into a unified CV with strict factual accuracy. Respond ONLY with a valid JSON object."
+    user_message = json.dumps({
+        "chunks": chunk_results,
+        "global_context": global_context,
+        "profile": profile,
+        "job_description": job_description,
+        "instructions": assembly_prompt
+    })
+    try:
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": assembly_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            max_tokens=3072,
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        content = response.choices[0].message.content
+        return json.loads(content)
+    except Exception as e:
+        logging.error(f"[OPENAI ASSEMBLY ERROR] {e}")
+        return {"error": f"Assembly OpenAI error: {e}"}
