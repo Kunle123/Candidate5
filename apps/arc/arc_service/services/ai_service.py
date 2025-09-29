@@ -512,7 +512,7 @@ You are a CV content processor for RECENT CAREER ROLES. You will receive:
 
 **KEYWORD OPTIMIZATION:**
 - Use job description keywords where candidate has relevant experience
-- Apply safe substitutions from global context (e.g., \"Oracle Fusion\" → \"Oracle ERP (Fusion)\")
+- Apply safe substitutions from global context (e.g., "Oracle Fusion" → "Oracle ERP (Fusion)")
 - Prioritize GREEN keywords (exact matches) over AMBER keywords (transferable)
 - For RED keywords (missing), do not fabricate - focus on related strengths
 
@@ -522,12 +522,58 @@ You are a CV content processor for RECENT CAREER ROLES. You will receive:
 - Priority 3: Supporting experience relevant to job requirements
 
 ### OUTPUT FORMAT (JSON):
-<output as previously specified>
-
-Chunk Data: {json.dumps(chunk)}
-Global Context: {json.dumps(profile.get('global_context', {}))}
-Job Description: {job_description}
-Profile Context: {json.dumps(profile)}
+```json
+{
+  "chunk_type": "recent_roles",
+  "processing_validation": {
+    "job_keywords_available": true,
+    "profile_context_complete": true,
+    "anti_fabrication_rules_applied": true
+  },
+  "raw_experience": [
+    {
+      "company": "Company Name",
+      "title": "Job Title",
+      "dates": "Start Date - End Date",
+      "location": "Location",
+      "bullets": [
+        {
+          "content": "Led Oracle ERP (Fusion) implementation for 500+ users, improving financial processing efficiency by 40%",
+          "priority": 1,
+          "keywords_used": ["Oracle ERP", "implementation", "financial processing"],
+          "evidence_source": "Original profile: Led Oracle Fusion upgrade for accounting team",
+          "fabrication_check": "PASS - rephrased existing achievement with job-aligned terminology"
+        }
+      ]
+    }
+  ],
+  "raw_achievements": [
+    {
+      "content": "Delivered Oracle ERP implementation 2 weeks ahead of schedule, resulting in £200K cost savings",
+      "priority": 1,
+      "source_role": "Company Name",
+      "keywords_used": ["Oracle ERP", "project delivery", "cost savings"],
+      "evidence_source": "Original profile achievement with job-aligned terminology",
+      "fabrication_check": "PASS - factual achievement with optimized presentation"
+    }
+  ],
+  "raw_skills": [
+    {
+      "skill": "Oracle ERP (Fusion)",
+      "priority": 1,
+      "evidence": "3 years hands-on experience, led major implementation",
+      "proficiency": "Advanced",
+      "job_alignment": "Direct match to job requirement"
+    }
+  ],
+  "anti_fabrication_summary": {
+    "skills_validated": "All skills traced to profile evidence",
+    "achievements_validated": "All achievements based on original profile content",
+    "experience_levels_accurate": "No exaggeration of years or responsibility",
+    "keyword_substitutions_safe": "All substitutions factually supported"
+  }
+}
+```
 """
     elif chunk_type == "supporting_roles":
         prompt = f"""
@@ -551,17 +597,59 @@ Apply the same strict validation rules as recent roles processor:
 - Supporting evidence for job requirements
 - Professional growth trajectory
 
-### OUTPUT FORMAT
-Same structure as recent roles processor with:
-- Supporting role focus
-- Priority range 2-4
-- Emphasis on skill development and progression
-- Anti-fabrication validation for all content
-
-Chunk Data: {json.dumps(chunk)}
-Global Context: {json.dumps(profile.get('global_context', {}))}
-Job Description: {job_description}
-Profile Context: {json.dumps(profile)}
+### OUTPUT FORMAT (JSON):
+```json
+{
+  "chunk_type": "supporting_roles",
+  "processing_validation": {
+    "job_keywords_available": true,
+    "profile_context_complete": true,
+    "anti_fabrication_rules_applied": true
+  },
+  "raw_experience": [
+    {
+      "company": "Company Name",
+      "title": "Job Title",
+      "dates": "Start Date - End Date",
+      "location": "Location",
+      "bullets": [
+        {
+          "content": "Demonstrated skill progression and career advancement in supporting roles.",
+          "priority": 2,
+          "keywords_used": ["Skill progression", "career advancement"],
+          "evidence_source": "Original profile: Supporting role evidence",
+          "fabrication_check": "PASS - supporting experience validated"
+        }
+      ]
+    }
+  ],
+  "raw_achievements": [
+    {
+      "content": "Contributed to major project delivery as a supporting team member.",
+      "priority": 2,
+      "source_role": "Company Name",
+      "keywords_used": ["project delivery", "team contribution"],
+      "evidence_source": "Original profile achievement",
+      "fabrication_check": "PASS - factual achievement with supporting role focus"
+    }
+  ],
+  "raw_skills": [
+    {
+      "skill": "Supporting role skill",
+      "priority": 2,
+      "evidence": "Demonstrated in supporting roles",
+      "proficiency": "Intermediate",
+      "job_alignment": "Transferable skill relevant to job requirement"
+    }
+  ],
+  "anti_fabrication_summary": {
+    "skills_validated": "All skills traced to profile evidence",
+    "achievements_validated": "All achievements based on original profile content",
+    "experience_levels_accurate": "No exaggeration of years or responsibility",
+    "keyword_substitutions_safe": "All substitutions factually supported"
+  }
+}
+```
 """
     elif chunk_type == "timeline_roles":
         prompt = f"""
@@ -579,17 +667,59 @@ You are a CV content processor for TIMELINE COMPLETION ROLES (typically pre-2010
 - Basic professional competency demonstration
 - Educational and training background
 
-### OUTPUT FORMAT
-Same structure as recent roles processor with:
-- Timeline role focus
-- Priority range 3-5
-- Emphasis on foundation and continuity
-- Anti-fabrication validation for all content
-
-Chunk Data: {json.dumps(chunk)}
-Global Context: {json.dumps(profile.get('global_context', {}))}
-Job Description: {job_description}
-Profile Context: {json.dumps(profile)}
+### OUTPUT FORMAT (JSON):
+```json
+{
+  "chunk_type": "timeline_roles",
+  "processing_validation": {
+    "job_keywords_available": true,
+    "profile_context_complete": true,
+    "anti_fabrication_rules_applied": true
+  },
+  "raw_experience": [
+    {
+      "company": "Company Name",
+      "title": "Job Title",
+      "dates": "Start Date - End Date",
+      "location": "Location",
+      "bullets": [
+        {
+          "content": "Demonstrated early career achievement or professional foundation.",
+          "priority": 3,
+          "keywords_used": ["early career", "foundation"],
+          "evidence_source": "Original profile: Timeline role evidence",
+          "fabrication_check": "PASS - timeline experience validated"
+        }
+      ]
+    }
+  ],
+  "raw_achievements": [
+    {
+      "content": "Completed foundational training or early career milestone.",
+      "priority": 3,
+      "source_role": "Company Name",
+      "keywords_used": ["training", "milestone"],
+      "evidence_source": "Original profile achievement",
+      "fabrication_check": "PASS - factual achievement with timeline focus"
+    }
+  ],
+  "raw_skills": [
+    {
+      "skill": "Timeline role skill",
+      "priority": 3,
+      "evidence": "Demonstrated in early career roles",
+      "proficiency": "Basic",
+      "job_alignment": "Foundation skill relevant to job requirement"
+    }
+  ],
+  "anti_fabrication_summary": {
+    "skills_validated": "All skills traced to profile evidence",
+    "achievements_validated": "All achievements based on original profile content",
+    "experience_levels_accurate": "No exaggeration of years or responsibility",
+    "keyword_substitutions_safe": "All substitutions factually supported"
+  }
+}
+```
 """
     else:
         prompt = f"""
@@ -627,80 +757,248 @@ def safe_json_parse(content, logger=None, context="OpenAI response"):
 
 def assemble_unified_cv(chunk_results, global_context, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
     # Final assembly step using OpenAI
-    assembly_prompt = """You are a CV reconstruction specialist. Take the raw content from multiple processed chunks and reconstruct it into a single, unified, professional CV with cover letter.
+    assembly_prompt = """# ENHANCED PROMPTS FOR FULL USER PREFERENCE ALIGNMENT
 
-### INPUT DATA
-You will receive:
-- **Raw chunks:** Content from recent roles, supporting roles, and timeline roles
-- **Global context:** Job analysis and alignment strategies
-- **Original profile:** Complete candidate profile for validation
-- **Job description:** Target job posting for final optimization
+## ENHANCED CV RECONSTRUCTION PROMPT (Updated)
 
-### RECONSTRUCTION REQUIREMENTS
+You are a CV reconstruction specialist. Take the raw content from multiple processed chunks and reconstruct it into a single, unified, professional CV with cover letter that meets strict formatting and content requirements.
 
-**CONTENT CONSOLIDATION:**
-- Merge all raw experience from chunks into chronological order (most recent first)
-- Combine all achievements, removing duplicates while preserving unique value
-- Consolidate skills from all chunks, prioritizing by job relevance
-- Integrate education and certifications from original profile
+### CRITICAL JSON SCHEMA REQUIREMENTS
 
-**PRIORITY-BASED ORGANIZATION:**
-- Priority 1 content: Featured prominently in summary and top achievements
-- Priority 2-3 content: Main experience bullets and core competencies
-- Priority 4-5 content: Supporting experience and timeline completion
+**ALL keys at every level MUST use lower_snake_case:**
+- Top-level: cv, cover_letter, reconstruction_metadata, job_title, company_name
+- CV sections: professional_summary, key_achievements, professional_experience, core_competencies, education, certifications
+- Nested objects: content, priority, keywords_used, source_chunk, etc.
+- NEVER use: CV, Cover Letter, Professional Summary, keywordsUsed, sourceChunk
 
-**FINAL OPTIMIZATION:**
-- Apply job-specific keyword optimization throughout
-- Ensure natural keyword integration (avoid stuffing)
-- Maintain UK English spelling and terminology
-- Create cohesive narrative flow
+**Required field validation before response:**
+- Verify all required top-level fields present
+- Confirm all nested objects use snake_case
+- Validate JSON structure completeness
 
-**ANTI-FABRICATION VALIDATION:**
-- Verify all content traces back to original profile
-- Ensure no skills or achievements are invented
-- Maintain factual accuracy of all metrics and timelines
-- Preserve authentic experience levels
+### UK ENGLISH REQUIREMENTS (Mandatory)
 
-### OUTPUT STRUCTURE
+**Spelling Standards:**
+- organisation (not organization), realise (not realize), colour (not color)
+- specialise (not specialize), analyse (not analyze), centre (not center)
+- programme (not program), licence (not license), defence (not defense)
 
-Generate a complete CV with these sections:
-1. **Professional Summary** (2-3 lines, Priority 1 content)
-2. **Key Achievements** (4-6 bullet points, Priority 1-2 content)
-3. **Professional Experience** (chronological, all roles with prioritized bullets)
-4. **Core Competencies** (skills organized by relevance)
-5. **Education & Certifications** (from original profile)
+**Terminology Standards:**
+- CV (not resume), mobile (not cell phone), postcode (not zip code)
+- university (not college), A-levels (not high school diploma)
+- managing director (not CEO), finance director (not CFO)
 
-### COVER LETTER REQUIREMENTS
+**Date Formats:**
+- "January 2023 - Present" or "Jan 2023 - Dec 2023"
+- Never use MM/DD/YYYY format
 
-Create a single, unified cover letter that:
-- Uses only factual highlights from the candidate's profile
-- Addresses the specific job requirements
-- Demonstrates clear value proposition
-- Maintains professional tone
-- Length: 3-4 paragraphs maximum
+### PRIORITY-BASED LENGTH CONTROL (Explicit)
 
-### FINAL OUTPUT FORMAT
+**Short CV (1-2 pages) - Priority 1 ONLY:**
+- Professional summary: 2 lines maximum
+- Key achievements: Top 3-4 only (Priority 1)
+- Experience bullets: 2-3 per role maximum
+- Roles included: Recent 3-4 roles only
+- Core competencies: Top 8-10 skills only
 
-Respond ONLY with a valid JSON object matching this exact schema:
-- All top-level and nested keys must use lower_snake_case (e.g., "cv", "cover_letter", "professional_summary", "key_achievements", "core_competencies", "education", "certifications", etc.).
-- The output must include all required top-level fields: "cv", "cover_letter", "reconstruction_metadata", "job_title", and "company_name".
-- The internal structure of each section must use lower_snake_case for all keys.
-- Do not use any capitalized or spaced keys (e.g., do not use "CV", "Cover Letter", "Professional Summary").
-- All other requirements and instructions above remain in full effect.
+**Medium CV (2-3 pages) - Priority 1-2:**
+- Professional summary: 2-3 lines
+- Key achievements: Top 5-6 (Priority 1-2)
+- Experience bullets: 3-4 per role maximum
+- Roles included: Recent 5-6 roles
+- Core competencies: 10-15 skills
 
-### RECONSTRUCTION VALIDATION CHECKLIST
+**Long CV (3-4 pages) - Priority 1-3:**
+- Professional summary: 3-4 lines
+- Key achievements: Top 6-8 (Priority 1-3)
+- Experience bullets: 4-5 per role maximum
+- Roles included: All relevant roles
+- Core competencies: 15-20 skills
 
-Before finalizing, verify:
-- ✓ All content traces to original profile chunks
+**Extended Long CV (4+ pages) - Priority 1-5:**
+- Professional summary: 4-5 lines
+- Key achievements: Top 8-10 (all priorities)
+- Experience bullets: 5-6 per role maximum
+- Roles included: Complete career timeline
+- Core competencies: 20+ skills
+
+### COVER LETTER STRUCTURE (Mandatory 4-Paragraph Format)
+
+**Paragraph 1 (Opening - 30-40 words):**
+Express interest in specific position and company. Brief introduction of candidacy.
+
+**Paragraph 2 (Key Achievements - 60-80 words):**
+Highlight 2-3 most relevant achievements from profile that directly align with job requirements. Include quantified results where available.
+
+**Paragraph 3 (Job Alignment - 50-70 words):**
+Demonstrate specific understanding of role requirements and how candidate's experience addresses company needs. Show company research and cultural fit.
+
+**Paragraph 4 (Closing - 20-30 words):**
+Professional closing with call to action. Express enthusiasm for interview opportunity.
+
+**Total word count: 160-220 words maximum**
+
+### ANTI-FABRICATION VALIDATION (Enhanced)
+
+**Content Traceability:**
+Every achievement, skill, and experience claim must include evidence_source field pointing to original profile content. No exceptions.
+
+**Fabrication Detection:**
+- Skills not demonstrated in profile = FORBIDDEN
+- Achievements not in original profile = FORBIDDEN
+- Exaggerated metrics or timelines = FORBIDDEN
+- Invented certifications or qualifications = FORBIDDEN
+
+**Validation Process:**
+1. Cross-reference every CV claim with original profile
+2. Verify all quantified achievements exist in source
+3. Confirm skill proficiency levels match demonstrated experience
+4. Validate timeline accuracy and career progression logic
+
+### FINAL OUTPUT SCHEMA (Mandatory Structure)
+
+```json
+{
+  "cv": {
+    "name": "Full Name",
+    "contact": {
+      "email": "email@domain.com",
+      "mobile": "+44 XXXX XXXXXX",
+      "location": "City, UK",
+      "linkedin": "linkedin.com/in/profile"
+    },
+    "professional_summary": {
+      "content": "2-5 lines based on target CV length",
+      "keywords_included": ["keyword1", "keyword2"],
+      "priority_level": 1
+    },
+    "key_achievements": [
+      {
+        "content": "Achievement with quantified results",
+        "priority": 1,
+        "source_chunk": "recent_roles",
+        "evidence_source": "Original profile location",
+        "keywords_used": ["keyword1", "keyword2"]
+      }
+    ],
+    "professional_experience": [
+      {
+        "company": "Company Name",
+        "title": "Job Title",
+        "dates": "Jan 2020 - Present",
+        "location": "City, UK",
+        "bullets": [
+          {
+            "content": "Achievement or responsibility",
+            "priority": 1,
+            "keywords_used": ["keyword1"],
+            "evidence_source": "Original profile reference"
+          }
+        ]
+      }
+    ],
+    "core_competencies": {
+      "technical_skills": [
+        {
+          "skill": "Skill Name",
+          "proficiency": "Expert/Advanced/Intermediate",
+          "priority": 1,
+          "evidence_source": "Profile reference"
+        }
+      ],
+      "functional_skills": [
+        {
+          "skill": "Skill Name",
+          "proficiency": "Advanced",
+          "priority": 2
+        }
+      ]
+    },
+    "education": [
+      {
+        "degree": "Degree Name",
+        "institution": "University Name",
+        "year": "2015",
+        "classification": "First Class Honours",
+        "relevant_modules": ["Module 1", "Module 2"]
+      }
+    ],
+    "certifications": [
+      {
+        "name": "Certification Name",
+        "issuer": "Issuing Organisation",
+        "year": "2023",
+        "status": "Active/Expired"
+      }
+    ]
+  },
+  "cover_letter": {
+    "content": "Four-paragraph cover letter following mandatory structure",
+    "word_count": 180,
+    "paragraph_breakdown": {
+      "opening": "Paragraph 1 content",
+      "achievements": "Paragraph 2 content", 
+      "alignment": "Paragraph 3 content",
+      "closing": "Paragraph 4 content"
+    },
+    "keywords_naturally_included": ["keyword1", "keyword2"],
+    "job_alignment_score": 87
+  },
+  "reconstruction_metadata": {
+    "chunks_processed": 3,
+    "total_content_items": 45,
+    "priority_distribution": {
+      "priority_1_items": 8,
+      "priority_2_items": 12,
+      "priority_3_items": 15,
+      "priority_4_items": 7,
+      "priority_5_items": 3
+    },
+    "duplicates_removed": 3,
+    "keywords_optimized": 16,
+    "uk_english_validated": true,
+    "json_schema_validated": true,
+    "anti_fabrication_compliance": "100% - all content traced to original profile"
+  },
+  "job_title": "Extracted from job description",
+  "company_name": "Extracted from job description"
+}
+```
+
+### PRE-RESPONSE VALIDATION CHECKLIST
+
+Before returning response, verify:
+- ✓ All keys use lower_snake_case (no exceptions)
+- ✓ All required top-level fields present
+- ✓ UK English spelling throughout
+- ✓ Cover letter follows 4-paragraph structure
+- ✓ Word count within 160-220 range
+- ✓ Priority-based content inclusion matches target length
+- ✓ All content traceable to original profile
+- ✓ JSON structure valid and complete
 - ✓ No fabricated skills, achievements, or experience
-- ✓ Chronological order maintained in experience section
-- ✓ Priority-based content organization applied
-- ✓ Job keywords naturally integrated throughout
-- ✓ UK English spelling and grammar used
-- ✓ Professional tone and formatting consistent
-- ✓ Cover letter uses only factual profile highlights
-- ✓ Single unified CV (not multiple versions)
-- ✓ All required sections included and properly formatted
+- ✓ Chronological order maintained
+
+## ENHANCED UK ENGLISH VALIDATION PROMPT
+
+Add this validation step to all prompts:
+
+### UK ENGLISH COMPLIANCE CHECK
+
+**Mandatory Spelling Corrections:**
+- Check and correct: organization→organisation, realize→realise, analyze→analyse
+- Verify: specialise, colour, centre, programme, licence, defence
+- Validate: CV (not resume), mobile (not cell), postcode (not zip code)
+
+**Professional Terminology:**
+- Use: managing director (not CEO), finance director (not CFO)
+- Use: university (not college), A-levels (not high school)
+- Use: programme (for initiatives), program (for software only)
+
+**Date and Number Formats:**
+- Dates: "January 2023" or "Jan 2023 - Dec 2023"
+- Phone: "+44 XXXX XXXXXX" format
+- Currency: £ symbol before amountyes 
 """
     user_message = json.dumps({
         "chunks": chunk_results,
@@ -750,56 +1048,153 @@ Rules:
 - Maintain factual accuracy
 - Preserve the overall CV structure
 
-Return the updated CV in the same JSON format.
-'''
-    elif any(word in update_request_lower for word in ["keyword", "optimiz", "ats"]):
-        prompt = f'''
-Optimize keywords in this CV based on: "{update_request}"
+### OUTPUT FORMAT
 
-Current CV: {json.dumps(current_cv)}
-Job Description: {job_description}
+Respond ONLY with a valid JSON object matching this exact schema:
 
-Rules:
-- Use intelligent keyword substitution where factually supported
-- Maintain all factual accuracy
-- Focus on natural keyword integration
-- Do not add skills not demonstrated in the original content
+```json
+{
+  "cv": {
+    "name": "Full Name",
+    "contact": {
+      "email": "email@domain.com",
+      "mobile": "+44 XXXX XXXXXX",
+      "location": "City, UK",
+      "linkedin": "linkedin.com/in/profile"
+    },
+    "professional_summary": {
+      "content": "2-5 lines based on target CV length",
+      "keywords_included": ["keyword1", "keyword2"],
+      "priority_level": 1
+    },
+    "key_achievements": [
+      {
+        "content": "Achievement with quantified results",
+        "priority": 1,
+        "source_chunk": "recent_roles",
+        "evidence_source": "Original profile location",
+        "keywords_used": ["keyword1", "keyword2"]
+      }
+    ],
+    "professional_experience": [
+      {
+        "company": "Company Name",
+        "title": "Job Title",
+        "dates": "Jan 2020 - Present",
+        "location": "City, UK",
+        "bullets": [
+          {
+            "content": "Achievement or responsibility",
+            "priority": 1,
+            "keywords_used": ["keyword1"],
+            "evidence_source": "Original profile reference"
+          }
+        ]
+      }
+    ],
+    "core_competencies": {
+      "technical_skills": [
+        {
+          "skill": "Skill Name",
+          "proficiency": "Expert/Advanced/Intermediate",
+          "priority": 1,
+          "evidence_source": "Profile reference"
+        }
+      ],
+      "functional_skills": [
+        {
+          "skill": "Skill Name",
+          "proficiency": "Advanced",
+          "priority": 2
+        }
+      ]
+    },
+    "education": [
+      {
+        "degree": "Degree Name",
+        "institution": "University Name",
+        "year": "2015",
+        "classification": "First Class Honours",
+        "relevant_modules": ["Module 1", "Module 2"]
+      }
+    ],
+    "certifications": [
+      {
+        "name": "Certification Name",
+        "issuer": "Issuing Organisation",
+        "year": "2023",
+        "status": "Active/Expired"
+      }
+    ]
+  },
+  "cover_letter": {
+    "content": "Four-paragraph cover letter following mandatory structure",
+    "word_count": 180,
+    "paragraph_breakdown": {
+      "opening": "Paragraph 1 content",
+      "achievements": "Paragraph 2 content", 
+      "alignment": "Paragraph 3 content",
+      "closing": "Paragraph 4 content"
+    },
+    "keywords_naturally_included": ["keyword1", "keyword2"],
+    "job_alignment_score": 87
+  },
+  "reconstruction_metadata": {
+    "chunks_processed": 3,
+    "total_content_items": 45,
+    "priority_distribution": {
+      "priority_1_items": 8,
+      "priority_2_items": 12,
+      "priority_3_items": 15,
+      "priority_4_items": 7,
+      "priority_5_items": 3
+    },
+    "duplicates_removed": 3,
+    "keywords_optimized": 16,
+    "uk_english_validated": true,
+    "json_schema_validated": true,
+    "anti_fabrication_compliance": "100% - all content traced to original profile"
+  },
+  "job_title": "Extracted from job description",
+  "company_name": "Extracted from job description"
+}
+```
 
-Return the updated CV with optimized keywords.
-'''
-    elif any(word in update_request_lower for word in ["length", "shorten", "expand", "longer", "shorter"]):
-        prompt = f'''
-Adjust the length of this CV based on: "{update_request}"
+### PRE-RESPONSE VALIDATION CHECKLIST
 
-Current CV: {json.dumps(current_cv)}
+Before returning response, verify:
+- ✓ All keys use lower_snake_case (no exceptions)
+- ✓ All required top-level fields present
+- ✓ UK English spelling throughout
+- ✓ Cover letter follows 4-paragraph structure
+- ✓ Word count within 160-220 range
+- ✓ Priority-based content inclusion matches target length
+- ✓ All content traceable to original profile
+- ✓ JSON structure valid and complete
+- ✓ No fabricated skills, achievements, or experience
+- ✓ Chronological order maintained
 
-Rules:
-- If shortening: Remove lower priority content first
-- If expanding: Add more detail to existing achievements
-- Maintain factual accuracy
-- Preserve the most important information
+## ENHANCED UK ENGLISH VALIDATION PROMPT
 
-Return the length-adjusted CV.
-'''
-    else:
-        # Default to emphasis adjustment if not clear
-        prompt = f'''
-Adjust the emphasis in this CV based on the user request: "{update_request}"
+Add this validation step to all prompts:
 
-Current CV: {json.dumps(current_cv)}
-Original Profile: {json.dumps(original_profile)}
+### UK ENGLISH COMPLIANCE CHECK
 
-Rules:
-- Only use content from the original profile
-- Reorder and rephrase existing content to match the emphasis request
-- Do not fabricate new achievements or skills
-- Maintain factual accuracy
-- Preserve the overall CV structure
+**Mandatory Spelling Corrections:**
+- Check and correct: organization→organisation, realize→realise, analyze→analyse
+- Verify: specialise, colour, centre, programme, licence, defence
+- Validate: CV (not resume), mobile (not cell), postcode (not zip code)
 
-Return the updated CV in the same JSON format.
-'''
-    # Append the critical validation checklist
-    prompt += '''\n\nCRITICAL VALIDATION CHECKLIST:\n- ✓ Job description used for keyword optimization throughout\n- ✓ All skills have evidence in original profile\n- ✓ All achievements traced to profile content\n- ✓ No exaggerated experience levels or capabilities\n- ✓ Single CV and single cover letter generated\n- ✓ Maximum job alignment within factual boundaries\n- ✓ Anti-fabrication compliance verified at every stage\n- ✓ 12-20 keywords extracted for comprehensive coverage\n- ✓ Realistic ATS scoring (0-100% range)\n- ✓ UK English maintained throughout\n'''
+**Professional Terminology:**
+- Use: managing director (not CEO), finance director (not CFO)
+- Use: university (not college), A-levels (not high school)
+- Use: programme (for initiatives), program (for software only)
+
+**Date and Number Formats:**
+- Dates: "January 2023" or "Jan 2023 - Dec 2023"
+- Phone: "+44 XXXX XXXXXX" format
+- Currency: £ symbol before amountyes 
+"""
     try:
         OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
         if not OPENAI_API_KEY:
