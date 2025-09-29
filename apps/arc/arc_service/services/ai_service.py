@@ -51,6 +51,259 @@ def map_profile_to_job_comprehensive(profile, job_analysis):
         )
     return mapping
 
+# ===== 1. COMPREHENSIVE KEYWORD EXTRACTION PROMPT =====
+KEYWORD_EXTRACTION_PROMPT = """
+You are a job analysis and keyword extraction specialist. Analyze this job posting and extract both job metadata AND exactly 12-20 keywords for comprehensive ATS optimization.
+
+### JOB METADATA EXTRACTION (REQUIRED)
+
+**Extract the following information from the job description:**
+- **job_title:** The main job title being advertised (e.g., "Senior Software Developer", "Project Manager")
+- **company:** The company or organization name, if mentioned (use "Not specified" if not found)
+- **experience_level:** Required experience level (e.g., "Senior", "Mid-level", "Entry-level", "5+ years", "Executive")
+- **industry:** The industry or business sector (e.g., "Technology", "Financial Services", "Healthcare", "Manufacturing")
+
+### KEYWORD EXTRACTION REQUIREMENTS
+
+**TOTAL TARGET: 12-20 keywords (no more, no less)**
+
+**CATEGORY DISTRIBUTION:**
+1. **TECHNICAL SKILLS (4-6 keywords):**
+   - Software, tools, platforms, technologies
+   - Programming languages, frameworks
+   - Technical methodologies, certifications
+   - Systems, databases, cloud platforms
+
+2. **FUNCTIONAL SKILLS (3-5 keywords):**
+   - Core job responsibilities and functions
+   - Business processes, analysis types
+   - Management or operational capabilities
+   - Industry-specific functions
+
+3. **SOFT SKILLS (2-4 keywords):**
+   - Leadership, communication, teamwork
+   - Problem-solving, analytical thinking
+   - Project management, collaboration
+   - Adaptability, innovation
+
+4. **INDUSTRY TERMS (2-4 keywords):**
+   - Sector-specific terminology
+   - Business domains, market segments
+   - Regulatory, compliance, or standards terms
+   - Company type or business model terms
+
+5. **EXPERIENCE QUALIFIERS (1-3 keywords):**
+   - Years of experience requirements
+   - Seniority levels, team size
+   - Budget responsibility, scale indicators
+   - Geographic or scope qualifiers
+
+### EXTRACTION GUIDELINES
+
+**PRIORITIZATION RULES:**
+- Keywords mentioned multiple times = higher priority
+- Keywords in job title or requirements section = higher priority
+- Specific technical terms = higher priority than generic terms
+- Measurable qualifications = higher priority
+
+**KEYWORD SELECTION CRITERIA:**
+- ✅ Terms a recruiter would search for in an ATS
+- ✅ Specific skills, tools, or qualifications
+- ✅ Industry-standard terminology
+- ✅ Measurable experience indicators
+- ❌ Generic words like "experience," "skills," "ability"
+- ❌ Common verbs like "manage," "develop," "work"
+- ❌ Overly broad terms like "technology," "business"
+
+### OUTPUT FORMAT
+
+Respond ONLY with a valid JSON object matching this exact schema:
+```json
+{
+  "job_title": "Senior Oracle Developer",
+  "company": "TechCorp Financial",
+  "experience_level": "Senior (5+ years)",
+  "industry": "Financial Services",
+  "technical_skills": ["Oracle Database", "SQL Server", "Python", "AWS", "Agile Methodology"],
+  "functional_skills": ["Data Analysis", "Project Management", "Business Intelligence", "Process Improvement"],
+  "soft_skills": ["Leadership", "Communication", "Problem Solving"],
+  "industry_terms": ["Financial Services", "Regulatory Compliance", "Risk Management"],
+  "experience_qualifiers": ["5+ years experience", "Team Leadership"],
+  "total_keywords": 16,
+  "keyword_priority": {
+    "high": ["Oracle Database", "SQL Server", "Data Analysis", "5+ years experience"],
+    "medium": ["Python", "AWS", "Project Management", "Leadership", "Financial Services"],
+    "low": ["Communication", "Problem Solving", "Risk Management"]
+  },
+  "extraction_validation": {
+    "job_metadata_extracted": true,
+    "keywords_in_range": true,
+    "categories_balanced": true
+  }
+}
+```
+
+### METADATA EXTRACTION GUIDELINES
+
+**Job Title Extraction:**
+- Look for phrases like "Job Title:", "Position:", "Role:", or titles in headers
+- Extract the most specific title mentioned (e.g., "Senior Software Developer" not just "Developer")
+- If multiple titles mentioned, use the primary/main one
+
+**Company Extraction:**
+- Look for company names, organization names, or "Company:" labels
+- Extract full company name if available
+- Use "Not specified" if no company name is found
+
+**Experience Level Extraction:**
+- Look for phrases like "X+ years", "Senior", "Junior", "Entry-level", "Executive"
+- Extract the most specific requirement (e.g., "5+ years" rather than just "experienced")
+- Combine seniority level with years if both present (e.g., "Senior (5+ years)")
+
+**Industry Extraction:**
+- Identify the business sector or industry context
+- Use standard industry terms (e.g., "Technology", "Financial Services", "Healthcare")
+- Infer from company type, job requirements, or explicit mentions
+"""
+
+# ===== 2. GLOBAL CONTEXT CREATION PROMPT =====
+GLOBAL_CONTEXT_PROMPT = """
+You are a career analysis specialist. Analyze the provided career profile and job description to create global context standards for consistent, factually accurate CV generation.
+
+### STRICT ANTI-FABRICATION POLICY
+- NEVER invent information not present in the profile
+- NEVER exaggerate experience levels or capabilities
+- ONLY use data from the provided profile and job description
+- Base all analysis on factual evidence from source materials
+- Flag any gaps rather than fabricating solutions
+
+### TASK: CREATE GLOBAL CONTEXT WITH JOB ALIGNMENT
+
+**INPUT ANALYSIS:**
+1. **Job Requirements Analysis:**
+   - Extract explicit requirements (skills, experience, education)
+   - Identify implicit requirements (soft skills, cultural fit)
+   - Map GREEN keywords (exact matches in profile)
+   - Map AMBER keywords (related/transferable skills in profile)
+   - Identify RED keywords (missing from profile - do not fabricate)
+
+2. **Profile Capability Inventory:**
+   - Document demonstrated skills with evidence
+   - Quantify experience levels factually
+   - Identify transferable skills with clear rationale
+   - Map achievements to potential job relevance
+   - Note any gaps honestly
+
+3. **Factual Alignment Strategy:**
+   - Define safe keyword substitutions
+   - Establish priority rankings based on evidence
+   - Create content emphasis guidelines
+   - Set boundaries for what can/cannot be claimed
+
+### OUTPUT FORMAT (JSON):
+```json
+{
+  "job_analysis": {
+    "explicit_requirements": {
+      "technical_skills": ["Oracle ERP", "Project Management"],
+      "experience_years": "5+ years",
+      "education": "Bachelor's degree",
+      "certifications": ["PMP preferred"]
+    },
+    "implicit_requirements": {
+      "soft_skills": ["Leadership", "Communication"],
+      "cultural_fit": ["Innovation", "Collaboration"],
+      "success_metrics": ["On-time delivery", "Budget management"]
+    },
+    "keyword_mapping": {
+      "green_keywords": ["Oracle", "Database", "Team Leadership"],
+      "amber_keywords": ["ERP", "Project Coordination"],
+      "red_keywords": ["SAP", "Agile Certification"]
+    }
+  },
+  "profile_inventory": {
+    "demonstrated_skills": [
+      {
+        "skill": "Oracle Fusion",
+        "evidence": "3 years experience, led implementation project",
+        "proficiency_level": "advanced",
+        "transferable_to": ["Oracle ERP"]
+      }
+    ],
+    "quantified_achievements": [
+      {
+        "achievement": "Led Oracle implementation for 500+ users",
+        "evidence_source": "Senior Developer role at Company X",
+        "relevance_to_job": "high - demonstrates ERP implementation experience"
+      }
+    ],
+    "experience_gaps": [
+      {
+        "missing_requirement": "SAP experience",
+        "gap_severity": "high",
+        "mitigation": "emphasize ERP principles and Oracle expertise"
+      }
+    ]
+  },
+  "alignment_strategy": {
+    "safe_keyword_substitutions": [
+      {
+        "original": "Oracle Fusion",
+        "optimized": "Oracle ERP (Fusion)",
+        "rationale": "aligns with job terminology while maintaining accuracy"
+      }
+    ],
+    "priority_definitions": {
+      "priority_1": "Direct keyword matches with strong evidence - ALWAYS included in all CV lengths",
+      "priority_2": "Transferable skills with clear rationale - Included in medium and long CVs",
+      "priority_3": "Supporting experience relevant to role - Included in long CVs only",
+      "priority_4": "General professional experience - Extended long CVs only",
+      "priority_5": "Timeline completion only - Extended long CVs only"
+    },
+    "cv_length_control": {
+      "short_cv": {
+        "target_length": "1-2 pages",
+        "priorities_included": [1],
+        "content_focus": "Only highest priority job-aligned content",
+        "experience_bullets": "2-3 per role maximum",
+        "roles_included": "Recent 3-4 roles only",
+        "achievements_section": "Top 3-4 achievements only"
+      },
+      "medium_cv": {
+        "target_length": "2-3 pages", 
+        "priorities_included": [1, 2],
+        "content_focus": "High priority + strong transferable skills",
+        "experience_bullets": "3-4 per role maximum",
+        "roles_included": "Recent 5-6 roles",
+        "achievements_section": "Top 5-6 achievements"
+      },
+      "long_cv": {
+        "target_length": "3-4 pages",
+        "priorities_included": [1, 2, 3],
+        "content_focus": "Comprehensive career narrative",
+        "experience_bullets": "4-5 per role maximum", 
+        "roles_included": "All relevant roles",
+        "achievements_section": "Top 6-8 achievements"
+      },
+      "extended_long_cv": {
+        "target_length": "4+ pages",
+        "priorities_included": [1, 2, 3, 4, 5],
+        "content_focus": "Complete career history",
+        "experience_bullets": "5-6 per role maximum",
+        "roles_included": "Complete career timeline",
+        "achievements_section": "Top 8-10 achievements"
+      }
+    },
+    "content_boundaries": {
+      "can_claim": ["skills with evidence", "achievements from profile"],
+      "cannot_claim": ["missing certifications", "undemonstrated skills"],
+      "must_avoid": ["fabricated metrics", "exaggerated experience levels"]
+    }
+  }
+}
+```
+"""
+
 async def extract_comprehensive_keywords(job_description):
     import openai
     import os
@@ -403,7 +656,7 @@ You will receive:
 - Create cohesive narrative flow
 
 **ANTI-FABRICATION VALIDATION:**
-- Verify all content traces back to original profile chunks
+- Verify all content traces back to original profile
 - Ensure no skills or achievements are invented
 - Maintain factual accuracy of all metrics and timelines
 - Preserve authentic experience levels
@@ -428,7 +681,12 @@ Create a single, unified cover letter that:
 
 ### FINAL OUTPUT FORMAT
 
-(see prompt collection for full JSON structure)
+Respond ONLY with a valid JSON object matching this exact schema:
+- All top-level and nested keys must use lower_snake_case (e.g., "cv", "cover_letter", "professional_summary", "key_achievements", "core_competencies", "education", "certifications", etc.).
+- The output must include all required top-level fields: "cv", "cover_letter", "reconstruction_metadata", "job_title", and "company_name".
+- The internal structure of each section must use lower_snake_case for all keys.
+- Do not use any capitalized or spaced keys (e.g., do not use "CV", "Cover Letter", "Professional Summary").
+- All other requirements and instructions above remain in full effect.
 
 ### RECONSTRUCTION VALIDATION CHECKLIST
 
