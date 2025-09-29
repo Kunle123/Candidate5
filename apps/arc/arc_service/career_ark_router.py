@@ -615,78 +615,20 @@ def partial_update_certification(id: int, update: CertificationUpdate, db: Sessi
     return entry
 
 @router.get("/profiles/{profile_id}/all_sections")
-def get_all_sections(profile_id: UUID, db: Session = Depends(get_db)):
-    # Fetch all sections for the given profile_id
-    def parse_date(date_str):
-        if not date_str:
-            return 0
-        if date_str.strip().lower() == "present":
-            return float('inf')
-        for fmt in ("%b %Y", "%Y"):
-            try:
-                return datetime.strptime(date_str, fmt).timestamp()
-            except Exception:
-                continue
-        return 0
-    work_experience = db.query(WorkExperience).filter_by(user_id=profile_id).all()
-    # Sort work_experience by end_date descending ("Present" most recent)
-    work_experience_sorted = sorted(
-        work_experience,
-        key=lambda x: parse_date(x.end_date),
-        reverse=True
-    )
-    education = db.query(Education).filter_by(user_id=profile_id).order_by(Education.order_index).all()
-    skills = db.query(Skill).filter_by(user_id=profile_id).order_by(Skill.id).all()
-    projects = db.query(Project).filter_by(user_id=profile_id).order_by(Project.order_index).all()
-    certifications = db.query(Certification).filter_by(user_id=profile_id).order_by(Certification.order_index).all()
-    return {
-        "work_experience": [
-            {
-                "id": str(x.id),
-                "company": x.company,
-                "title": x.title,
-                "start_date": x.start_date,
-                "end_date": x.end_date,
-                "description": x.description,
-                "order_index": x.order_index
-            } for x in work_experience_sorted
-        ],
-        "education": [
-            {
-                "id": str(x.id),
-                "institution": x.institution,
-                "degree": x.degree,
-                "field": x.field,
-                "start_date": x.start_date,
-                "end_date": x.end_date,
-                "description": x.description,
-                "order_index": x.order_index
-            } for x in education
-        ],
-        "skills": [
-            {
-                "id": str(x.id),
-                "skill": x.skill
-            } for x in skills
-        ],
-        "projects": [
-            {
-                "id": str(x.id),
-                "name": x.name,
-                "description": x.description,
-                "order_index": x.order_index
-            } for x in projects
-        ],
-        "certifications": [
-            {
-                "id": str(x.id),
-                "name": x.name,
-                "issuer": x.issuer,
-                "year": x.year,
-                "order_index": x.order_index
-            } for x in certifications
-        ]
-    }
+async def get_all_sections(profile_id: UUID, request: Request):
+    # Fetch the full profile using the new v1 endpoint via the utility
+    token = None
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        token = auth_header.split(" ", 1)[1]
+    if not token:
+        raise HTTPException(status_code=401, detail="Authorization token required to fetch profile.")
+    from arc_service.utils.profile_fetch import get_user_profile
+    try:
+        profile = await get_user_profile(str(profile_id), token)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Profile not found for user_id: {profile_id}. {str(e)}")
+    return profile
 
 # --- Generate Assistant Endpoint ---
 from fastapi import Request
