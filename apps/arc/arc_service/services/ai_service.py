@@ -1,0 +1,179 @@
+import logging
+import re
+from fastapi import HTTPException
+import openai
+import os
+import json
+
+# --- ENHANCED KEYWORD MAPPING ---
+def map_profile_to_job_comprehensive(profile, job_analysis):
+    profile_text = str(profile).lower()
+    all_keywords = (
+        job_analysis.get("technical_skills", []) +
+        job_analysis.get("functional_skills", []) +
+        job_analysis.get("soft_skills", []) +
+        job_analysis.get("industry_terms", []) +
+        job_analysis.get("experience_qualifiers", [])
+    )
+    mapping = {
+        "green_keywords": [],
+        "amber_keywords": [],
+        "red_keywords": [],
+        "keyword_coverage": {
+            "total_keywords": len(all_keywords),
+            "matched_keywords": 0,
+            "coverage_percentage": 0
+        }
+    }
+    for keyword in all_keywords:
+        keyword_lower = keyword.lower()
+        if keyword_lower in profile_text:
+            mapping["green_keywords"].append({"keyword": keyword, "evidence": "Found in profile"})
+            mapping["keyword_coverage"]["matched_keywords"] += 1
+        else:
+            # Simple related skill logic: check for partial match
+            related = None
+            for word in keyword_lower.split():
+                if word in profile_text and len(word) > 3:
+                    related = word
+                    break
+            if related:
+                mapping["amber_keywords"].append({"keyword": keyword, "related_skill": related, "transfer_rationale": f"{related} is related to {keyword}"})
+                mapping["keyword_coverage"]["matched_keywords"] += 1
+            else:
+                mapping["red_keywords"].append({"keyword": keyword, "gap_severity": "medium", "mitigation": f"Consider gaining experience or training in {keyword}"})
+    if mapping["keyword_coverage"]["total_keywords"] > 0:
+        mapping["keyword_coverage"]["coverage_percentage"] = round(
+            mapping["keyword_coverage"]["matched_keywords"] / mapping["keyword_coverage"]["total_keywords"] * 100
+        )
+    return mapping
+
+async def extract_comprehensive_keywords(job_description):
+    import openai
+    import os
+    import json
+    prompt = f'''
+    You are a job analysis and keyword extraction specialist. Analyze this job posting and extract both job metadata AND exactly 12-20 keywords for comprehensive ATS optimization.
+
+    Job Description: {job_description}
+
+    ### JOB METADATA EXTRACTION (REQUIRED)
+
+    **Extract the following information from the job description:**
+    - **job_title:** The main job title being advertised (e.g., "Senior Software Developer", "Project Manager")
+    - **company:** The company or organization name, if mentioned (use "Not specified" if not found)
+    - **experience_level:** Required experience level (e.g., "Senior", "Mid-level", "Entry-level", "5+ years", "Executive")
+    - **industry:** The industry or business sector (e.g., "Technology", "Financial Services", "Healthcare", "Manufacturing")
+
+    ### KEYWORD EXTRACTION REQUIREMENTS
+
+    **TOTAL TARGET: 12-20 keywords (no more, no less)**
+
+    **CATEGORY DISTRIBUTION:**
+    1. **TECHNICAL SKILLS (4-6 keywords):**
+       - Software, tools, platforms, technologies
+       - Programming languages, frameworks
+       - Technical methodologies, certifications
+       - Systems, databases, cloud platforms
+
+    2. **FUNCTIONAL SKILLS (3-5 keywords):**
+       - Core job responsibilities and functions
+       - Business processes, analysis types
+       - Management or operational capabilities
+       - Industry-specific functions
+
+    3. **SOFT SKILLS (2-4 keywords):**
+       - Leadership, communication, teamwork
+       - Problem-solving, analytical thinking
+       - Project management, collaboration
+       - Adaptability, innovation
+
+    4. **INDUSTRY TERMS (2-4 keywords):**
+       - Sector-specific terminology
+       - Business domains, market segments
+       - Regulatory, compliance, or standards terms
+       - Company type or business model terms
+
+    5. **EXPERIENCE QUALIFIERS (1-3 keywords):**
+       - Years of experience requirements
+       - Seniority levels, team size
+       - Budget responsibility, scale indicators
+       - Geographic or scope qualifiers
+
+    ### EXTRACTION GUIDELINES
+
+    **PRIORITIZATION RULES:**
+    - Keywords mentioned multiple times = higher priority
+    - Keywords in job title or requirements section = higher priority
+    - Specific technical terms = higher priority than generic terms
+    - Measurable qualifications = higher priority
+
+    **KEYWORD SELECTION CRITERIA:**
+    - ✅ Terms a recruiter would search for in an ATS
+    - ✅ Specific skills, tools, or qualifications
+    - ✅ Industry-standard terminology
+    - ✅ Measurable experience indicators
+    - ❌ Generic words like "experience," "skills," "ability"
+    - ❌ Common verbs like "manage," "develop," "work"
+    - ❌ Overly broad terms like "technology," "business"
+
+    ### METADATA EXTRACTION GUIDELINES
+
+    **Job Title Extraction:**
+    - Look for phrases like "Job Title:", "Position:", "Role:", or titles in headers
+    - Extract the most specific title mentioned (e.g., "Senior Software Developer" not just "Developer")
+    - If multiple titles mentioned, use the primary/main one
+
+    **Company Extraction:**
+    - Look for company names, organization names, or "Company:" labels
+    - Extract full company name if available
+    - Use "Not specified" if no company name is found
+
+    **Experience Level Extraction:**
+    - Look for phrases like "X+ years", "Senior", "Junior", "Entry-level", "Executive"
+    - Extract the most specific requirement (e.g., "5+ years" rather than just "experienced")
+    - Combine seniority level with years if both present (e.g., "Senior (5+ years)")
+
+    **Industry Extraction:**
+    - Identify the business sector or industry context
+    - Use standard industry terms (e.g., "Technology", "Financial Services", "Healthcare")
+    - Infer from company type, job requirements, or explicit mentions
+
+    ### OUTPUT FORMAT
+
+    **Respond ONLY with a valid JSON object matching this exact schema:**
+
+    {{
+      "job_title": "Senior Oracle Developer",
+      "company": "TechCorp Financial",
+      "experience_level": "Senior (5+ years)",
+      "industry": "Financial Services",
+      "technical_skills": ["Oracle Database", "SQL Server", "Python", "AWS", "Agile Methodology"],
+      "functional_skills": ["Data Analysis", "Project Management", "Business Intelligence", "Process Improvement"],
+      "soft_skills": ["Leadership", "Communication", "Problem Solving"],
+      "industry_terms": ["Financial Services", "Regulatory Compliance", "Risk Management"],
+      "experience_qualifiers": ["5+ years experience", "Team Leadership"],
+      "total_keywords": 16,
+      "keyword_priority": {{"high": ["Oracle Database", "SQL Server"], "medium": ["Python", "AWS"], "low": ["Agile Methodology"]}}
+    }}
+
+    Respond ONLY with a valid JSON object.
+    '''
+    try:
+        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        if not OPENAI_API_KEY:
+            raise HTTPException(status_code=500, detail="OpenAI API key not set")
+        client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
+        response = await client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a job analysis and keyword extraction specialist. Respond ONLY with a valid JSON object."},
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+        content = response.choices[0].message.content
+        return json.loads(content)
+    except Exception as e:
+        logging.error(f"[OPENAI EXCEPTION] {e}")
+        raise HTTPException(status_code=500, detail=f"Keyword extraction failed: {e}")

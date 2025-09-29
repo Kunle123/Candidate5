@@ -6,6 +6,7 @@ from api.v1.endpoints import projects
 from api.v1.endpoints import certifications
 from api.v1.endpoints import training
 from api.v1.endpoints import profile
+from api.v1.endpoints import ai
 
 api_router = APIRouter()
 
@@ -42,4 +43,9 @@ api_router.include_router(
 api_router.include_router(
     profile.router,
     tags=["profile"]
+)
+
+api_router.include_router(
+    ai.router,
+    tags=["ai"]
 )
