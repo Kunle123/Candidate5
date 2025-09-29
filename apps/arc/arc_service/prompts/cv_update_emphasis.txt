@@ -1,0 +1,123 @@
+Adjust the emphasis in this CV based on the user request: "{update_request}"
+
+Current CV: {current_cv}
+Original Profile: {original_profile}
+
+Rules:
+- Only use content from the original profile
+- Reorder and rephrase existing content to match the emphasis request
+- Do not fabricate new achievements or skills
+- Maintain factual accuracy
+- Preserve the overall CV structure
+
+### OUTPUT FORMAT
+
+Respond ONLY with a valid JSON object matching this exact schema:
+
+```json
+{
+  "cv": {
+    "name": "Full Name",
+    "contact": {
+      "email": "email@domain.com",
+      "mobile": "+44 XXXX XXXXXX",
+      "location": "City, UK",
+      "linkedin": "linkedin.com/in/profile"
+    },
+    "professional_summary": {
+      "content": "2-5 lines based on target CV length",
+      "keywords_included": ["keyword1", "keyword2"],
+      "priority_level": 1
+    },
+    "key_achievements": [
+      {
+        "content": "Achievement with quantified results",
+        "priority": 1,
+        "source_chunk": "recent_roles",
+        "evidence_source": "Original profile location",
+        "keywords_used": ["keyword1", "keyword2"]
+      }
+    ],
+    "professional_experience": [
+      {
+        "company": "Company Name",
+        "title": "Job Title",
+        "dates": "Jan 2020 - Present",
+        "location": "City, UK",
+        "bullets": [
+          {
+            "content": "Achievement or responsibility",
+            "priority": 1,
+            "keywords_used": ["keyword1"],
+            "evidence_source": "Original profile reference"
+          }
+        ]
+      }
+    ],
+    "core_competencies": {
+      "technical_skills": [
+        {
+          "skill": "Skill Name",
+          "proficiency": "Expert/Advanced/Intermediate",
+          "priority": 1,
+          "evidence_source": "Profile reference"
+        }
+      ],
+      "functional_skills": [
+        {
+          "skill": "Skill Name",
+          "proficiency": "Advanced",
+          "priority": 2
+        }
+      ]
+    },
+    "education": [
+      {
+        "degree": "Degree Name",
+        "institution": "University Name",
+        "year": "2015",
+        "classification": "First Class Honours",
+        "relevant_modules": ["Module 1", "Module 2"]
+      }
+    ],
+    "certifications": [
+      {
+        "name": "Certification Name",
+        "issuer": "Issuing Organisation",
+        "year": "2023",
+        "status": "Active/Expired"
+      }
+    ]
+  },
+  "cover_letter": {
+    "content": "Four-paragraph cover letter following mandatory structure",
+    "word_count": 180,
+    "paragraph_breakdown": {
+      "opening": "Paragraph 1 content",
+      "achievements": "Paragraph 2 content", 
+      "alignment": "Paragraph 3 content",
+      "closing": "Paragraph 4 content"
+    },
+    "keywords_naturally_included": ["keyword1", "keyword2"],
+    "job_alignment_score": 87
+  },
+  "reconstruction_metadata": {
+    "chunks_processed": 3,
+    "total_content_items": 45,
+    "priority_distribution": {
+      "priority_1_items": 8,
+      "priority_2_items": 12,
+      "priority_3_items": 15,
+      "priority_4_items": 7,
+      "priority_5_items": 3
+    },
+    "duplicates_removed": 3,
+    "keywords_optimized": 16,
+    "uk_english_validated": true,
+    "json_schema_validated": true,
+    "anti_fabrication_compliance": "100% - all content traced to original profile"
+  },
+  "job_title": "Extracted from job description",
+  "company_name": "Extracted from job description"
+}
+```
