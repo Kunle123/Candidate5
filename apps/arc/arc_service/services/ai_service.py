@@ -374,7 +374,76 @@ def safe_json_parse(content, logger=None, context="OpenAI response"):
 
 def assemble_unified_cv(chunk_results, global_context, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
     # Final assembly step using OpenAI
-    assembly_prompt = "You are a CV assembly specialist. Combine processed chunks into a unified CV with strict factual accuracy. Respond ONLY with a valid JSON object."
+    assembly_prompt = """You are a CV reconstruction specialist. Take the raw content from multiple processed chunks and reconstruct it into a single, unified, professional CV with cover letter.
+
+### INPUT DATA
+You will receive:
+- **Raw chunks:** Content from recent roles, supporting roles, and timeline roles
+- **Global context:** Job analysis and alignment strategies
+- **Original profile:** Complete candidate profile for validation
+- **Job description:** Target job posting for final optimization
+
+### RECONSTRUCTION REQUIREMENTS
+
+**CONTENT CONSOLIDATION:**
+- Merge all raw experience from chunks into chronological order (most recent first)
+- Combine all achievements, removing duplicates while preserving unique value
+- Consolidate skills from all chunks, prioritizing by job relevance
+- Integrate education and certifications from original profile
+
+**PRIORITY-BASED ORGANIZATION:**
+- Priority 1 content: Featured prominently in summary and top achievements
+- Priority 2-3 content: Main experience bullets and core competencies
+- Priority 4-5 content: Supporting experience and timeline completion
+
+**FINAL OPTIMIZATION:**
+- Apply job-specific keyword optimization throughout
+- Ensure natural keyword integration (avoid stuffing)
+- Maintain UK English spelling and terminology
+- Create cohesive narrative flow
+
+**ANTI-FABRICATION VALIDATION:**
+- Verify all content traces back to original profile chunks
+- Ensure no skills or achievements are invented
+- Maintain factual accuracy of all metrics and timelines
+- Preserve authentic experience levels
+
+### OUTPUT STRUCTURE
+
+Generate a complete CV with these sections:
+1. **Professional Summary** (2-3 lines, Priority 1 content)
+2. **Key Achievements** (4-6 bullet points, Priority 1-2 content)
+3. **Professional Experience** (chronological, all roles with prioritized bullets)
+4. **Core Competencies** (skills organized by relevance)
+5. **Education & Certifications** (from original profile)
+
+### COVER LETTER REQUIREMENTS
+
+Create a single, unified cover letter that:
+- Uses only factual highlights from the candidate's profile
+- Addresses the specific job requirements
+- Demonstrates clear value proposition
+- Maintains professional tone
+- Length: 3-4 paragraphs maximum
+
+### FINAL OUTPUT FORMAT
+
+(see prompt collection for full JSON structure)
+
+### RECONSTRUCTION VALIDATION CHECKLIST
+
+Before finalizing, verify:
+- ✓ All content traces to original profile chunks
+- ✓ No fabricated skills, achievements, or experience
+- ✓ Chronological order maintained in experience section
+- ✓ Priority-based content organization applied
+- ✓ Job keywords naturally integrated throughout
+- ✓ UK English spelling and grammar used
+- ✓ Professional tone and formatting consistent
+- ✓ Cover letter uses only factual profile highlights
+- ✓ Single unified CV (not multiple versions)
+- ✓ All required sections included and properly formatted
+"""
     user_message = json.dumps({
         "chunks": chunk_results,
         "global_context": global_context,
