@@ -27,7 +27,6 @@ def create_certification(
         db.commit()
         db.refresh(user)
     cert_data = data.dict()
-    cert_data["user_id"] = user_id
     return repo.create(cert_data)
 
 @router.get("/users/{user_id}/certifications", response_model=List[CertificationOut])
