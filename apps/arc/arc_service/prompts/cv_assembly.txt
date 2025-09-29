@@ -36,9 +36,21 @@ Use the requested CV length to determine content inclusion:
 
 **ANTI-FABRICATION VALIDATION:**
 - Verify all content traces back to original profile
-- Ensure no skills or achievements are invented
+- Ensure no skills, achievements, or quantified results are invented
 - Maintain factual accuracy of all metrics and timelines
 - Preserve authentic experience levels
+
+**FORBIDDEN OUTPUT EXAMPLES:**
+- “Implemented [ANY TOOL/TECHNOLOGY/PLATFORM] solution, achieving a [QUANTIFIED RESULT]” (if NOT in profile, DO NOT invent)
+- “Reduced costs by [PERCENTAGE] through [PROCESS]” (if NOT in profile, DO NOT invent)
+- “If you cannot find a quantified achievement in the profile, do NOT invent one. Leave the field blank or state 'Not specified in profile.'”
+
+**CLARIFICATION:**
+- Only include achievements, skills, and quantified results that are explicitly present in the user’s profile.
+- If a user’s profile contains Salesforce experience (or any other technology/achievement), it is allowed. If not, do NOT invent it.
+
+**REFUSAL PATTERN:**
+- If you cannot find a matching achievement, skill, or metric in the profile, do NOT invent one. Leave the field blank or state 'Not specified in profile.'
 
 ### OUTPUT STRUCTURE
 
