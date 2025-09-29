@@ -249,6 +249,16 @@ def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, O
         logging.error(f"[OPENAI CHUNK ERROR] {e}")
         return {"error": str(e)}
 
+# --- Helper: Safe JSON parse with logging ---
+def safe_json_parse(content, logger=None, context="OpenAI response"):
+    try:
+        return json.loads(content)
+    except Exception as e:
+        if logger:
+            logger.error(f"[OPENAI JSON PARSE ERROR] {context}: {e}")
+            logger.error(f"[OPENAI RAW RESPONSE] {content[:1000]}")
+        return None
+
 def assemble_unified_cv(chunk_results, global_context, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
     # Final assembly step using OpenAI
     assembly_prompt = "You are a CV assembly specialist. Combine processed chunks into a unified CV with strict factual accuracy. Respond ONLY with a valid JSON object."
@@ -259,6 +269,7 @@ def assemble_unified_cv(chunk_results, global_context, profile, job_description,
         "job_description": job_description,
         "instructions": assembly_prompt
     })
+    logger = logging.getLogger("arc_service")
     try:
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
         response = client.chat.completions.create(
@@ -272,9 +283,13 @@ def assemble_unified_cv(chunk_results, global_context, profile, job_description,
             response_format={"type": "json_object"}
         )
         content = response.choices[0].message.content
-        return json.loads(content)
+        logger.info(f"[OPENAI RAW ASSEMBLY RESPONSE] {content[:1000]}")
+        content_json = safe_json_parse(content, logger, context="OpenAI assembly")
+        if content_json is None:
+            return {"error": "Failed to parse OpenAI assembly response as JSON. See logs for details."}
+        return content_json
     except Exception as e:
-        logging.error(f"[OPENAI ASSEMBLY ERROR] {e}")
+        logger.error(f"[OPENAI ASSEMBLY ERROR] {e}")
         return {"error": f"Assembly OpenAI error: {e}"}
 
 def update_cv_with_openai(current_cv, update_request, original_profile, job_description):
