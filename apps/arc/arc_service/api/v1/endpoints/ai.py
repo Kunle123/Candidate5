@@ -15,7 +15,7 @@ import os
 import json
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
-from ...utils.profile_fetch import get_user_profile
+from utils.profile_fetch import get_user_profile
 
 router = APIRouter()
 
