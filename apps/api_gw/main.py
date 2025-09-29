@@ -372,6 +372,10 @@ async def proxy_arc_v1(request: StarletteRequest, full_path: str):
     path = f"/api/v1{full_path}"
     return await proxy(request, arc_service_url, path)
 
+@app.api_route("/api/v1/cv/generate", methods=["POST"])
+async def proxy_cv_generate(request: StarletteRequest):
+    return await proxy(request, arc_service_url, "/api/v1/cv/generate")
+
 # This must be the last route!
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def catch_all(request: StarletteRequest, full_path: str):
