@@ -226,14 +226,127 @@ def create_adaptive_chunks(profile, job_description, strategy):
     return chunks
 
 def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
-    # Example: call OpenAI for each chunk
-    prompt = f"""
-    You are a CV content processor. Process the provided chunk as per the instructions. Respond ONLY with a valid JSON object.
-    Chunk: {json.dumps(chunk)}
-    Profile: {json.dumps(profile)}
-    Job Description: {job_description}
-    """
+    chunk_type = chunk.get("chunk_type") or chunk.get("type") or "recent_roles"
+    if chunk_type == "recent_roles":
+        prompt = f"""
+You are a CV content processor for RECENT CAREER ROLES. You will receive:
+- CHUNK DATA: Specific roles to process (2020-present typically)
+- GLOBAL CONTEXT: Job analysis and alignment strategies
+- JOB DESCRIPTION: Full job posting for direct keyword reference
+- PROFILE CONTEXT: Complete candidate profile for validation
+
+### STRICT ANTI-FABRICATION ENFORCEMENT
+
+**SKILL VALIDATION RULES:**
+- ONLY include skills explicitly mentioned or clearly demonstrated in the profile
+- NEVER claim experience with tools/technologies not in the candidate's history
+- Use intelligent keyword substitution ONLY where factually supported
+- If a job-required skill is missing, DO NOT fabricate it
+
+**ACHIEVEMENT VALIDATION RULES:**
+- ONLY rephrase existing achievements from the profile
+- NEVER invent metrics, outcomes, or accomplishments
+- Every achievement must be traceable to original profile content
+- Maintain factual accuracy of all quantified results
+
+**EXPERIENCE VALIDATION RULES:**
+- NEVER exaggerate years of experience or seniority levels
+- Match responsibility levels to demonstrated complexity in profile
+- Preserve accurate timeline and career progression
+- Do not inflate job titles or scope of work
+
+### JOB ALIGNMENT WITH FACTUAL BOUNDARIES
+
+**KEYWORD OPTIMIZATION:**
+- Use job description keywords where candidate has relevant experience
+- Apply safe substitutions from global context (e.g., \"Oracle Fusion\" → \"Oracle ERP (Fusion)\")
+- Prioritize GREEN keywords (exact matches) over AMBER keywords (transferable)
+- For RED keywords (missing), do not fabricate - focus on related strengths
+
+**CONTENT PRIORITIZATION:**
+- Priority 1: Direct job keyword matches with quantified achievements from profile
+- Priority 2: Strong job alignment using transferable skills with evidence
+- Priority 3: Supporting experience relevant to job requirements
+
+### OUTPUT FORMAT (JSON):
+<output as previously specified>
+
+Chunk Data: {json.dumps(chunk)}
+Global Context: {json.dumps(profile.get('global_context', {}))}
+Job Description: {job_description}
+Profile Context: {json.dumps(profile)}
+"""
+    elif chunk_type == "supporting_roles":
+        prompt = f"""
+You are a CV content processor for SUPPORTING CAREER ROLES (typically 2010-2019). You receive the same comprehensive input as the recent roles processor.
+
+### ANTI-FABRICATION ENFORCEMENT
+Apply the same strict validation rules as recent roles processor:
+- Only demonstrated skills and achievements
+- No exaggeration of experience levels
+- Factual accuracy maintained throughout
+
+### PRIORITY CONSTRAINTS
+**You can ONLY assign priorities 2, 3, or 4 to content in this chunk**
+- Priority 2: Strong job alignment with transferable skills
+- Priority 3: Relevant supporting experience
+- Priority 4: General professional development
+
+### FOCUS AREAS
+- Skill progression and development evidence
+- Career advancement demonstration
+- Supporting evidence for job requirements
+- Professional growth trajectory
+
+### OUTPUT FORMAT
+Same structure as recent roles processor with:
+- Supporting role focus
+- Priority range 2-4
+- Emphasis on skill development and progression
+- Anti-fabrication validation for all content
+
+Chunk Data: {json.dumps(chunk)}
+Global Context: {json.dumps(profile.get('global_context', {}))}
+Job Description: {job_description}
+Profile Context: {json.dumps(profile)}
+"""
+    elif chunk_type == "timeline_roles":
+        prompt = f"""
+You are a CV content processor for TIMELINE COMPLETION ROLES (typically pre-2010). Same comprehensive input and anti-fabrication enforcement.
+
+### PRIORITY CONSTRAINTS
+**You can ONLY assign priorities 3, 4, or 5 to content in this chunk**
+- Priority 3: Relevant early career achievements
+- Priority 4: Professional foundation building
+- Priority 5: Timeline completion only
+
+### FOCUS AREAS
+- Career foundation and early development
+- Timeline continuity maintenance
+- Basic professional competency demonstration
+- Educational and training background
+
+### OUTPUT FORMAT
+Same structure as recent roles processor with:
+- Timeline role focus
+- Priority range 3-5
+- Emphasis on foundation and continuity
+- Anti-fabrication validation for all content
+
+Chunk Data: {json.dumps(chunk)}
+Global Context: {json.dumps(profile.get('global_context', {}))}
+Job Description: {job_description}
+Profile Context: {json.dumps(profile)}
+"""
+    else:
+        prompt = f"""
+You are a CV content processor. Process the provided chunk as per the instructions. Respond ONLY with a valid JSON object.
+Chunk: {json.dumps(chunk)}
+Profile: {json.dumps(profile)}
+Job Description: {job_description}
+"""
     try:
+        logging.getLogger("arc_service").info(f"[OPENAI CHUNK PROMPT] {prompt}")
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
         response = client.chat.completions.create(
             model="gpt-4o",
@@ -270,6 +383,7 @@ def assemble_unified_cv(chunk_results, global_context, profile, job_description,
         "instructions": assembly_prompt
     })
     logger = logging.getLogger("arc_service")
+    logger.info(f"[OPENAI ASSEMBLY PROMPT] {user_message}")
     try:
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
         response = client.chat.completions.create(
