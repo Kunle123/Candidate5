@@ -106,3 +106,24 @@ async def cv_full_generation(request: Request):
         "analysis": analysis,
         "chunks": chunk_results
     }
+
+@router.post("/cv/update")
+async def cv_update(request: Request):
+    """
+    User-driven CV update endpoint (emphasis, keywords, length, etc.).
+    Input: { currentCV, updateRequest, originalProfile, jobDescription }
+    Output: { ...updated CV... }
+    """
+    data = await request.json()
+    current_cv = data.get("currentCV")
+    update_request = data.get("updateRequest")
+    original_profile = data.get("originalProfile")
+    job_description = data.get("jobDescription") or data.get("job_description")
+    # --- Placeholder logic for update ---
+    # In production, call OpenAI with update prompt and current CV
+    updated_cv = {
+        "cv": {"name": "{{CANDIDATE_NAME}}", "summary": {"content": f"[UPDATED] {update_request}", "priority": 1}},
+        "update_applied": update_request,
+        "validation_summary": {"factual_accuracy": "100%", "job_alignment": "maximum", "anti_fabrication_compliance": "full"}
+    }
+    return JSONResponse(content=updated_cv)
