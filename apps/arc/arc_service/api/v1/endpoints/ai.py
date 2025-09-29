@@ -65,14 +65,32 @@ async def cv_keyword_preview(request: Request):
 async def cv_full_generation(request: Request):
     """
     Full CV generation with user preferences and preview data.
-    Input: { profile, jobDescription, previewData, userPreferences }
+    Input: { profile, user_id/profile_id, jobDescription, previewData, userPreferences }
     Output: { ...full CV, cover letter, validation, update capabilities... }
     """
     data = await request.json()
     profile = data.get("profile")
+    user_id = data.get("user_id") or data.get("profile_id")
     job_description = data.get("jobDescription") or data.get("job_description")
     preview_data = data.get("previewData")
     user_preferences = data.get("userPreferences", {})
+    # If profile is not provided, fetch it using user_id/profile_id
+    if not profile and user_id:
+        # Try to get the Authorization header from the request
+        token = None
+        auth_header = request.headers.get("authorization")
+        if auth_header and auth_header.lower().startswith("bearer "):
+            token = auth_header.split(" ", 1)[1]
+        if not token:
+            return JSONResponse(status_code=401, content={"error": "Authorization token required to fetch profile by user_id."})
+        # Import get_user_profile from career_ark_router
+        from apps.arc.arc_service.career_ark_router import get_user_profile
+        try:
+            profile = await get_user_profile(user_id, token)
+        except Exception as e:
+            return JSONResponse(status_code=404, content={"error": f"Profile not found for user_id: {user_id}. {str(e)}"})
+    if not profile:
+        return JSONResponse(status_code=400, content={"error": "No profile or user_id provided"})
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
     if not OPENAI_API_KEY or not OPENAI_ASSISTANT_ID:
