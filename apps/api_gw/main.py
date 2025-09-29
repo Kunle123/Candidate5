@@ -366,6 +366,12 @@ async def proxy_application_history_direct(request: StarletteRequest):
     path = "/api/application-history"
     return await proxy(request, cv_service_url, path)
 
+@app.api_route("/api/v1{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_arc_v1(request: StarletteRequest, full_path: str):
+    # Forward /api/v1/* to the ARC service
+    path = f"/api/v1{full_path}"
+    return await proxy(request, arc_service_url, path)
+
 # This must be the last route!
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def catch_all(request: StarletteRequest, full_path: str):
