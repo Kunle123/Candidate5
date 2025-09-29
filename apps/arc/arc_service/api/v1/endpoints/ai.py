@@ -16,6 +16,7 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
 from utils.profile_fetch import get_user_profile
+import logging
 
 router = APIRouter()
 
@@ -64,6 +65,8 @@ async def cv_keyword_preview(request: Request):
 
 @router.post("/cv/generate")
 async def cv_full_generation(request: Request):
+    logger = logging.getLogger("arc_service")
+    logger.info("[DEBUG] Received /cv/generate request")
     """
     Full CV generation with user preferences and preview data.
     Input: { profile, user_id/profile_id, jobDescription, previewData, userPreferences }
