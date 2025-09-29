@@ -47,17 +47,7 @@ import openai
 # Utility function to fetch user profile from user service
 import httpx
 
-async def get_user_profile(user_id: str, token: str) -> dict:
-    # Use the correct GET endpoint for full profile
-    url = f"https://api-gw-production.up.railway.app/api/v1/users/{user_id}/all_sections"
-    headers = {"Authorization": f"Bearer {token}"}
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url, headers=headers)
-        resp.raise_for_status()
-        return resp.json()
-
-# Example usage (in an endpoint):
-# profile = await get_user_profile(user_id, token)
+from arc_service.utils.profile_fetch import get_user_profile
 
 router = APIRouter()
 

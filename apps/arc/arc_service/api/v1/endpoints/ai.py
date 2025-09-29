@@ -15,6 +15,7 @@ import os
 import json
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+from arc_service.utils.profile_fetch import get_user_profile
 
 router = APIRouter()
 
@@ -83,8 +84,6 @@ async def cv_full_generation(request: Request):
             token = auth_header.split(" ", 1)[1]
         if not token:
             return JSONResponse(status_code=401, content={"error": "Authorization token required to fetch profile by user_id."})
-        # Import get_user_profile using a relative import
-        from ...career_ark_router import get_user_profile
         try:
             profile = await get_user_profile(user_id, token)
         except Exception as e:
