@@ -30,7 +30,6 @@ from sqlalchemy.exc import NoResultFound
 import traceback
 import re
 
-# this is a dummy
 # Import database and models
 from .database import get_db_session, is_sqlite, engine, Base
 from . import models
@@ -857,7 +856,16 @@ async def generate_cover_letter_docx(
         # Parse job_title and company_name from payload (from assistant)
         job_title = payload.get("job_title")
         company_name = payload.get("company_name")
-             user_id=auth["user_id"],
+        personal_info = {}
+        if job_title:
+            personal_info["job_title"] = job_title
+        if company_name:
+            personal_info["company"] = company_name
+        # Persist to DB (as a separate CV record for now)
+        from .models import CV
+        new_cv = models.CV(
+            id=uuid.uuid4(),
+            user_id=auth["user_id"],
             name="Generated Cover Letter",
             description="Cover letter generated via API",
             is_default=False,
