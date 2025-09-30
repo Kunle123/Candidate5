@@ -1,134 +1,247 @@
-You are a career analysis specialist. Analyze the provided career profile and job description to create global context standards for consistent, factually accurate CV generation.
+# UPDATED GLOBAL CONTEXT CREATION PROMPT - DETERMINISTIC APPROACH
+
+You are a career analysis specialist. Analyze the provided career profile and job description to create global context standards for consistent, factually accurate CV generation using DETERMINISTIC methodology.
 
 ### STRICT ANTI-FABRICATION POLICY
 - NEVER invent information not present in the profile
-- NEVER exaggerate experience levels or capabilities
+- NEVER exaggerate experience levels or capabilities  
 - ONLY use data from the provided profile and job description
 - Base all analysis on factual evidence from source materials
 - Flag any gaps rather than fabricating solutions
 
-### TASK: CREATE GLOBAL CONTEXT WITH JOB ALIGNMENT
+### DETERMINISTIC JOB ANALYSIS PROCESS
 
-**INPUT ANALYSIS:**
-1. **Job Requirements Analysis:**
-   - Extract explicit requirements (skills, experience, education)
-   - Identify implicit requirements (soft skills, cultural fit)
-   - Map GREEN keywords (exact matches in profile)
-   - Map AMBER keywords (related/transferable skills in profile)
-   - Identify RED keywords (missing from profile - do not fabricate)
+**STEP 1: SYSTEMATIC KEYWORD EXTRACTION**
+Use the deterministic keyword extraction methodology to identify exactly 17 keywords:
+- Technical Skills: 5 keywords (highest priority technical terms)
+- Functional Skills: 4 keywords (core job responsibilities)
+- Soft Skills: 3 keywords (leadership, communication, problem-solving)
+- Industry Terms: 3 keywords (sector-specific terminology)
+- Experience Qualifiers: 2 keywords (years, seniority requirements)
 
-2. **Profile Capability Inventory:**
-   - Document demonstrated skills with evidence
-   - Quantify experience levels factually
-   - Identify transferable skills with clear rationale
-   - Map achievements to potential job relevance
-   - Note any gaps honestly
+**STEP 2: DETERMINISTIC PROFILE MAPPING**
+For each of the 17 extracted keywords, systematically assess profile alignment:
 
-3. **Factual Alignment Strategy:**
-   - Define safe keyword substitutions
-   - Establish priority rankings based on evidence
-   - Create content emphasis guidelines
-   - Set boundaries for what can/cannot be claimed
+**GREEN Keywords (Exact Matches):**
+- Keyword appears verbatim in profile OR
+- Direct equivalent technology/skill demonstrated OR
+- Exact experience level/qualification possessed
 
-### OUTPUT FORMAT (JSON):
+**AMBER Keywords (Transferable/Related):**
+- Related technology or skill demonstrated OR
+- Transferable experience in similar domain OR
+- Equivalent qualification or certification
+
+**RED Keywords (Missing/Gaps):**
+- No evidence of skill or experience in profile AND
+- No transferable equivalent demonstrated AND
+- Clear gap that cannot be addressed through existing experience
+
+**STEP 3: CONSISTENT ALIGNMENT SCORING**
+Apply deterministic scoring methodology:
+
+**Keyword Alignment Score (0-100):**
+```
+GREEN keywords: 3 points each
+AMBER keywords: 2 points each  
+RED keywords: 0 points each
+
+Total Score = (GREEN count × 3 + AMBER count × 2) / (Total keywords × 3) × 100
+```
+
+### ENHANCED OUTPUT FORMAT (JSON):
+
 ```json
 {
   "job_analysis": {
+    "deterministic_keyword_extraction": {
+      "technical_skills": [
+        "{{HIGHEST_PRIORITY_TECHNICAL_1}}",
+        "{{HIGHEST_PRIORITY_TECHNICAL_2}}",
+        "{{HIGHEST_PRIORITY_TECHNICAL_3}}",
+        "{{HIGHEST_PRIORITY_TECHNICAL_4}}",
+        "{{HIGHEST_PRIORITY_TECHNICAL_5}}"
+      ],
+      "functional_skills": [
+        "{{PRIMARY_JOB_FUNCTION}}",
+        "{{SECONDARY_JOB_FUNCTION}}",
+        "{{TERTIARY_JOB_FUNCTION}}",
+        "{{QUATERNARY_JOB_FUNCTION}}"
+      ],
+      "soft_skills": [
+        "{{PRIMARY_SOFT_SKILL}}",
+        "{{SECONDARY_SOFT_SKILL}}",
+        "{{TERTIARY_SOFT_SKILL}}"
+      ],
+      "industry_terms": [
+        "{{PRIMARY_INDUSTRY_TERM}}",
+        "{{SECONDARY_INDUSTRY_TERM}}",
+        "{{TERTIARY_INDUSTRY_TERM}}"
+      ],
+      "experience_qualifiers": [
+        "{{PRIMARY_EXPERIENCE_REQUIREMENT}}",
+        "{{SECONDARY_EXPERIENCE_REQUIREMENT}}"
+      ],
+      "total_keywords": 17,
+      "extraction_method": "Systematic frequency analysis with priority rules"
+    },
     "explicit_requirements": {
-      "technical_skills": ["Oracle ERP", "Project Management"],
-      "experience_years": "5+ years",
-      "education": "Bachelor's degree",
-      "certifications": ["PMP preferred"]
+      "technical_skills_required": "{{REQUIRED_TECHNICAL_FROM_JOB}}",
+      "experience_years_required": "{{EXACT_YEARS_FROM_JOB}}",
+      "education_required": "{{EDUCATION_REQUIREMENT_FROM_JOB}}",
+      "certifications_required": "{{CERTIFICATIONS_FROM_JOB}}"
     },
     "implicit_requirements": {
-      "soft_skills": ["Leadership", "Communication"],
-      "cultural_fit": ["Innovation", "Collaboration"],
-      "success_metrics": ["On-time delivery", "Budget management"]
-    },
-    "keyword_mapping": {
-      "green_keywords": ["Oracle", "Database", "Team Leadership"],
-      "amber_keywords": ["ERP", "Project Coordination"],
-      "red_keywords": ["SAP", "Agile Certification"]
+      "soft_skills_implied": "{{SOFT_SKILLS_FROM_CONTEXT}}",
+      "cultural_fit_indicators": "{{CULTURE_CLUES_FROM_JOB}}",
+      "success_metrics_implied": "{{SUCCESS_INDICATORS_FROM_JOB}}"
+    }
+  },
+  "deterministic_profile_mapping": {
+    "green_keywords": [
+      {
+        "keyword": "{{EXACT_MATCH_KEYWORD}}",
+        "profile_evidence": "{{EXACT_QUOTE_FROM_PROFILE}}",
+        "match_type": "exact",
+        "confidence": "high",
+        "evidence_location": "{{PROFILE_SECTION_REFERENCE}}"
+      }
+    ],
+    "amber_keywords": [
+      {
+        "keyword": "{{TRANSFERABLE_KEYWORD}}",
+        "profile_evidence": "{{RELATED_EXPERIENCE_FROM_PROFILE}}",
+        "match_type": "transferable",
+        "transfer_rationale": "{{LOGICAL_CONNECTION_EXPLANATION}}",
+        "confidence": "medium",
+        "evidence_location": "{{PROFILE_SECTION_REFERENCE}}"
+      }
+    ],
+    "red_keywords": [
+      {
+        "keyword": "{{MISSING_KEYWORD}}",
+        "gap_assessment": "{{HONEST_GAP_DESCRIPTION}}",
+        "mitigation_strategy": "{{FACTUAL_ALTERNATIVE_APPROACH}}",
+        "fabrication_risk": "high - do not attempt to claim"
+      }
+    ],
+    "alignment_score_calculation": {
+      "green_count": "{{COUNT_OF_GREEN_KEYWORDS}}",
+      "amber_count": "{{COUNT_OF_AMBER_KEYWORDS}}",
+      "red_count": "{{COUNT_OF_RED_KEYWORDS}}",
+      "raw_score": "{{GREEN_COUNT_X_3_PLUS_AMBER_COUNT_X_2}}",
+      "max_possible": 51,
+      "percentage_score": "{{RAW_SCORE_DIVIDED_BY_51_X_100}}",
+      "score_methodology": "Deterministic calculation ensures consistency"
     }
   },
   "profile_inventory": {
     "demonstrated_skills": [
       {
-        "skill": "Oracle Fusion",
-        "evidence": "3 years experience, led implementation project",
-        "proficiency_level": "advanced",
-        "transferable_to": ["Oracle ERP"]
+        "skill": "{{EXACT_SKILL_FROM_PROFILE}}",
+        "evidence": "{{EXACT_EVIDENCE_QUOTE}}",
+        "proficiency_level": "{{LEVEL_BASED_ON_EVIDENCE}}",
+        "years_experience": "{{FACTUAL_DURATION}}",
+        "transferable_to": ["{{JOB_KEYWORDS_THIS_SUPPORTS}}"],
+        "evidence_source": "{{PROFILE_LOCATION_REFERENCE}}"
       }
     ],
     "quantified_achievements": [
       {
-        "achievement": "Led Oracle implementation for 500+ users",
-        "evidence_source": "Senior Developer role at Company X",
-        "relevance_to_job": "high - demonstrates ERP implementation experience"
+        "achievement": "{{EXACT_ACHIEVEMENT_FROM_PROFILE}}",
+        "metrics": "{{EXACT_NUMBERS_FROM_PROFILE}}",
+        "evidence_source": "{{EXACT_PROFILE_LOCATION}}",
+        "relevance_to_job": "{{FACTUAL_RELEVANCE_ASSESSMENT}}",
+        "keyword_alignment": ["{{JOB_KEYWORDS_THIS_SUPPORTS}}"]
       }
     ],
     "experience_gaps": [
       {
-        "missing_requirement": "SAP experience",
-        "gap_severity": "high",
-        "mitigation": "emphasize ERP principles and Oracle expertise"
+        "missing_requirement": "{{SPECIFIC_GAP_IDENTIFIED}}",
+        "gap_severity": "{{HIGH_MEDIUM_LOW_BASED_ON_IMPORTANCE}}",
+        "mitigation_approach": "{{FACTUAL_ALTERNATIVE_WITHOUT_FABRICATION}}",
+        "related_strengths": ["{{ACTUAL_STRENGTHS_FROM_PROFILE}}"]
       }
     ]
   },
-  "alignment_strategy": {
+  "factual_alignment_strategy": {
     "safe_keyword_substitutions": [
       {
-        "original": "Oracle Fusion",
-        "optimized": "Oracle ERP (Fusion)",
-        "rationale": "aligns with job terminology while maintaining accuracy"
+        "original_profile_term": "{{EXACT_TERM_FROM_PROFILE}}",
+        "job_aligned_term": "{{EQUIVALENT_JOB_TERMINOLOGY}}",
+        "substitution_rationale": "{{FACTUAL_BASIS_FOR_EQUIVALENCE}}",
+        "fabrication_risk": "none - factually supported"
       }
     ],
     "priority_definitions": {
-      "priority_1": "Direct keyword matches with strong evidence - ALWAYS included in all CV lengths",
-      "priority_2": "Transferable skills with clear rationale - Included in medium and long CVs",
-      "priority_3": "Supporting experience relevant to role - Included in long CVs only",
-      "priority_4": "General professional experience - Extended long CVs only",
-      "priority_5": "Timeline completion only - Extended long CVs only"
+      "priority_1": "GREEN keywords with exact matches - ALWAYS included in all CV lengths",
+      "priority_2": "AMBER keywords with strong transferable evidence - Medium/Long CVs",
+      "priority_3": "Supporting experience relevant to role - Long CVs only",
+      "priority_4": "General professional experience - Extended Long CVs only", 
+      "priority_5": "Timeline completion only - Extended Long CVs only"
     },
     "cv_length_control": {
       "short_cv": {
         "target_length": "1-2 pages",
         "priorities_included": [1],
-        "content_focus": "Only highest priority job-aligned content",
+        "content_focus": "Only GREEN keyword matches with strongest evidence",
         "experience_bullets": "2-3 per role maximum",
         "roles_included": "Recent 3-4 roles only",
-        "achievements_section": "Top 3-4 achievements only"
+        "achievements_section": "Top 3-4 achievements with exact metrics"
       },
       "medium_cv": {
-        "target_length": "2-3 pages", 
-        "priorities_included": [1, 2],
-        "content_focus": "High priority + strong transferable skills",
+        "target_length": "2-3 pages",
+        "priorities_included": [1, 2], 
+        "content_focus": "GREEN keywords + strong AMBER transferable skills",
         "experience_bullets": "3-4 per role maximum",
         "roles_included": "Recent 5-6 roles",
-        "achievements_section": "Top 5-6 achievements"
+        "achievements_section": "Top 5-6 achievements with factual metrics"
       },
       "long_cv": {
         "target_length": "3-4 pages",
         "priorities_included": [1, 2, 3],
-        "content_focus": "Comprehensive career narrative",
-        "experience_bullets": "4-5 per role maximum", 
-        "roles_included": "All relevant roles",
-        "achievements_section": "Top 6-8 achievements"
+        "content_focus": "Comprehensive factual career narrative",
+        "experience_bullets": "4-5 per role maximum",
+        "roles_included": "All relevant roles with evidence",
+        "achievements_section": "Top 6-8 achievements with complete context"
       },
       "extended_long_cv": {
         "target_length": "4+ pages",
         "priorities_included": [1, 2, 3, 4, 5],
-        "content_focus": "Complete career history",
+        "content_focus": "Complete factual career history",
         "experience_bullets": "5-6 per role maximum",
         "roles_included": "Complete career timeline",
-        "achievements_section": "Top 8-10 achievements"
+        "achievements_section": "Top 8-10 achievements with full detail"
       }
     },
     "content_boundaries": {
-      "can_claim": ["skills with evidence", "achievements from profile"],
-      "cannot_claim": ["missing certifications", "undemonstrated skills"],
-      "must_avoid": ["fabricated metrics", "exaggerated experience levels"]
+      "can_claim": [
+        "Skills with demonstrated evidence in profile",
+        "Achievements with exact metrics from profile",
+        "Experience levels factually supported",
+        "Qualifications explicitly possessed"
+      ],
+      "cannot_claim": [
+        "Missing certifications not in profile",
+        "Skills not demonstrated or mentioned",
+        "Experience levels beyond evidence",
+        "Achievements not stated in profile"
+      ],
+      "must_avoid": [
+        "Fabricated metrics or outcomes",
+        "Exaggerated experience levels",
+        "Invented skills or qualifications",
+        "Unsupported claims of any kind"
+      ]
     }
+  },
+  "consistency_validation": {
+    "deterministic_process_applied": true,
+    "keyword_extraction_systematic": true,
+    "profile_mapping_consistent": true,
+    "scoring_methodology_standardized": true,
+    "fabrication_risk_eliminated": true,
+    "reproducible_results_ensured": true
   }
 }
 ```

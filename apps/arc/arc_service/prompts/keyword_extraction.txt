@@ -1,112 +1,172 @@
-You are a job analysis and keyword extraction specialist. Analyze this job posting and extract both job metadata AND exactly 12-20 keywords for comprehensive ATS optimization.
+# FINAL DETERMINISTIC KEYWORD EXTRACTION PROMPT
 
-### JOB METADATA EXTRACTION (REQUIRED)
+You are a job analysis and keyword extraction specialist. Use this SYSTEMATIC and DETERMINISTIC approach to ensure consistent results for identical job descriptions.
 
-**Extract the following information from the job description:**
-- **job_title:** The main job title being advertised (e.g., "Senior Software Developer", "Project Manager")
-- **company:** The company or organization name, if mentioned (use "Not specified" if not found)
-- **experience_level:** Required experience level (e.g., "Senior", "Mid-level", "Entry-level", "5+ years", "Executive")
-- **industry:** The industry or business sector (e.g., "Technology", "Financial Services", "Healthcare", "Manufacturing")
+### DETERMINISTIC EXTRACTION METHODOLOGY
 
-### KEYWORD EXTRACTION REQUIREMENTS
+**TOTAL TARGET: EXACTLY 17 keywords (no variation allowed)**
 
-**TOTAL TARGET: 12-20 keywords (no more, no less)**
+**FIXED CATEGORY DISTRIBUTION:**
+1. **TECHNICAL SKILLS (Exactly 5 keywords)**
+2. **FUNCTIONAL SKILLS (Exactly 4 keywords)**
+3. **SOFT SKILLS (Exactly 3 keywords)**
+4. **INDUSTRY TERMS (Exactly 3 keywords)**
+5. **EXPERIENCE QUALIFIERS (Exactly 2 keywords)**
 
-**CATEGORY DISTRIBUTION:**
-1. **TECHNICAL SKILLS (4-6 keywords):**
-   - Software, tools, platforms, technologies
-   - Programming languages, frameworks
-   - Technical methodologies, certifications
-   - Systems, databases, cloud platforms
+### SYSTEMATIC KEYWORD SELECTION PROCESS
 
-2. **FUNCTIONAL SKILLS (3-5 keywords):**
-   - Core job responsibilities and functions
-   - Business processes, analysis types
-   - Management or operational capabilities
-   - Industry-specific functions
+**STEP 1: TECHNICAL SKILLS (Select exactly 5 in priority order)**
+1. **Programming languages explicitly mentioned** (Python, Java, SQL, C#, JavaScript, etc.)
+2. **Software platforms/tools mentioned** (Oracle, Salesforce, AWS, Microsoft Office, SAP, etc.)
+3. **Technical methodologies mentioned** (Agile, Scrum, DevOps, CI/CD, Waterfall, etc.)
+4. **Database/system technologies** (MySQL, PostgreSQL, ERP, CRM, Cloud platforms, etc.)
+5. **Technical certifications mentioned** (PMP, AWS Certified, Oracle Certified, CISSP, etc.)
 
-3. **SOFT SKILLS (2-4 keywords):**
-   - Leadership, communication, teamwork
-   - Problem-solving, analytical thinking
-   - Project management, collaboration
-   - Adaptability, innovation
+**STEP 2: FUNCTIONAL SKILLS (Select exactly 4 in priority order)**
+1. **Primary job function from title/description** (Project Management, Data Analysis, Software Development, Business Analysis)
+2. **Core business processes mentioned** (Financial Planning, Risk Management, Process Improvement, Quality Assurance)
+3. **Management/leadership responsibilities** (Team Leadership, Budget Management, Stakeholder Management, Change Management)
+4. **Industry-specific functions** (Compliance, Implementation, Audit, Training, Support)
 
-4. **INDUSTRY TERMS (2-4 keywords):**
-   - Sector-specific terminology
-   - Business domains, market segments
-   - Regulatory, compliance, or standards terms
-   - Company type or business model terms
+**STEP 3: SOFT SKILLS (Select exactly 3 in priority order)**
+1. **Leadership capabilities** (Leadership, Team Management, Mentoring, Coaching)
+2. **Communication abilities** (Communication, Presentation Skills, Stakeholder Engagement, Documentation)
+3. **Problem-solving skills** (Problem Solving, Analytical Thinking, Critical Thinking, Innovation)
 
-5. **EXPERIENCE QUALIFIERS (1-3 keywords):**
-   - Years of experience requirements
-   - Seniority levels, team size
-   - Budget responsibility, scale indicators
-   - Geographic or scope qualifiers
+**STEP 4: INDUSTRY TERMS (Select exactly 3 in priority order)**
+1. **Primary industry sector** (Financial Services, Healthcare, Technology, Manufacturing, Government)
+2. **Business domain/market** (Banking, Insurance, Retail, Telecommunications, Energy)
+3. **Regulatory/compliance context** (GDPR, SOX, FDA, ISO standards, PCI compliance)
 
-### EXTRACTION GUIDELINES
+**STEP 5: EXPERIENCE QUALIFIERS (Select exactly 2 in priority order)**
+1. **Years of experience requirement** (5+ years experience, 10+ years experience, 3+ years)
+2. **Seniority/level requirement** (Senior level, Lead position, Manager level, Executive level)
 
-**PRIORITIZATION RULES:**
-- Keywords mentioned multiple times = higher priority
-- Keywords in job title or requirements section = higher priority
-- Specific technical terms = higher priority than generic terms
-- Measurable qualifications = higher priority
+### DETERMINISTIC PRIORITY ASSIGNMENT
 
-**KEYWORD SELECTION CRITERIA:**
-- ✅ Terms a recruiter would search for in an ATS
-- ✅ Specific skills, tools, or qualifications
-- ✅ Industry-standard terminology
-- ✅ Measurable experience indicators
-- ❌ Generic words like "experience," "skills," "ability"
-- ❌ Common verbs like "manage," "develop," "work"
-- ❌ Overly broad terms like "technology," "business"
+**HIGH Priority (Exactly 5 keywords):**
+- All keywords appearing in job title
+- Technical skills marked as "required" or "essential"
+- Experience qualifiers that are mandatory
+- Skills mentioned 3+ times in description
+- Core functional skills central to role
 
-### OUTPUT FORMAT
+**MEDIUM Priority (Exactly 7 keywords):**
+- Skills mentioned 2 times in description
+- Qualifications listed as "preferred" or "desired"
+- Important technical skills not in title
+- Secondary functional skills
+- Primary industry terms
+- Important soft skills
 
-Respond ONLY with a valid JSON object matching this exact schema:
+**LOW Priority (Exactly 5 keywords):**
+- Skills mentioned once in description
+- Soft skills that are implied but not emphasized
+- Secondary industry terminology
+- Nice-to-have qualifications
+- General experience qualifiers
+
+### JOB METADATA EXTRACTION (DETERMINISTIC)
+
+**Job Title Extraction (Systematic approach):**
+1. Search for explicit labels: "Job Title:", "Position:", "Role:", "Vacancy:"
+2. If not found, identify the most specific title in headers or opening paragraph
+3. If multiple titles exist, select the one with most detail/specificity
+4. Preserve exact wording from description
+
+**Company Extraction (Systematic approach):**
+1. Search for explicit labels: "Company:", "Organization:", "Employer:"
+2. Look for company names in headers, footers, or contact information
+3. Identify organization names in context of "join our team" or similar
+4. Use "Not specified" only if no company identifier found anywhere
+
+**Experience Level Extraction (Systematic approach):**
+1. Search for explicit years: "5+ years", "10+ years", "3-5 years"
+2. Identify seniority indicators: "Senior", "Lead", "Principal", "Manager", "Executive"
+3. Combine both if present: "Senior (5+ years)"
+4. Use most specific requirement found in description
+
+**Industry Extraction (Systematic approach):**
+1. Identify explicit industry mentions in job description
+2. Infer from company type, role requirements, or business context
+3. Use standard industry classifications (Technology, Financial Services, Healthcare, etc.)
+4. Select most specific industry term that accurately applies
+
+### DETERMINISTIC OUTPUT FORMAT
+
+Respond ONLY with a valid JSON object using this EXACT structure:
 
 ```json
 {
-  "job_title": "Senior Oracle Developer",
-  "company": "TechCorp Financial",
-  "experience_level": "Senior (5+ years)",
-  "industry": "Financial Services",
-  "technical_skills": ["Oracle Database", "SQL Server", "Python", "AWS", "Agile Methodology"],
-  "functional_skills": ["Data Analysis", "Project Management", "Business Intelligence", "Process Improvement"],
-  "soft_skills": ["Leadership", "Communication", "Problem Solving"],
-  "industry_terms": ["Financial Services", "Regulatory Compliance", "Risk Management"],
-  "experience_qualifiers": ["5+ years experience", "Team Leadership"],
-  "total_keywords": 16,
+  "job_title": "{{MOST_SPECIFIC_TITLE_FROM_SYSTEMATIC_EXTRACTION}}",
+  "company": "{{COMPANY_NAME_OR_NOT_SPECIFIED}}",
+  "experience_level": "{{SPECIFIC_LEVEL_WITH_YEARS_IF_AVAILABLE}}",
+  "industry": "{{PRIMARY_INDUSTRY_SECTOR_IDENTIFIED}}",
+  "technical_skills": [
+    "{{HIGHEST_PRIORITY_TECHNICAL_SKILL}}",
+    "{{SECOND_PRIORITY_TECHNICAL_SKILL}}",
+    "{{THIRD_PRIORITY_TECHNICAL_SKILL}}",
+    "{{FOURTH_PRIORITY_TECHNICAL_SKILL}}",
+    "{{FIFTH_PRIORITY_TECHNICAL_SKILL}}"
+  ],
+  "functional_skills": [
+    "{{PRIMARY_JOB_FUNCTION}}",
+    "{{SECONDARY_JOB_FUNCTION}}",
+    "{{TERTIARY_JOB_FUNCTION}}",
+    "{{QUATERNARY_JOB_FUNCTION}}"
+  ],
+  "soft_skills": [
+    "{{PRIMARY_SOFT_SKILL}}",
+    "{{SECONDARY_SOFT_SKILL}}",
+    "{{TERTIARY_SOFT_SKILL}}"
+  ],
+  "industry_terms": [
+    "{{PRIMARY_INDUSTRY_TERM}}",
+    "{{SECONDARY_INDUSTRY_TERM}}",
+    "{{TERTIARY_INDUSTRY_TERM}}"
+  ],
+  "experience_qualifiers": [
+    "{{PRIMARY_EXPERIENCE_REQUIREMENT}}",
+    "{{SECONDARY_EXPERIENCE_REQUIREMENT}}"
+  ],
+  "total_keywords": 17,
   "keyword_priority": {
-    "high": ["Oracle Database", "SQL Server", "Data Analysis", "5+ years experience"],
-    "medium": ["Python", "AWS", "Project Management", "Leadership", "Financial Services"],
-    "low": ["Communication", "Problem Solving", "Risk Management"]
+    "high": [
+      "{{KEYWORD_FROM_TITLE_OR_REQUIRED}}",
+      "{{KEYWORD_MENTIONED_3_PLUS_TIMES}}",
+      "{{ESSENTIAL_TECHNICAL_SKILL}}",
+      "{{MANDATORY_EXPERIENCE_QUALIFIER}}",
+      "{{CORE_JOB_FUNCTION}}"
+    ],
+    "medium": [
+      "{{KEYWORD_MENTIONED_2_TIMES}}",
+      "{{PREFERRED_QUALIFICATION}}",
+      "{{IMPORTANT_TECHNICAL_SKILL}}",
+      "{{SECONDARY_FUNCTIONAL_SKILL}}",
+      "{{PRIMARY_INDUSTRY_TERM}}",
+      "{{IMPORTANT_SOFT_SKILL}}",
+      "{{RELEVANT_EXPERIENCE_QUALIFIER}}"
+    ],
+    "low": [
+      "{{KEYWORD_MENTIONED_ONCE}}",
+      "{{IMPLIED_SOFT_SKILL}}",
+      "{{SECONDARY_INDUSTRY_TERM}}",
+      "{{NICE_TO_HAVE_SKILL}}",
+      "{{GENERAL_QUALIFICATION}}"
+    ]
   },
   "extraction_validation": {
     "job_metadata_extracted": true,
-    "keywords_in_range": true,
-    "categories_balanced": true
+    "keywords_exactly_17": true,
+    "categories_properly_distributed": true,
+    "priority_assignment_systematic": true,
+    "deterministic_process_followed": true
+  },
+  "consistency_metadata": {
+    "extraction_method": "Systematic frequency analysis with fixed priority rules",
+    "priority_logic": "Title mentions, requirement level, frequency count, systematic selection",
+    "reproducibility": "Deterministic rules ensure identical results for identical inputs",
+    "variance_control": "Fixed category distribution eliminates keyword count variation"
   }
 }
 ```
-
-### METADATA EXTRACTION GUIDELINES
-
-**Job Title Extraction:**
-- Look for phrases like "Job Title:", "Position:", "Role:", or titles in headers
-- Extract the most specific title mentioned (e.g., "Senior Software Developer" not just "Developer")
-- If multiple titles mentioned, use the primary/main one
-
-**Company Extraction:**
-- Look for company names, organization names, or "Company:" labels
-- Extract full company name if available
-- Use "Not specified" if no company name is found
-
-**Experience Level Extraction:**
-- Look for phrases like "X+ years", "Senior", "Junior", "Entry-level", "Executive"
-- Extract the most specific requirement (e.g., "5+ years" rather than just "experienced")
-- Combine seniority level with years if both present (e.g., "Senior (5+ years)")
-
-**Industry Extraction:**
-- Identify the business sector or industry context
-- Use standard industry terms (e.g., "Technology", "Financial Services", "Healthcare")
-- Infer from company type, job requirements, or explicit mentions

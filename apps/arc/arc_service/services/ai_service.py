@@ -476,7 +476,6 @@ def update_cv_with_openai(current_cv, update_request, original_profile, job_desc
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
-                {"role": "system", "content": "You are a CV update specialist. Respond ONLY with a valid JSON object."},
                 {"role": "user", "content": prompt}
             ],
             response_format={"type": "json_object"}
