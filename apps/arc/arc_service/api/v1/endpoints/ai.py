@@ -17,6 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 import asyncio
 from utils.profile_fetch import get_user_profile
 import logging
+import io
 
 router = APIRouter()
 
@@ -120,9 +121,8 @@ async def cv_full_generation(request: Request):
         ]
         chunk_results = await asyncio.gather(*tasks)
     # 5. Final assembly: single unified CV and cover letter
-    # Remove work_experience from profile for assembly step
-    minimal_profile = {k: v for k, v in profile.items() if k != "work_experience"}
-    assembled = assemble_unified_cv(chunk_results, global_context, minimal_profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID)
+    # Do not send profile at all to the assembly step
+    assembled = assemble_unified_cv(chunk_results, global_context, None, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID)
     if not assembled or (isinstance(assembled, dict) and "error" in assembled):
         return JSONResponse(status_code=500, content=assembled if assembled else {"error": "Unknown error in CV assembly."})
     return {
@@ -146,3 +146,57 @@ async def cv_update(request: Request):
     job_description = data.get("jobDescription") or data.get("job_description")
     updated_cv = update_cv_with_openai(current_cv, update_request, original_profile, job_description)
     return JSONResponse(content=updated_cv)
+
+@router.post("/cv/generate-single-thread")
+async def cv_generate_single_thread(request: Request):
+    import openai
+    import os
+    import json
+    import time
+    logger = logging.getLogger("arc_service")
+    data = await request.json()
+    profile = data.get("profile")
+    job_description = data.get("jobDescription") or data.get("job_description")
+    if not profile or not job_description:
+        return JSONResponse(status_code=400, content={"error": "profile and jobDescription are required"})
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    if not OPENAI_API_KEY:
+        return JSONResponse(status_code=500, content={"error": "OpenAI API key not set"})
+    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    # 1. Upload profile as file
+    profile_json = json.dumps(profile, indent=2)
+    file_obj = io.BytesIO(profile_json.encode('utf-8'))
+    file_obj.name = f"profile_{int(time.time())}.json"
+    file = client.files.create(file=file_obj, purpose="assistants")
+    file_id = file.id
+    try:
+        # 2. Compose prompt
+        prompt = f"""
+You are a professional CV writer. Using the attached profile, generate a complete CV and cover letter tailored to the following job description:\n\n{job_description}\n\nReturn the result as a JSON object with keys: cv, cover_letter.
+"""
+        response = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {"role": "system", "content": "You are a professional CV writer."},
+                {
+                    "role": "user",
+                    "content": prompt,
+                    "attachments": [
+                        {"file_id": file_id, "tools": [{"type": "file_search"}]}
+                    ]
+                }
+            ],
+            response_format={"type": "json_object"}
+        )
+        content = response.choices[0].message.content
+        try:
+            result = json.loads(content)
+        except Exception as e:
+            logger.error(f"[CV GENERATE SINGLE THREAD] Failed to parse LLM response: {e}")
+            return JSONResponse(status_code=500, content={"error": "Failed to parse LLM response as JSON", "raw": content})
+        return result
+    finally:
+        try:
+            client.files.delete(file_id)
+        except Exception as e:
+            logger.warning(f"[CV GENERATE SINGLE THREAD] Failed to delete file {file_id}: {e}")
