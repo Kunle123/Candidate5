@@ -20,6 +20,13 @@ from openai import OpenAI
 logger = logging.getLogger(__name__)
 
 
+def sanitize_profile(profile: dict) -> dict:
+    sanitized = profile.copy()
+    sanitized['name'] = "Candidate Name"
+    sanitized['email'] = "candidate@email.com"
+    return sanitized
+
+
 class ProfileSessionManager:
     """
     Manages profile file uploads and sessions for CV workflow operations.
@@ -80,8 +87,10 @@ class ProfileSessionManager:
         session_id = str(uuid.uuid4())
         
         try:
+            # Sanitize profile to avoid sending PII
+            profile_to_upload = sanitize_profile(profile)
             # Create profile hash for change detection
-            profile_json = json.dumps(profile, sort_keys=True)
+            profile_json = json.dumps(profile_to_upload, sort_keys=True)
             profile_hash = hashlib.md5(profile_json.encode()).hexdigest()
             
             # Upload profile as file to OpenAI
