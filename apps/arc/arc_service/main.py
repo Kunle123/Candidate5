@@ -2,6 +2,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 from fastapi import FastAPI
 import os
+from api.v1.router import api_router
 from api.v1.endpoints.session_endpoints import session_router
 from api.v1.endpoints.ai import router as ai_router
 from profile_session_manager import initialize_profile_session_manager
@@ -24,6 +25,8 @@ def startup():
 def on_startup():
     startup()
 
+# Include all modular and session/AI routers
+app.include_router(api_router, prefix="/api/v1")
 app.include_router(session_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")
 
