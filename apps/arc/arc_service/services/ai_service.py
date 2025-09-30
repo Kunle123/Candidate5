@@ -379,7 +379,6 @@ def create_adaptive_chunks(profile, job_description, strategy):
             chunk_type = "supporting_roles"
         chunk = {
             "roles": chunk_roles,
-            "profile": profile,
             "job_description": job_description,
             "chunk_type": chunk_type
         }
