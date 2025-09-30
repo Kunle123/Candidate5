@@ -65,15 +65,18 @@ async def cv_preview(request: CVPreviewRequest):
         logger.error(f"CV preview failed: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate CV preview: {str(e)}")
 
+class CVGenerateRequest(BaseModel):
+    session_id: str = Field(..., description="Active session identifier")
+    job_description: str = Field(..., description="Job description for CV tailoring")
+
 @router.post("/cv/generate")
-async def cv_full_generation(request: Request):
-    data = await request.json()
-    profile = data.get("profile")
-    job_description = data.get("jobDescription") or data.get("job_description")
-    if not profile or not job_description:
-        return JSONResponse(status_code=400, content={"error": "profile and jobDescription are required"})
-    profile_file_id = await handle_large_profile(profile, profile_manager)
+async def cv_generate(request: CVGenerateRequest):
     try:
+        session_manager = get_profile_session_manager()
+        file_id = session_manager.get_file_id(request.session_id)
+        if not file_id:
+            raise HTTPException(status_code=404, detail="Session not found or expired. Start a new session.")
+        client = OpenAI()
         messages = [
             {"role": "system", "content": "You are a professional CV writer. Use the uploaded profile to create tailored CV content."}
         ]
@@ -83,7 +86,7 @@ async def cv_full_generation(request: Request):
             messages.append({
                 "role": "user",
                 "content": f"""
-Generate the {section} section for this job description: {job_description}
+Generate the {section} section for this job description: {request.job_description}
 
 Requirements:
 - Tailor to job requirements
@@ -93,10 +96,10 @@ Requirements:
 Return only the {section} content.
 """,
                 "attachments": [
-                    {"file_id": profile_file_id, "tools": [{"type": "file_search"}]}
+                    {"file_id": file_id, "tools": [{"type": "file_search"}]}
                 ]
             })
-            response = openai_client.chat.completions.create(
+            response = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=messages
             )
@@ -108,20 +111,23 @@ Return only the {section} content.
             })
         messages.append({
             "role": "user",
-            "content": f"Now generate a cover letter for this job: {job_description}"
+            "content": f"Now generate a cover letter for this job: {request.job_description}"
         })
-        cover_response = openai_client.chat.completions.create(
+        cover_response = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=messages
         )
         return {
             "cv": cv_sections,
             "cover_letter": cover_response.choices[0].message.content,
-            "strategy": "conversation_based",
-            "analysis": "Generated using file context"
+            "strategy": "session_based_conversation",
+            "job_description": request.job_description
         }
-    finally:
-        await profile_manager.cleanup_file(profile_file_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"CV generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate CV: {str(e)}")
 
 @router.post("/cv/update")
 async def cv_update(request: Request):
