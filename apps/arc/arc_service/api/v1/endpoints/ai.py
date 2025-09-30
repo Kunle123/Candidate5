@@ -24,6 +24,7 @@ import openai
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 from profile_session_manager import get_profile_session_manager
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
