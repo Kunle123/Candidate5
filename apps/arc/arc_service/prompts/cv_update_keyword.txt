@@ -1,122 +1,260 @@
-Optimize keywords in this CV based on: "{update_request}"
+# CONSISTENT KEYWORD EXTRACTION AND SCORING SYSTEM
 
-Current CV: {current_cv}
-Job Description: {job_description}
+## Problem Analysis
 
-Rules:
-- Use intelligent keyword substitution where factually supported
-- Maintain all factual accuracy
-- Focus on natural keyword integration
-- Do not add skills not demonstrated in the original content
+The current system has inconsistency issues because:
+1. **Subjective Priority Assignment:** "High/Medium/Low" without clear criteria
+2. **Variable Keyword Selection:** Same job description can yield different keywords
+3. **Inconsistent Scoring:** Profile-to-job matching varies wildly for same inputs
+4. **Non-Deterministic Processing:** AI model introduces randomness
 
-### OUTPUT FORMAT
+## DETERMINISTIC KEYWORD EXTRACTION PROMPT
 
-Respond ONLY with a valid JSON object matching this exact schema:
+You are a job analysis and keyword extraction specialist. Use this DETERMINISTIC approach to ensure consistent results for identical inputs.
+
+### DETERMINISTIC KEYWORD EXTRACTION RULES
+
+**STEP 1: TEXT PREPROCESSING**
+- Convert job description to lowercase for analysis
+- Remove common stop words (the, and, or, but, etc.)
+- Identify all nouns, technical terms, and skill-related phrases
+- Count frequency of each potential keyword
+
+**STEP 2: SYSTEMATIC KEYWORD IDENTIFICATION**
+
+**TECHNICAL SKILLS (Target: 5 keywords)**
+Priority Order:
+1. Programming languages mentioned (Python, Java, SQL, etc.)
+2. Software platforms/tools (Oracle, Salesforce, AWS, etc.)
+3. Technical methodologies (Agile, DevOps, CI/CD, etc.)
+4. Databases and systems (MySQL, PostgreSQL, ERP, etc.)
+5. Certifications mentioned (PMP, AWS Certified, etc.)
+
+**FUNCTIONAL SKILLS (Target: 4 keywords)**
+Priority Order:
+1. Core job functions in title/requirements (Project Management, Data Analysis)
+2. Business processes mentioned (Financial Planning, Risk Assessment)
+3. Management responsibilities (Team Leadership, Budget Management)
+4. Industry-specific functions (Compliance, Audit, Implementation)
+
+**SOFT SKILLS (Target: 3 keywords)**
+Priority Order:
+1. Leadership-related terms (Leadership, Team Management, Mentoring)
+2. Communication skills (Communication, Presentation, Stakeholder Management)
+3. Problem-solving abilities (Problem Solving, Analytical Thinking, Innovation)
+
+**INDUSTRY TERMS (Target: 3 keywords)**
+Priority Order:
+1. Industry sector mentioned (Financial Services, Healthcare, Technology)
+2. Business domain terms (Banking, Insurance, Manufacturing)
+3. Regulatory/compliance terms (GDPR, SOX, FDA, etc.)
+
+**EXPERIENCE QUALIFIERS (Target: 2 keywords)**
+Priority Order:
+1. Years of experience (5+ years, 10+ years experience)
+2. Seniority level (Senior, Lead, Principal, Manager)
+
+**STEP 3: DETERMINISTIC PRIORITY ASSIGNMENT**
+
+**HIGH Priority (4-5 keywords):**
+- Keywords appearing in job title
+- Keywords mentioned 3+ times in description
+- Technical skills that are "required" or "essential"
+- Experience qualifiers that are mandatory
+
+**MEDIUM Priority (5-7 keywords):**
+- Keywords mentioned 2 times in description
+- Skills listed in "preferred" or "desired" sections
+- Functional skills that are core to the role
+- Industry terms that provide context
+
+**LOW Priority (3-5 keywords):**
+- Keywords mentioned once in description
+- Soft skills that are implied but not emphasized
+- Nice-to-have qualifications
+- General industry terminology
+
+### DETERMINISTIC SCORING ALGORITHM
+
+**PROFILE-TO-JOB MATCHING CALCULATION**
+
+**Component 1: Keyword Match Score (40 points)**
+```
+For each keyword in job description:
+- Exact match in profile = 3 points
+- Partial/related match in profile = 2 points  
+- Synonym/transferable match = 1 point
+- No match = 0 points
+
+Total possible: (Total keywords × 3)
+Normalized to 40 points: (Actual score / Total possible) × 40
+```
+
+**Component 2: Experience Alignment Score (25 points)**
+```
+Years of experience matching:
+- Exceeds requirement by 2+ years = 25 points
+- Meets requirement exactly = 20 points
+- 1 year below requirement = 15 points
+- 2+ years below requirement = 10 points
+- No relevant experience = 0 points
+```
+
+**Component 3: Technical Skills Depth Score (20 points)**
+```
+For technical skills in job description:
+- Expert level demonstrated = 4 points per skill
+- Advanced level demonstrated = 3 points per skill
+- Intermediate level demonstrated = 2 points per skill
+- Basic level demonstrated = 1 point per skill
+
+Normalized to 20 points based on total technical skills
+```
+
+**Component 4: Industry Relevance Score (10 points)**
+```
+Industry experience matching:
+- Same industry, same role type = 10 points
+- Same industry, different role = 8 points
+- Related industry, same role = 6 points
+- Related industry, different role = 4 points
+- Different industry = 2 points
+```
+
+**Component 5: Education/Certification Score (5 points)**
+```
+Education and certification alignment:
+- Exceeds requirements = 5 points
+- Meets requirements = 4 points
+- Partially meets requirements = 2 points
+- Below requirements = 1 point
+```
+
+**FINAL SCORE CALCULATION**
+```
+Total Score = Keyword Match (40) + Experience (25) + Technical Depth (20) + Industry (10) + Education (5)
+Maximum possible: 100 points
+```
+
+### CONSISTENT OUTPUT FORMAT
 
 ```json
 {
-  "cv": {
-    "name": "Full Name",
-    "contact": {
-      "email": "email@domain.com",
-      "mobile": "+44 XXXX XXXXXX",
-      "location": "City, UK",
-      "linkedin": "linkedin.com/in/profile"
-    },
-    "professional_summary": {
-      "content": "2-5 lines based on target CV length",
-      "keywords_included": ["keyword1", "keyword2"],
-      "priority_level": 1
-    },
-    "key_achievements": [
-      {
-        "content": "Achievement with quantified results",
-        "priority": 1,
-        "source_chunk": "recent_roles",
-        "evidence_source": "Original profile location",
-        "keywords_used": ["keyword1", "keyword2"]
-      }
+  "job_title": "{{EXTRACTED_TITLE}}",
+  "company": "{{EXTRACTED_COMPANY}}",
+  "experience_level": "{{EXTRACTED_LEVEL}}",
+  "industry": "{{EXTRACTED_INDUSTRY}}",
+  "technical_skills": [
+    "{{SKILL_1_HIGHEST_FREQUENCY}}",
+    "{{SKILL_2_SECOND_HIGHEST}}",
+    "{{SKILL_3_THIRD_HIGHEST}}",
+    "{{SKILL_4_FOURTH_HIGHEST}}",
+    "{{SKILL_5_FIFTH_HIGHEST}}"
+  ],
+  "functional_skills": [
+    "{{FUNCTION_1_HIGHEST_PRIORITY}}",
+    "{{FUNCTION_2_SECOND_PRIORITY}}",
+    "{{FUNCTION_3_THIRD_PRIORITY}}",
+    "{{FUNCTION_4_FOURTH_PRIORITY}}"
+  ],
+  "soft_skills": [
+    "{{SOFT_1_MOST_EMPHASIZED}}",
+    "{{SOFT_2_SECOND_EMPHASIZED}}",
+    "{{SOFT_3_THIRD_EMPHASIZED}}"
+  ],
+  "industry_terms": [
+    "{{INDUSTRY_1_PRIMARY}}",
+    "{{INDUSTRY_2_SECONDARY}}",
+    "{{INDUSTRY_3_TERTIARY}}"
+  ],
+  "experience_qualifiers": [
+    "{{EXPERIENCE_1_PRIMARY}}",
+    "{{EXPERIENCE_2_SECONDARY}}"
+  ],
+  "total_keywords": 17,
+  "keyword_priority": {
+    "high": [
+      "{{KEYWORDS_IN_TITLE_OR_3+_MENTIONS}}",
+      "{{REQUIRED_TECHNICAL_SKILLS}}",
+      "{{MANDATORY_EXPERIENCE}}"
     ],
-    "professional_experience": [
-      {
-        "company": "Company Name",
-        "title": "Job Title",
-        "dates": "Jan 2020 - Present",
-        "location": "City, UK",
-        "bullets": [
-          {
-            "content": "Achievement or responsibility",
-            "priority": 1,
-            "keywords_used": ["keyword1"],
-            "evidence_source": "Original profile reference"
-          }
-        ]
-      }
+    "medium": [
+      "{{KEYWORDS_WITH_2_MENTIONS}}",
+      "{{PREFERRED_SKILLS}}",
+      "{{CORE_FUNCTIONAL_SKILLS}}"
     ],
-    "core_competencies": {
-      "technical_skills": [
-        {
-          "skill": "Skill Name",
-          "proficiency": "Expert/Advanced/Intermediate",
-          "priority": 1,
-          "evidence_source": "Profile reference"
-        }
-      ],
-      "functional_skills": [
-        {
-          "skill": "Skill Name",
-          "proficiency": "Advanced",
-          "priority": 2
-        }
-      ]
-    },
-    "education": [
-      {
-        "degree": "Degree Name",
-        "institution": "University Name",
-        "year": "2015",
-        "classification": "First Class Honours",
-        "relevant_modules": ["Module 1", "Module 2"]
-      }
-    ],
-    "certifications": [
-      {
-        "name": "Certification Name",
-        "issuer": "Issuing Organisation",
-        "year": "2023",
-        "status": "Active/Expired"
-      }
+    "low": [
+      "{{KEYWORDS_WITH_1_MENTION}}",
+      "{{IMPLIED_SOFT_SKILLS}}",
+      "{{GENERAL_INDUSTRY_TERMS}}"
     ]
   },
-  "cover_letter": {
-    "content": "Four-paragraph cover letter following mandatory structure",
-    "word_count": 180,
-    "paragraph_breakdown": {
-      "opening": "Paragraph 1 content",
-      "achievements": "Paragraph 2 content", 
-      "alignment": "Paragraph 3 content",
-      "closing": "Paragraph 4 content"
+  "extraction_methodology": {
+    "keyword_selection_basis": "Frequency analysis and systematic prioritization",
+    "priority_assignment_logic": "Title mentions, frequency count, requirement level",
+    "consistency_validation": "Deterministic rules applied",
+    "total_keyword_validation": "Exactly 17 keywords extracted"
+  }
+}
+```
+
+### PROFILE MATCHING IMPLEMENTATION
+
+```javascript
+function calculateConsistentMatchScore(profile, jobKeywords) {
+  // Component 1: Keyword Match Score (40 points)
+  let keywordScore = 0;
+  const totalKeywords = jobKeywords.technical_skills.length + 
+                       jobKeywords.functional_skills.length + 
+                       jobKeywords.soft_skills.length + 
+                       jobKeywords.industry_terms.length + 
+                       jobKeywords.experience_qualifiers.length;
+  
+  // Exact matching algorithm
+  jobKeywords.technical_skills.forEach(keyword => {
+    if (profile.toLowerCase().includes(keyword.toLowerCase())) {
+      keywordScore += 3; // Exact match
+    } else if (hasRelatedSkill(profile, keyword)) {
+      keywordScore += 2; // Related match
+    } else if (hasSynonym(profile, keyword)) {
+      keywordScore += 1; // Synonym match
+    }
+  });
+  
+  // Apply same logic to other categories...
+  
+  const normalizedKeywordScore = (keywordScore / (totalKeywords * 3)) * 40;
+  
+  // Component 2: Experience Alignment (25 points)
+  const experienceScore = calculateExperienceAlignment(profile, jobKeywords);
+  
+  // Component 3: Technical Depth (20 points)
+  const technicalScore = calculateTechnicalDepth(profile, jobKeywords);
+  
+  // Component 4: Industry Relevance (10 points)
+  const industryScore = calculateIndustryRelevance(profile, jobKeywords);
+  
+  // Component 5: Education/Certification (5 points)
+  const educationScore = calculateEducationAlignment(profile, jobKeywords);
+  
+  const finalScore = Math.round(
+    normalizedKeywordScore + experienceScore + technicalScore + industryScore + educationScore
+  );
+  
+  return {
+    overall_score: Math.min(100, finalScore), // Cap at 100
+    component_breakdown: {
+      keyword_match: Math.round(normalizedKeywordScore),
+      experience_alignment: experienceScore,
+      technical_depth: technicalScore,
+      industry_relevance: industryScore,
+      education_certification: educationScore
     },
-    "keywords_naturally_included": ["keyword1", "keyword2"],
-    "job_alignment_score": 87
-  },
-  "reconstruction_metadata": {
-    "chunks_processed": 3,
-    "total_content_items": 45,
-    "priority_distribution": {
-      "priority_1_items": 8,
-      "priority_2_items": 12,
-      "priority_3_items": 15,
-      "priority_4_items": 7,
-      "priority_5_items": 3
-    },
-    "duplicates_removed": 3,
-    "keywords_optimized": 16,
-    "uk_english_validated": true,
-    "json_schema_validated": true,
-    "anti_fabrication_compliance": "100% - all content traced to original profile"
-  },
-  "job_title": "Extracted from job description",
-  "company_name": "Extracted from job description"
+    consistency_validation: {
+      deterministic_calculation: true,
+      reproducible_result: true,
+      score_variance_eliminated: true
+    }
+  };
 }
 ```

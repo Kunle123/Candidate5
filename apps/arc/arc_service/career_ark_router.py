@@ -1564,12 +1564,12 @@ async def extract_comprehensive_keywords(job_description):
     client = openai.OpenAI(api_key=openai_api_key)
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-2024-08-06",
+                model="gpt-4o-2024-08-06",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=800,
             temperature=0.1,
-            response_format={"type": "json_object"}
-        )
+                response_format={"type": "json_object"}
+            )
         content = response.choices[0].message.content
         logging.getLogger("arc").info(f"[OPENAI RAW CONTENT] {content}")
         if not content or not content.strip():
@@ -1578,7 +1578,7 @@ async def extract_comprehensive_keywords(job_description):
         import json
         try:
             return json.loads(content)
-    except Exception as e:
+        except Exception as e:
             logging.getLogger("arc").error(f"[OPENAI INVALID JSON] {e}. Content: {content}")
             logging.getLogger("arc").error(f"[OPENAI FULL RESPONSE] {response}")
             raise HTTPException(status_code=500, detail=f"OpenAI returned invalid JSON: {e}. Content: {content}")

@@ -1147,7 +1147,7 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
                     user_profile = resp.json()
                 else:
                     logger.warning(f"[DOWNLOAD] Failed to fetch user profile from user service: {resp.status_code} {resp.text}")
-        except Exception as e:
+    except Exception as e:
             logger.warning(f"[DOWNLOAD] Exception fetching user profile: {e}")
     user_name = user_profile.get("name") if user_profile and user_profile.get("name") else "CV"
     contact_info = []

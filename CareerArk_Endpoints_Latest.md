@@ -13,7 +13,7 @@ This document lists all expected endpoints for the Career Ark (CV management) fe
 - **Description:** Fetch the current user's Career Ark profile (returns profile object with `id`).
 
 ### Get All Sections for a Profile
-- **GET** `/api/career-ark/profiles/{profileId}/all_sections`
+- **GET** `/api/v1/users/{profileId}/all_sections`
 - **Description:** Fetch all sections (work experience, education, skills, projects, certifications, training) for a given profile.
 
 ### Work Experience
@@ -92,4 +92,4 @@ This document lists all expected endpoints for the Career Ark (CV management) fe
 - All endpoints require authentication (Bearer token).
 - Replace `{profileId}` and `{id}` with the actual profile or entry ID.
 - For section CRUD, always use the normalized endpoints above.
-- If you need to fetch all sections at once, use `/profiles/{profileId}/all_sections`. 
+- If you need to fetch all sections at once, use `/api/v1/users/{profileId}/all_sections`. 

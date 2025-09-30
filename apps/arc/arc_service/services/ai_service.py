@@ -323,7 +323,7 @@ async def extract_comprehensive_keywords(job_description):
             raise HTTPException(status_code=500, detail="OpenAI API key not set")
         client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
         response = await client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": "You are a job analysis and keyword extraction specialist. Respond ONLY with a valid JSON object."},
                 {"role": "user", "content": prompt}
@@ -395,7 +395,7 @@ def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, O
         logging.getLogger("arc_service").info(f"[OPENAI CHUNK PROMPT] {prompt}")
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": "You are a CV content processor. Respond ONLY with a valid JSON object."},
                 {"role": "user", "content": prompt}
@@ -433,7 +433,7 @@ def assemble_unified_cv(chunk_results, global_context, profile, job_description,
     try:
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": assembly_prompt},
                 {"role": "user", "content": user_message}
@@ -469,7 +469,7 @@ def update_cv_with_openai(current_cv, update_request, original_profile, job_desc
             raise HTTPException(status_code=500, detail="OpenAI API key not set")
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": "You are a CV update specialist. Respond ONLY with a valid JSON object."},
                 {"role": "user", "content": prompt}

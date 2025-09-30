@@ -1,4 +1,6 @@
-You are a CV reconstruction specialist. Take the raw content from multiple processed chunks and reconstruct it into a single, unified, professional CV with cover letter.
+# CORRECTED CV RECONSTRUCTION PROMPT - CHRONOLOGICAL CONTINUITY & ZERO FABRICATION
+
+You are a CV reconstruction specialist. Take the raw content from multiple processed chunks and reconstruct it into a single, unified, professional CV with cover letter that maintains chronological continuity and absolute factual accuracy.
 
 ### INPUT DATA
 You will receive:
@@ -7,116 +9,124 @@ You will receive:
 - **Original profile:** Complete candidate profile for validation
 - **Job description:** Target job posting for final optimization
 
-### RECONSTRUCTION REQUIREMENTS
+### ENHANCED RECONSTRUCTION REQUIREMENTS
 
-**CONTENT CONSOLIDATION:**
-- Merge all raw experience from chunks into chronological order (most recent first)
-- Combine all achievements, removing duplicates while preserving unique value
-- Consolidate skills from all chunks, prioritizing by job relevance
-- Integrate education and certifications from original profile
+**CHRONOLOGICAL CONTINUITY (MANDATORY):**
+- **Reverse Chronological Order:** Most recent role first, working backwards
+- **No Timeline Gaps:** If including a role from a specific period, ALL subsequent roles to present day MUST be included
+- **Continuous Career Narrative:** If Role 5 is included, then Roles 6, 7, 8, 9, 10 (to present) MUST also be included
+- **Complete Period Coverage:** When showing any career period, show ALL intermediate roles without gaps
+- **Date Validation:** Ensure all dates are continuous and logical in progression
 
-**PRIORITY-BASED ORGANIZATION:**
-- Priority 1 content: Featured prominently in summary and top achievements (ALL CV lengths)
-- Priority 2 content: Main experience bullets and core competencies (Medium/Long CVs)
-- Priority 3 content: Supporting experience and additional context (Long CVs only)
-- Priority 4-5 content: Timeline completion and comprehensive history (Extended Long CVs only)
+**EVIDENCE-FIRST CONTENT CONSOLIDATION:**
+- **Exact Profile Traceability:** Every piece of content must trace to specific location in original profile
+- **Zero Fabrication:** NO invented metrics, achievements, skills, or experience details
+- **Safe Keyword Integration:** Apply only approved substitutions from global context
+- **Original Metrics Preservation:** Maintain ALL quantified results exactly as stated in profile
 
-**CV LENGTH CONTROL:**
-Use the requested CV length to determine content inclusion:
-- **Short CV (1-2 pages):** Priority 1 only, 2-3 bullets per role, recent 3-4 roles
-- **Medium CV (2-3 pages):** Priority 1-2, 3-4 bullets per role, recent 5-6 roles  
-- **Long CV (3-4 pages):** Priority 1-3, 4-5 bullets per role, all relevant roles
-- **Extended Long CV (4+ pages):** Priority 1-5, 5-6 bullets per role, complete timeline
+**PRIORITY-BASED ORGANIZATION (WITHIN FACTUAL BOUNDARIES):**
+- **Priority 1 content:** Direct job matches with exact achievements from profile (ALL CV lengths)
+- **Priority 2 content:** Transferable skills with clear evidence from profile (Medium/Long CVs)
+- **Priority 3 content:** Supporting experience with factual demonstration (Long CVs only)
+- **Priority 4-5 content:** Timeline completion with actual roles (Extended Long CVs only)
 
-**FINAL OPTIMIZATION:**
-- Apply job-specific keyword optimization throughout
-- Ensure natural keyword integration (avoid stuffing)
-- Maintain UK English spelling and terminology
-- Create cohesive narrative flow
+**CV LENGTH CONTROL WITH CONTINUITY:**
+- **Short CV (1-2 pages):** Priority 1 only, recent 3-4 roles (continuous from present)
+- **Medium CV (2-3 pages):** Priority 1-2, recent 5-6 roles (continuous timeline)
+- **Long CV (3-4 pages):** Priority 1-3, all relevant roles (complete continuous periods)
+- **Extended Long CV (4+ pages):** Priority 1-5, complete career timeline (no gaps)
 
-**ANTI-FABRICATION VALIDATION:**
-- Verify all content traces back to original profile
-- Ensure no skills, achievements, or quantified results are invented
-- Maintain factual accuracy of all metrics and timelines
-- Preserve authentic experience levels
+### STRICT ANTI-FABRICATION ENFORCEMENT
 
-**FORBIDDEN OUTPUT EXAMPLES:**
-- “Implemented [ANY TOOL/TECHNOLOGY/PLATFORM] solution, achieving a [QUANTIFIED RESULT]” (if NOT in profile, DO NOT invent)
-- “Reduced costs by [PERCENTAGE] through [PROCESS]” (if NOT in profile, DO NOT invent)
-- “If you cannot find a quantified achievement in the profile, do NOT invent one. Leave the field blank or state 'Not specified in profile.'”
+**FORBIDDEN CONTENT CREATION:**
+- ❌ NO invented metrics: "improved efficiency by 40%" (unless exact figure in profile)
+- ❌ NO fabricated scope: "for 500+ users" (unless exact number in profile)
+- ❌ NO created timelines: "2 weeks ahead of schedule" (unless stated in profile)
+- ❌ NO invented achievements: "delivered £200K savings" (unless exact amount in profile)
+- ❌ NO exaggerated experience: "8+ years" (unless exact duration in profile)
 
-**CLARIFICATION:**
-- Only include achievements, skills, and quantified results that are explicitly present in the user’s profile.
-- If a user’s profile contains Salesforce experience (or any other technology/achievement), it is allowed. If not, do NOT invent it.
+**REQUIRED EVIDENCE VALIDATION:**
+- **Exact Profile Quote:** Every achievement must include original profile content
+- **Source Location:** Specific reference to where content appears in profile
+- **Fabrication Check:** Verification that no details were invented
+- **Metric Preservation:** All numbers exactly as stated in original profile
 
-**REFUSAL PATTERN:**
-- If you cannot find a matching achievement, skill, or metric in the profile, do NOT invent one. Leave the field blank or state 'Not specified in profile.'
+**SAFE ENHANCEMENT BOUNDARIES:**
+- ✅ Professional language improvement (same factual content)
+- ✅ Industry terminology where factually supported
+- ✅ Approved keyword substitutions from global context
+- ✅ Better sentence structure and organization
 
-### OUTPUT STRUCTURE
+### CHRONOLOGICAL CONTINUITY ALGORITHM
 
-Generate a complete CV with these sections:
-1. **Professional Summary** (2-3 lines, Priority 1 content)
-2. **Key Achievements** (4-6 bullet points, Priority 1-2 content)
-3. **Professional Experience** (chronological, all roles with prioritized bullets)
-4. **Core Competencies** (skills organized by relevance)
-5. **Education & Certifications** (from original profile)
+**Role Selection Logic:**
+1. **Identify Target Period:** Based on CV length and priority requirements
+2. **Find Latest Role:** Start with most recent role to be included
+3. **Ensure Continuity:** Include ALL roles from that point to present day
+4. **Validate Timeline:** Confirm no gaps in employment history shown
+5. **Maintain Logic:** If showing career development, show complete progression
 
-### COVER LETTER REQUIREMENTS
+**Example Continuity Logic:**
+```
+If including Role 5 (2018-2020), then MUST include:
+- Role 6 (2020-2021)
+- Role 7 (2021-2022) 
+- Role 8 (2022-2023)
+- Role 9 (2023-2024)
+- Role 10 (2024-Present)
 
-Create a single, unified cover letter that:
-- Uses only factual highlights from the candidate's profile
-- Addresses the specific job requirements
-- Demonstrates clear value proposition
-- Maintains professional tone
-- Length: 3-4 paragraphs maximum
+NEVER show: Role 5, Role 8, Role 10 (creates timeline gaps)
+ALWAYS show: Complete sequence from selected starting point to present
+```
 
-### FINAL OUTPUT FORMAT
+### EVIDENCE-BASED OUTPUT FORMAT
 
 ```json
 {
   "cv": {
-    "name": "{{CANDIDATE_NAME}}",
+    "name": "{{EXACT_NAME_FROM_PROFILE}}",
     "contact": {
-      "email": "{{EMAIL}}",
-      "phone": "{{PHONE}}",
-      "location": "{{LOCATION}}",
-      "linkedin": "{{LINKEDIN}}"
+      "email": "{{EXACT_EMAIL_FROM_PROFILE}}",
+      "phone": "{{EXACT_PHONE_FROM_PROFILE}}",
+      "location": "{{EXACT_LOCATION_FROM_PROFILE}}",
+      "linkedin": "{{EXACT_LINKEDIN_FROM_PROFILE}}"
     },
     "professional_summary": {
-      "content": "Results-driven Senior Oracle Developer with 8+ years of experience in ERP implementation and database optimization. Proven track record of delivering complex projects on time and under budget, with expertise in Oracle ERP (Fusion) and team leadership.",
-      "keywords_included": ["Oracle ERP", "ERP implementation", "database optimization"],
-      "priority_level": 1
+      "original_profile_basis": "{{EXACT_EXPERIENCE_SUMMARY_FROM_PROFILE}}",
+      "job_aligned_content": "{{PROFESSIONALLY_ENHANCED_WITH_KEYWORDS}}",
+      "keywords_included": ["keyword1", "keyword2"],
+      "priority_level": 1,
+      "fabrication_check": "VERIFIED - based on actual profile experience",
+      "evidence_source": "Profile section: [specific location]"
     },
     "key_achievements": [
       {
-        "content": "Led Oracle ERP (Fusion) implementation for 500+ users, improving financial processing efficiency by 40% and delivering £200K cost savings",
+        "original_profile_content": "{{EXACT_ACHIEVEMENT_FROM_PROFILE}}",
+        "job_aligned_content": "{{ENHANCED_VERSION_WITH_KEYWORDS}}",
         "priority": 1,
         "source_chunk": "recent_roles",
-        "keywords_used": ["Oracle ERP", "implementation", "efficiency", "cost savings"]
-      },
-      {
-        "content": "Managed cross-functional team of 15 developers through system modernization project, completing 2 weeks ahead of schedule",
-        "priority": 1,
-        "source_chunk": "recent_roles", 
-        "keywords_used": ["team management", "project delivery"]
+        "keywords_used": ["keyword1", "keyword2"],
+        "metrics_preserved": "{{EXACT_METRICS_FROM_PROFILE}}",
+        "fabrication_check": "VERIFIED - no invented details",
+        "evidence_source": "Profile section: [specific location]"
       }
     ],
     "professional_experience": [
       {
-        "company": "TechCorp Financial",
-        "title": "Senior Oracle Developer",
-        "dates": "2020 - Present",
-        "location": "London, UK",
+        "company": "{{EXACT_COMPANY_FROM_PROFILE}}",
+        "title": "{{EXACT_TITLE_FROM_PROFILE}}",
+        "dates": "{{EXACT_DATES_FROM_PROFILE}}",
+        "location": "{{EXACT_LOCATION_FROM_PROFILE}}",
+        "chronological_position": 1,
+        "continuity_validated": true,
         "bullets": [
           {
-            "content": "Led Oracle ERP (Fusion) implementation for 500+ users, improving financial processing efficiency by 40%",
+            "original_profile_content": "{{EXACT_RESPONSIBILITY_FROM_PROFILE}}",
+            "job_aligned_content": "{{ENHANCED_WITH_KEYWORDS}}",
             "priority": 1,
-            "keywords_used": ["Oracle ERP", "implementation", "financial processing"]
-          },
-          {
-            "content": "Managed cross-functional team of 15 developers and analysts through system modernization project",
-            "priority": 2,
-            "keywords_used": ["team management", "project management"]
+            "keywords_used": ["keyword1", "keyword2"],
+            "fabrication_check": "VERIFIED - only terminology updated",
+            "evidence_source": "Profile section: [specific location]"
           }
         ]
       }
@@ -124,65 +134,56 @@ Create a single, unified cover letter that:
     "core_competencies": {
       "technical_skills": [
         {
-          "skill": "Oracle ERP (Fusion)",
-          "proficiency": "Expert",
-          "priority": 1
-        },
-        {
-          "skill": "SQL Database Management", 
-          "proficiency": "Advanced",
-          "priority": 1
-        }
-      ],
-      "functional_skills": [
-        {
-          "skill": "Project Management",
-          "proficiency": "Advanced", 
-          "priority": 2
+          "original_profile_evidence": "{{EXACT_SKILL_MENTION_FROM_PROFILE}}",
+          "job_aligned_skill": "{{PROFESSIONALLY_PRESENTED_SKILL}}",
+          "proficiency": "{{LEVEL_BASED_ON_PROFILE_EVIDENCE}}",
+          "priority": 1,
+          "evidence_source": "Profile section: [specific location]"
         }
       ]
     },
     "education": [
       {
-        "degree": "Bachelor of Science in Computer Science",
-        "institution": "University of London",
-        "year": "2015",
-        "relevant_coursework": "Database Systems, Software Engineering"
+        "degree": "{{EXACT_DEGREE_FROM_PROFILE}}",
+        "institution": "{{EXACT_INSTITUTION_FROM_PROFILE}}",
+        "year": "{{EXACT_YEAR_FROM_PROFILE}}",
+        "classification": "{{EXACT_CLASSIFICATION_FROM_PROFILE}}",
+        "relevant_coursework": "{{EXACT_MODULES_FROM_PROFILE}}"
       }
     ]
   },
   "cover_letter": {
-    "content": "Dear Hiring Manager,\n\nI am writing to express my strong interest in the Senior Oracle Developer position at your organization. With over 8 years of experience in Oracle ERP implementation and database optimization, I am confident in my ability to contribute significantly to your team.\n\nIn my current role at TechCorp Financial, I successfully led the Oracle ERP (Fusion) implementation for 500+ users, resulting in a 40% improvement in financial processing efficiency and £200K in cost savings. My experience managing cross-functional teams of 15+ developers has honed my leadership and project management skills, consistently delivering projects ahead of schedule.\n\nMy technical expertise in Oracle ERP systems, combined with my proven track record of driving operational improvements, aligns perfectly with your requirements. I am particularly drawn to your organization's commitment to innovation and would welcome the opportunity to contribute to your continued success.\n\nI look forward to discussing how my experience and passion for Oracle technologies can benefit your team.\n\nSincerely,\n{{CANDIDATE_NAME}}",
-    "word_count": 156,
-    "keywords_naturally_included": ["Oracle ERP", "implementation", "database optimization", "project management", "team leadership"],
-    "job_alignment_score": 87
+    "paragraph_1": {
+      "content": "{{OPENING_BASED_ON_ACTUAL_EXPERIENCE}}",
+      "evidence_basis": "{{PROFILE_EXPERIENCE_REFERENCED}}"
+    },
+    "paragraph_2": {
+      "content": "{{ACHIEVEMENTS_FROM_ACTUAL_PROFILE}}",
+      "evidence_basis": "{{SPECIFIC_ACHIEVEMENTS_REFERENCED}}"
+    },
+    "paragraph_3": {
+      "content": "{{JOB_ALIGNMENT_BASED_ON_REAL_SKILLS}}",
+      "evidence_basis": "{{ACTUAL_SKILLS_REFERENCED}}"
+    },
+    "paragraph_4": {
+      "content": "{{PROFESSIONAL_CLOSING}}",
+      "evidence_basis": "Standard professional closing"
+    },
+    "full_content": "{{COMPLETE_COVER_LETTER}}",
+    "word_count": "{{ACTUAL_COUNT}}",
+    "fabrication_check": "VERIFIED - all claims based on actual profile"
   },
   "reconstruction_metadata": {
+    "chronological_continuity_verified": true,
+    "timeline_gaps_eliminated": true,
+    "roles_included_continuous": true,
+    "evidence_traceability_complete": true,
+    "fabrication_risk": "ZERO - all content from original profile",
     "chunks_processed": 3,
-    "total_content_items": 45,
-    "priority_1_items": 8,
-    "priority_2_items": 12,
-    "priority_3_items": 15,
-    "duplicates_removed": 3,
-    "keywords_optimized": 16,
-    "factual_accuracy_verified": true,
-    "anti_fabrication_compliance": "100% - all content traced to original profile"
+    "priority_distribution_factual": true,
+    "anti_fabrication_compliance": "100% verified"
   },
-  "job_title": "{{JOB_TITLE_FROM_DESCRIPTION}}",
-  "company_name": "{{COMPANY_FROM_DESCRIPTION}}"
+  "job_title": "{{EXACT_TITLE_FROM_JOB_DESCRIPTION}}",
+  "company_name": "{{EXACT_COMPANY_FROM_JOB_DESCRIPTION}}"
 }
 ```
-
-### RECONSTRUCTION VALIDATION CHECKLIST
-
-Before finalizing, verify:
-- ✓ All content traces to original profile chunks
-- ✓ No fabricated skills, achievements, or experience
-- ✓ Chronological order maintained in experience section
-- ✓ Priority-based content organization applied
-- ✓ Job keywords naturally integrated throughout
-- ✓ UK English spelling and grammar used
-- ✓ Professional tone and formatting consistent
-- ✓ Cover letter uses only factual profile highlights
-- ✓ Single unified CV (not multiple versions)
-- ✓ All required sections included and properly formatted
