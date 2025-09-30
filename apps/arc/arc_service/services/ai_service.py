@@ -426,6 +426,12 @@ def safe_json_parse(content, logger=None, context="OpenAI response"):
 def assemble_unified_cv(chunk_results, global_context, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID):
     # Final assembly step using OpenAI
     assembly_prompt = load_prompt("cv_assembly.txt")
+    def size(obj):
+        if isinstance(obj, str):
+            return len(obj.encode("utf-8"))
+        return len(json.dumps(obj, ensure_ascii=False).encode("utf-8"))
+    logger = logging.getLogger("arc_service")
+    logger.info(f"[PAYLOAD SECTION SIZES] chunks: {size(chunk_results)} bytes, global_context: {size(global_context)} bytes, profile: {size(profile)} bytes, job_description: {size(job_description)} bytes, instructions: {size(assembly_prompt)} bytes")
     user_message = json.dumps({
         "chunks": chunk_results,
         "global_context": global_context,
@@ -433,7 +439,6 @@ def assemble_unified_cv(chunk_results, global_context, profile, job_description,
         "job_description": job_description,
         "instructions": assembly_prompt
     })
-    logger = logging.getLogger("arc_service")
     logger.info(f"[OPENAI ASSEMBLY PROMPT] {user_message}")
     try:
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
@@ -476,6 +481,7 @@ def update_cv_with_openai(current_cv, update_request, original_profile, job_desc
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
+                {"role": "system", "content": "You are a CV update specialist. Respond ONLY with a valid JSON object."},
                 {"role": "user", "content": prompt}
             ],
             response_format={"type": "json_object"}
