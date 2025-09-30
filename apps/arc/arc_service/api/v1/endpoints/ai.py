@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 import time
 from services.ai_service import (
@@ -21,6 +21,11 @@ from utils.profile_fetch import get_user_profile
 import logging
 import io
 import openai
+from pydantic import BaseModel, Field
+from typing import Optional, Dict, Any
+from profile_session_manager import get_profile_session_manager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -28,42 +33,36 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 profile_manager = ProfileFileManager(openai_client)
 
+class CVPreviewRequest(BaseModel):
+    session_id: str = Field(..., description="Active session identifier")
+    job_description: str = Field(..., description="Job description to analyze against")
+
 @router.post("/cv/preview")
-async def cv_preview(request: Request):
-    data = await request.json()
-    profile = data.get("profile")
-    job_description = data.get("jobDescription") or data.get("job_description")
-    if not profile or not job_description:
-        return JSONResponse(status_code=400, content={"error": "profile and jobDescription are required"})
-    profile_file_id = await handle_large_profile(profile, profile_manager)
+async def cv_preview(request: CVPreviewRequest):
     try:
-        response = openai_client.chat.completions.create(
+        session_manager = get_profile_session_manager()
+        file_id = session_manager.get_file_id(request.session_id)
+        if not file_id:
+            raise HTTPException(status_code=404, detail="Session not found or expired. Start a new session.")
+        client = OpenAI()
+        response = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[
-                {"role": "system", "content": "You are a CV analysis expert. Analyze the uploaded profile against the job description."},
-                {
-                    "role": "user",
-                    "content": f"""
-Analyze this job description and provide:
-1. Job analysis
-2. Keyword analysis
-3. Match assessment
-
-Job Description: {job_description}
-
-Return as JSON with keys: job_analysis, keyword_analysis, match_score
-""",
-                    "attachments": [
-                        {"file_id": profile_file_id, "tools": [{"type": "file_search"}]}
-                    ]
-                }
+                {"role": "system", "content": "You are a CV analysis expert. Analyze the uploaded profile against the job description and return JSON insights."},
+                {"role": "user", "content": f"Analyze this job description: {request.job_description}", "attachments": [{"file_id": file_id, "tools": [{"type": "file_search"}]}]}
             ],
-            response_format={"type": "json_object"}
+            temperature=0.3
         )
-        result = json.loads(response.choices[0].message.content)
-        return {"preview_ready": True, **result}
-    finally:
-        await profile_manager.cleanup_file(profile_file_id)
+        try:
+            analysis_result = json.loads(response.choices[0].message.content)
+        except json.JSONDecodeError:
+            analysis_result = {"raw_response": response.choices[0].message.content}
+        return {"preview_ready": True, "session_id": request.session_id, **analysis_result}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"CV preview failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate CV preview: {str(e)}")
 
 @router.post("/cv/generate")
 async def cv_full_generation(request: Request):
