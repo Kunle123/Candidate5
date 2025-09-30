@@ -7,6 +7,7 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
 import time
+import io
 
 # --- ENHANCED KEYWORD MAPPING ---
 def map_profile_to_job_comprehensive(profile, job_analysis):
@@ -490,3 +491,42 @@ def update_cv_with_openai(current_cv, update_request, original_profile, job_desc
     except Exception as e:
         logging.error(f"[OPENAI CV UPDATE ERROR] {e}")
         return {"error": f"CV update OpenAI error: {e}"}
+
+class ProfileFileManager:
+    def __init__(self, openai_client):
+        self.client = openai_client
+        self.file_cache = {}  # Cache file_ids by user_id
+
+    async def upload_profile(self, profile, user_id=None):
+        import json
+        profile_json = json.dumps(profile, indent=2)
+        file_obj = io.BytesIO(profile_json.encode('utf-8'))
+        file_obj.name = f'profile_{user_id or "temp"}.json'
+        file = self.client.files.create(file=file_obj, purpose="assistants")
+        if user_id:
+            self.file_cache[user_id] = {
+                'file_id': file.id,
+                'timestamp': time.time()
+            }
+        return file.id
+
+    async def cleanup_file(self, file_id):
+        try:
+            self.client.files.delete(file_id)
+        except Exception as e:
+            logging.warning(f"Failed to delete file {file_id}: {e}")
+
+def check_profile_size(profile):
+    import json
+    profile_text = json.dumps(profile)
+    estimated_tokens = len(profile_text) / 4  # Rough estimate: 1 token ≈ 4 chars
+    return estimated_tokens
+
+async def handle_large_profile(profile, profile_manager, max_tokens=100000):
+    if check_profile_size(profile) > max_tokens:
+        # Optionally, summarize profile first (not implemented here)
+        # summary = await summarize_profile(profile)
+        # return await profile_manager.upload_profile(summary)
+        raise Exception("Profile too large. Summarization not implemented.")
+    else:
+        return await profile_manager.upload_profile(profile)

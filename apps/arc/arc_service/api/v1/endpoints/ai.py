@@ -9,7 +9,9 @@ from services.ai_service import (
     create_adaptive_chunks,
     process_chunk_with_openai,
     assemble_unified_cv,
-    update_cv_with_openai
+    update_cv_with_openai,
+    ProfileFileManager,
+    handle_large_profile
 )
 import os
 import json
@@ -18,134 +20,146 @@ import asyncio
 from utils.profile_fetch import get_user_profile
 import logging
 import io
+import openai
 
 router = APIRouter()
 
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
+profile_manager = ProfileFileManager(openai_client)
+
 @router.post("/cv/preview")
-async def cv_keyword_preview(request: Request):
-    """
-    Fast keyword preview and job analysis for user review before full CV generation.
-    Input: { profile, jobDescription }
-    Output: { preview_ready, processing_time, job_analysis, keyword_analysis, match_score, processing_strategy, user_options }
-    """
+async def cv_preview(request: Request):
     data = await request.json()
     profile = data.get("profile")
     job_description = data.get("jobDescription") or data.get("job_description")
-    start = time.time()
-    # 1. Extract comprehensive keywords from job description
-    job_analysis = await extract_comprehensive_keywords(job_description)
-    # 2. Map profile to keywords for RAG status
-    keyword_mapping = map_profile_to_job_comprehensive(profile, job_analysis)
-    # 3. Build preview response (leave fields blank/empty if missing, never use mock data)
-    match_score = keyword_mapping.get("keyword_coverage", {}).get("coverage_percentage", 0)
-    preview = {
-        "preview_ready": True,
-        "processing_time": f"{round(time.time() - start, 2)} seconds",
-        "job_analysis": {
-            "job_title": job_analysis.get("job_title", ""),
-            "company": job_analysis.get("company", ""),
-            "experience_level": job_analysis.get("experience_level", ""),
-            "industry": job_analysis.get("industry", ""),
-            "primary_keywords": (job_analysis.get("technical_skills") or []) + (job_analysis.get("functional_skills") or [])
-        },
-        "keyword_analysis": keyword_mapping,
-        "match_score": match_score,
-        "processing_strategy": {
-            "chunking_approach": "auto",
-            "estimated_time": "28 seconds",
-            "optimization_focus": job_analysis.get("keyword_priority", {}).get("high", [])
-        },
-        "user_options": {
-            "proceed_with_generation": True,
-            "modify_keyword_emphasis": True,
-            "adjust_focus_areas": True,
-            "custom_instructions": True
-        }
-    }
-    return JSONResponse(content=preview)
+    if not profile or not job_description:
+        return JSONResponse(status_code=400, content={"error": "profile and jobDescription are required"})
+    profile_file_id = await handle_large_profile(profile, profile_manager)
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {"role": "system", "content": "You are a CV analysis expert. Analyze the uploaded profile against the job description."},
+                {
+                    "role": "user",
+                    "content": f"""
+Analyze this job description and provide:
+1. Job analysis
+2. Keyword analysis
+3. Match assessment
+
+Job Description: {job_description}
+
+Return as JSON with keys: job_analysis, keyword_analysis, match_score
+""",
+                    "attachments": [
+                        {"file_id": profile_file_id, "tools": [{"type": "file_search"}]}
+                    ]
+                }
+            ],
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        return {"preview_ready": True, **result}
+    finally:
+        await profile_manager.cleanup_file(profile_file_id)
 
 @router.post("/cv/generate")
 async def cv_full_generation(request: Request):
-    logger = logging.getLogger("arc_service")
-    logger.info("[DEBUG] Received /cv/generate request")
-    """
-    Full CV generation with user preferences and preview data.
-    Input: { profile, user_id/profile_id, jobDescription, previewData, userPreferences }
-    Output: { ...full CV, cover letter, validation, update capabilities... }
-    """
     data = await request.json()
     profile = data.get("profile")
-    user_id = data.get("user_id") or data.get("profile_id")
     job_description = data.get("jobDescription") or data.get("job_description")
-    preview_data = data.get("previewData")
-    user_preferences = data.get("userPreferences", {})
-    # If profile is not provided, fetch it using user_id/profile_id
-    if not profile and user_id:
-        # Try to get the Authorization header from the request
-        token = None
-        auth_header = request.headers.get("authorization")
-        if auth_header and auth_header.lower().startswith("bearer "):
-            token = auth_header.split(" ", 1)[1]
-        if not token:
-            return JSONResponse(status_code=401, content={"error": "Authorization token required to fetch profile by user_id."})
-        try:
-            profile = await get_user_profile(user_id, token)
-        except Exception as e:
-            return JSONResponse(status_code=404, content={"error": f"Profile not found for user_id: {user_id}. {str(e)}"})
-    if not profile:
-        return JSONResponse(status_code=400, content={"error": "No profile or user_id provided"})
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
-    if not OPENAI_API_KEY or not OPENAI_ASSISTANT_ID:
-        return {"error": "OpenAI API key or Assistant ID not set"}
-    # 1. Analyze
-    analysis = analyze_payload(profile)
-    strategy = select_chunking_strategy(analysis)
-    # 2. Create chunks
-    chunks = create_adaptive_chunks(profile, job_description, strategy)
-    # 3. Create global context (if needed)
-    global_context = {}  # Optionally, call OpenAI for global context if required
-    # 4. Process chunks for raw content only, passing job description and anti-fabrication rules
-    loop = asyncio.get_event_loop()
-    with ThreadPoolExecutor(max_workers=strategy["chunkCount"]) as executor:
-        tasks = [
-            loop.run_in_executor(
-                executor,
-                process_chunk_with_openai,
-                chunk,
-                profile,
-                job_description,
-                OPENAI_API_KEY,
-                OPENAI_ASSISTANT_ID
-            ) for chunk in chunks
+    if not profile or not job_description:
+        return JSONResponse(status_code=400, content={"error": "profile and jobDescription are required"})
+    profile_file_id = await handle_large_profile(profile, profile_manager)
+    try:
+        messages = [
+            {"role": "system", "content": "You are a professional CV writer. Use the uploaded profile to create tailored CV content."}
         ]
-        chunk_results = await asyncio.gather(*tasks)
-    # 5. Final assembly: single unified CV and cover letter
-    # Do not send profile at all to the assembly step
-    assembled = assemble_unified_cv(chunk_results, global_context, None, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID)
-    if not assembled or (isinstance(assembled, dict) and "error" in assembled):
-        return JSONResponse(status_code=500, content=assembled if assembled else {"error": "Unknown error in CV assembly."})
-    return {
-        **assembled,
-        "strategy": strategy,
-        "analysis": analysis,
-        "chunks": chunk_results
-    }
+        sections = ["professional_summary", "work_experience", "skills", "education"]
+        cv_sections = {}
+        for section in sections:
+            messages.append({
+                "role": "user",
+                "content": f"""
+Generate the {section} section for this job description: {job_description}
+
+Requirements:
+- Tailor to job requirements
+- Use relevant keywords
+- Professional tone
+
+Return only the {section} content.
+""",
+                "attachments": [
+                    {"file_id": profile_file_id, "tools": [{"type": "file_search"}]}
+                ]
+            })
+            response = openai_client.chat.completions.create(
+                model="gpt-4-turbo",
+                messages=messages
+            )
+            section_content = response.choices[0].message.content
+            cv_sections[section] = section_content
+            messages.append({
+                "role": "assistant",
+                "content": section_content
+            })
+        messages.append({
+            "role": "user",
+            "content": f"Now generate a cover letter for this job: {job_description}"
+        })
+        cover_response = openai_client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=messages
+        )
+        return {
+            "cv": cv_sections,
+            "cover_letter": cover_response.choices[0].message.content,
+            "strategy": "conversation_based",
+            "analysis": "Generated using file context"
+        }
+    finally:
+        await profile_manager.cleanup_file(profile_file_id)
 
 @router.post("/cv/update")
 async def cv_update(request: Request):
-    """
-    User-driven CV update endpoint (emphasis, keywords, length, etc.).
-    Input: { currentCV, updateRequest, originalProfile, jobDescription }
-    Output: { ...updated CV... }
-    """
     data = await request.json()
     current_cv = data.get("currentCV")
     update_request = data.get("updateRequest")
-    original_profile = data.get("originalProfile")
+    profile = data.get("originalProfile")
     job_description = data.get("jobDescription") or data.get("job_description")
-    updated_cv = update_cv_with_openai(current_cv, update_request, original_profile, job_description)
-    return JSONResponse(content=updated_cv)
+    if not current_cv or not update_request or not profile or not job_description:
+        return JSONResponse(status_code=400, content={"error": "currentCV, updateRequest, originalProfile, and jobDescription are required"})
+    profile_file_id = await handle_large_profile(profile, profile_manager)
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {"role": "system", "content": "You are a CV editor. Update the existing CV based on user instructions."},
+                {
+                    "role": "user",
+                    "content": f"""
+Current CV: {json.dumps(current_cv)}
+
+Update Request: {update_request}
+Job Description: {job_description}
+
+Please update the CV according to the request while maintaining professional quality.
+Return the updated CV in the same JSON structure.
+""",
+                    "attachments": [
+                        {"file_id": profile_file_id, "tools": [{"type": "file_search"}]}
+                    ]
+                }
+            ],
+            response_format={"type": "json_object"}
+        )
+        updated_cv = json.loads(response.choices[0].message.content)
+        return updated_cv
+    finally:
+        await profile_manager.cleanup_file(profile_file_id)
 
 @router.post("/cv/generate-single-thread")
 async def cv_generate_single_thread(request: Request):
