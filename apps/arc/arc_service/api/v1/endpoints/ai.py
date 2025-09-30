@@ -120,7 +120,9 @@ async def cv_full_generation(request: Request):
         ]
         chunk_results = await asyncio.gather(*tasks)
     # 5. Final assembly: single unified CV and cover letter
-    assembled = assemble_unified_cv(chunk_results, global_context, profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID)
+    # Remove work_experience from profile for assembly step
+    minimal_profile = {k: v for k, v in profile.items() if k != "work_experience"}
+    assembled = assemble_unified_cv(chunk_results, global_context, minimal_profile, job_description, OPENAI_API_KEY, OPENAI_ASSISTANT_ID)
     if not assembled or (isinstance(assembled, dict) and "error" in assembled):
         return JSONResponse(status_code=500, content=assembled if assembled else {"error": "Unknown error in CV assembly."})
     return {
