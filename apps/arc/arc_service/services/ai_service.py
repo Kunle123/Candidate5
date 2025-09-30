@@ -364,18 +364,24 @@ def select_chunking_strategy(analysis):
         return {"chunkCount": 4, "strategy": "multi"}
 
 def create_adaptive_chunks(profile, job_description, strategy):
-    # Example: split work_experience into N chunks
     work_experience = profile.get("work_experience", [])
     chunk_count = strategy["chunkCount"]
     chunk_size = max(1, len(work_experience) // chunk_count)
     chunks = []
     for i in range(chunk_count):
         chunk_roles = work_experience[i*chunk_size:(i+1)*chunk_size]
+        # Assign chunk_type based on position
+        if i == 0:
+            chunk_type = "recent_roles"
+        elif i == chunk_count - 1 and chunk_count > 2:
+            chunk_type = "timeline_roles"
+        else:
+            chunk_type = "supporting_roles"
         chunk = {
             "roles": chunk_roles,
             "profile": profile,
             "job_description": job_description,
-            "chunk_index": i
+            "chunk_type": chunk_type
         }
         chunks.append(chunk)
     return chunks
@@ -389,8 +395,7 @@ def process_chunk_with_openai(chunk, profile, job_description, OPENAI_API_KEY, O
     elif chunk_type == "timeline_roles":
         prompt = load_prompt("chunk_timeline_roles.txt")
     else:
-        prompt = "You are a CV content processor. Process the provided chunk as per the instructions. Respond ONLY with a valid JSON object.\n" + \
-                 f"Chunk: {json.dumps(chunk)}\nProfile: {json.dumps(profile)}\nJob Description: {job_description}\n"
+        prompt = load_prompt("chunk_supporting_roles.txt")
     try:
         logging.getLogger("arc_service").info(f"[OPENAI CHUNK PROMPT] {prompt}")
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
