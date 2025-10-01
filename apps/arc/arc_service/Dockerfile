@@ -4,10 +4,11 @@ WORKDIR /app
 
 COPY requirements.txt ./
 
-# Force install correct OpenAI version FIRST, before requirements.txt
+# Force install correct OpenAI version and compatible dependencies
 RUN pip install --no-cache-dir --force-reinstall openai==1.52.0
+RUN pip install --no-cache-dir --force-reinstall httpx==0.25.0
 
-# Then install other requirements (this will skip openai since it's already installed)
+# Then install other requirements
 RUN pip install --no-cache-dir -r requirements.txt
 
 RUN python -m spacy download en_core_web_sm
