@@ -107,7 +107,12 @@ Generate the {section} section for this job description: {request.job_descriptio
                 messages=messages
             )
             section_content = response.choices[0].message.content
-            cv_sections[section] = section_content
+            # Try to parse as JSON, fallback to string
+            try:
+                parsed_section = json.loads(section_content)
+                cv_sections[section] = parsed_section
+            except Exception:
+                cv_sections[section] = {"raw": section_content, "error": "Section could not be parsed as JSON"}
             messages.append({
                 "role": "assistant",
                 "content": section_content
@@ -120,9 +125,14 @@ Generate the {section} section for this job description: {request.job_descriptio
             model="gpt-4-1106-preview",
             messages=messages
         )
+        cover_content = cover_response.choices[0].message.content
+        try:
+            parsed_cover = json.loads(cover_content)
+        except Exception:
+            parsed_cover = {"raw": cover_content, "error": "Cover letter could not be parsed as JSON"}
         return {
             "cv": cv_sections,
-            "cover_letter": cover_response.choices[0].message.content,
+            "cover_letter": parsed_cover,
             "strategy": "session_based_conversation",
             "job_description": request.job_description
         }
@@ -130,7 +140,7 @@ Generate the {section} section for this job description: {request.job_descriptio
         raise
     except Exception as e:
         logger.error(f"CV generation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate CV: {str(e)}")
+        return JSONResponse(status_code=500, content={"error": f"Failed to generate CV: {str(e)}"})
 
 @router.post("/cv/update")
 async def cv_update(request: Request):
@@ -164,7 +174,11 @@ Job Description: {job_description}
             ],
             response_format={"type": "json_object"}
         )
-        updated_cv = json.loads(response.choices[0].message.content)
+        update_content = response.choices[0].message.content
+        try:
+            updated_cv = json.loads(update_content)
+        except Exception:
+            updated_cv = {"raw": update_content, "error": "Update could not be parsed as JSON"}
         return updated_cv
     finally:
         await profile_manager.cleanup_file(profile_file_id)
