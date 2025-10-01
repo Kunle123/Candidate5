@@ -12,3 +12,5 @@ COPY prompts ./prompts
 EXPOSE 8000
 RUN chmod +x /app/start.sh
 CMD ["/app/start.sh"] 
+
+# Force rebuild for OpenAI upgrade
