@@ -52,7 +52,7 @@ async def cv_preview(request: CVPreviewRequest):
         if not file_id:
             raise HTTPException(status_code=404, detail="Session not found or expired. Start a new session.")
         client = OpenAI()
-        prompt = load_prompt("keyword_extraction.txt")
+        prompt = load_prompt("cv_preview.txt")
         response = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[
