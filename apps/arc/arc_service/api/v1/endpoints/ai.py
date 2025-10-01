@@ -35,7 +35,7 @@ openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 profile_manager = ProfileFileManager(openai_client)
 
 import os
-PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../../prompts")
+PROMPT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../prompts"))
 def load_prompt(filename):
     with open(os.path.join(PROMPT_DIR, filename), "r", encoding="utf-8") as f:
         return f.read()
