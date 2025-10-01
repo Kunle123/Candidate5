@@ -22,8 +22,9 @@ logger = logging.getLogger(__name__)
 
 def sanitize_profile(profile: dict) -> dict:
     sanitized = profile.copy()
-    sanitized['name'] = "Candidate Name"
-    sanitized['email'] = "candidate@email.com"
+    # Always add placeholders if missing
+    sanitized['name'] = sanitized.get('name', "Candidate Name") or "Candidate Name"
+    sanitized['email'] = sanitized.get('email', "candidate@email.com") or "candidate@email.com"
     return sanitized
 
 
