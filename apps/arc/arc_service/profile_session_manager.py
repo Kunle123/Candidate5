@@ -106,8 +106,42 @@ class ProfileSessionManager:
             )
             # Log the OpenAI file upload response
             logger.info(f"[PROFILE UPLOAD] Session {session_id} OpenAI file upload response: {file_response}")
+            
+            # Create a vector store for the session
+            vector_store = self.client.beta.vector_stores.create(
+                name=f"profile_session_{session_id}",
+                expires_after={"anchor": "last_active_at", "days": 1}
+            )
+            # Log the vector store creation response
+            logger.info(f"[PROFILE UPLOAD] Session {session_id} OpenAI vector store creation response: {vector_store}")
+
+            # Add the file to the vector store
+            vector_store_file = self.client.beta.vector_stores.files.create(
+                vector_store_id=vector_store.id,
+                file_id=file_response.id
+            )
+            # Log the vector store file addition response
+            logger.info(f"[PROFILE UPLOAD] Session {session_id} OpenAI vector store file addition response: {vector_store_file}")
+
+            # Wait for the file to be processed in the vector store
+            max_wait_time = 30
+            wait_start = time.time()
+            while time.time() - wait_start < max_wait_time:
+                file_status = self.client.beta.vector_stores.files.retrieve(
+                    vector_store_id=vector_store.id,
+                    file_id=file_response.id
+                )
+                if file_status.status == "completed":
+                    break
+                elif file_status.status == "failed":
+                    raise Exception(f"File processing failed: {file_status.last_error}")
+                await asyncio.sleep(1)
+            else:
+                logger.warning(f"File processing timeout for session {session_id}")
+
             # Store session metadata
             self.sessions[session_id] = {
+                'vector_store_id': vector_store.id,
                 'file_id': file_response.id,
                 'user_id': user_id,
                 'profile_hash': profile_hash,
@@ -118,8 +152,8 @@ class ProfileSessionManager:
                 'status': 'active'
             }
             # Log the session_id to file_id mapping
-            logger.info(f"[PROFILE UPLOAD] Session {session_id} mapped to file_id {file_response.id}")
-            logger.info(f"Started CV session {session_id} with file {file_response.id}")
+            logger.info(f"[PROFILE UPLOAD] Session {session_id} mapped to vector_store_id {vector_store.id} and file_id {file_response.id}")
+            logger.info(f"Started CV session {session_id} with vector store {vector_store.id} and file {file_response.id}")
             return session_id
             
         except Exception as e:
@@ -127,7 +161,39 @@ class ProfileSessionManager:
             # Clean up partial session if it exists
             if session_id in self.sessions:
                 await self._cleanup_session(session_id)
-            raise Exception(f"Failed to upload profile: {str(e)}")
+            raise Exception(f"Failed to create vector store and upload profile: {str(e)}")
+    
+    def get_vector_store_id(self, session_id: str) -> Optional[str]:
+        """
+        Get the OpenAI vector store ID for a session.
+        
+        Args:
+            session_id: Session identifier
+            
+        Returns:
+            vector_store_id: OpenAI vector store ID if session exists and is valid, None otherwise
+        """
+        session_data = self.sessions.get(session_id)
+        
+        if not session_data:
+            logger.warning(f"Session {session_id} not found")
+            return None
+        
+        # Check if session is expired
+        if datetime.utcnow() > session_data['expires_at']:
+            logger.warning(f"Session {session_id} has expired")
+            asyncio.create_task(self._cleanup_session(session_id))
+            return None
+        
+        if session_data['status'] != 'active':
+            logger.warning(f"Session {session_id} is not active (status: {session_data['status']})")
+            return None
+        
+        # Update last accessed time and increment request count
+        session_data['last_accessed'] = datetime.utcnow()
+        session_data['request_count'] += 1
+        
+        return session_data['vector_store_id']
     
     def get_file_id(self, session_id: str) -> Optional[str]:
         """
@@ -194,11 +260,17 @@ class ProfileSessionManager:
         session_data['status'] = 'cleaning_up'
         
         try:
-            # Delete file from OpenAI
-            self.client.files.delete(session_data['file_id'])
-            logger.info(f"Deleted OpenAI file {session_data['file_id']} for session {session_id}")
+            # Delete vector store from OpenAI
+            self.client.beta.vector_stores.delete(session_data['vector_store_id'])
+            logger.info(f"Deleted vector store {session_data['vector_store_id']} for session {session_id}")
         except Exception as e:
-            logger.error(f"Failed to delete OpenAI file {session_data['file_id']}: {e}")
+            logger.error(f"Failed to delete vector store {session_data['vector_store_id']}: {e}")
+            try:
+                # Delete file from OpenAI
+                self.client.files.delete(session_data['file_id'])
+                logger.info(f"Deleted file {session_data['file_id']} for session {session_id}")
+            except Exception as file_e:
+                logger.error(f"Failed to delete file {session_data['file_id']}: {file_e}")
         
         # Remove session from memory
         del self.sessions[session_id]
@@ -241,6 +313,8 @@ class ProfileSessionManager:
         
         return {
             'session_id': session_id,
+            'vector_store_id': session_data['vector_store_id'],
+            'file_id': session_data['file_id'],
             'user_id': session_data['user_id'],
             'created_at': session_data['created_at'].isoformat(),
             'expires_at': session_data['expires_at'].isoformat(),
@@ -337,7 +411,7 @@ def initialize_profile_session_manager(openai_client: OpenAI, session_ttl_hours:
     """
     global profile_session_manager
     profile_session_manager = ProfileSessionManager(openai_client, session_ttl_hours)
-    logger.info("ProfileSessionManager initialized")
+    logger.info("ProfileSessionManager initialized with vector store support")
 
 
 def get_profile_session_manager() -> ProfileSessionManager:
