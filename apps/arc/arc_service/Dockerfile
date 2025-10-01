@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN python -m spacy download en_core_web_sm
 
 COPY . .
-COPY prompts ./pr
+COPY prompts ./prompts
 
 EXPOSE 8000
 RUN chmod +x /app/start.sh
