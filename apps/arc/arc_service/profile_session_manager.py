@@ -90,6 +90,8 @@ class ProfileSessionManager:
         try:
             # Sanitize profile to avoid sending PII
             profile_to_upload = sanitize_profile(profile)
+            # Log the sanitized profile content before upload
+            logger.info(f"[PROFILE UPLOAD] Session {session_id} sanitized profile: {json.dumps(profile_to_upload, indent=2)[:1000]}" if len(json.dumps(profile_to_upload)) > 1000 else f"[PROFILE UPLOAD] Session {session_id} sanitized profile: {json.dumps(profile_to_upload, indent=2)}")
             # Create profile hash for change detection
             profile_json = json.dumps(profile_to_upload, sort_keys=True)
             profile_hash = hashlib.md5(profile_json.encode()).hexdigest()
@@ -102,7 +104,8 @@ class ProfileSessionManager:
                 file=file_obj,
                 purpose="assistants"
             )
-            
+            # Log the OpenAI file upload response
+            logger.info(f"[PROFILE UPLOAD] Session {session_id} OpenAI file upload response: {file_response}")
             # Store session metadata
             self.sessions[session_id] = {
                 'file_id': file_response.id,
@@ -114,7 +117,8 @@ class ProfileSessionManager:
                 'request_count': 0,
                 'status': 'active'
             }
-            
+            # Log the session_id to file_id mapping
+            logger.info(f"[PROFILE UPLOAD] Session {session_id} mapped to file_id {file_response.id}")
             logger.info(f"Started CV session {session_id} with file {file_response.id}")
             return session_id
             
