@@ -10,7 +10,7 @@ granian
 python-multipart
 pdfplumber
 python-docx
-openai>=1.52.0
+openai>=1.12.0
 tiktoken
 PyJWT 
 spacy 
