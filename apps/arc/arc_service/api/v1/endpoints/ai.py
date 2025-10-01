@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 import time
 import os
@@ -9,6 +9,7 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 from profile_session_manager import get_profile_session_manager
+from function_based_endpoints import handle_cv_preview, handle_cv_generate, handle_cv_update
 
 logger = logging.getLogger(__name__)
 
@@ -60,196 +61,19 @@ class CVUpdateRequest(BaseModel):
     job_description: str = Field(..., description="Job description for context")
 
 @router.post("/cv/preview")
-async def cv_preview(request: CVPreviewRequest):
-    try:
-        session_manager = get_profile_session_manager()
-        vector_store_id = session_manager.get_vector_store_id(request.session_id)
-        if not vector_store_id:
-            raise HTTPException(
-                status_code=404, 
-                detail="Session not found or expired. Start a new session."
-            )
-        prompt = load_prompt("cv_preview.txt")
-        logger.debug(f"[CV PREVIEW] Using vector store {vector_store_id}")
-        response = openai_client.responses.create(
-            model="gpt-4o",
-            input=f"{prompt}\n\nAnalyze this job description: {request.job_description}",
-            tools=[{
-                "type": "file_search",
-                "vector_store_ids": [vector_store_id]
-            }],
-            temperature=0.3
-        )
-        content = None
-        for output_item in response.output:
-            if output_item.type == "message":
-                for content_item in output_item.content:
-                    if content_item.type == "output_text":
-                        content = content_item.text
-                        break
-                break
-        if not content:
-            raise Exception("No content found in response")
-        try:
-            analysis_result = json.loads(content)
-            return {
-                "preview_ready": True, 
-                "session_id": request.session_id, 
-                **analysis_result
-            }
-        except Exception:
-            parsed = try_parse_json_from_string(content)
-            if parsed:
-                return {
-                    "preview_ready": True, 
-                    "session_id": request.session_id, 
-                    **parsed
-                }
-            return {
-                "preview_ready": True,
-                "session_id": request.session_id,
-                "raw_response": content,
-                "error": "Could not parse LLM response as JSON"
-            }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"CV preview failed: {e}")
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Failed to generate CV preview: {str(e)}"
-        )
+async def cv_preview(request: Request):
+    data = await request.json()
+    return await handle_cv_preview(data)
 
 @router.post("/cv/generate")
-async def cv_generate(request: CVGenerateRequest):
-    try:
-        session_manager = get_profile_session_manager()
-        vector_store_id = session_manager.get_vector_store_id(request.session_id)
-        if not vector_store_id:
-            raise HTTPException(
-                status_code=404, 
-                detail="Session not found or expired. Start a new session."
-            )
-        prompt = load_prompt("cv_generate.txt")
-        logger.info(f"[CV GENERATE] Using vector store {vector_store_id}")
-        response = openai_client.responses.create(
-            model="gpt-4o",
-            input=f"{prompt}\n\nGenerate a complete CV and cover letter tailored to this job description:\n\n{request.job_description}",
-            tools=[{
-                "type": "file_search",
-                "vector_store_ids": [vector_store_id]
-            }],
-            temperature=0.3
-        )
-        content = None
-        for output_item in response.output:
-            if output_item.type == "message":
-                for content_item in output_item.content:
-                    if content_item.type == "output_text":
-                        content = content_item.text
-                        break
-                break
-        if not content:
-            raise Exception("No content found in response")
-        try:
-            result = json.loads(content)
-            return {
-                **result,
-                "strategy": "responses_api_vector_store",
-                "session_id": request.session_id,
-                "job_description": request.job_description
-            }
-        except Exception as e:
-            parsed = try_parse_json_from_string(content)
-            if parsed:
-                return {
-                    **parsed,
-                    "strategy": "responses_api_vector_store",
-                    "session_id": request.session_id,
-                    "job_description": request.job_description
-                }
-            logger.error(f"[CV GENERATE] Failed to parse response as JSON: {e}")
-            return {
-                "error": "Failed to parse LLM response as JSON",
-                "raw_response": content[:1000],
-                "session_id": request.session_id
-            }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"CV generation failed: {e}")
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Failed to generate CV: {str(e)}"
-        )
+async def cv_full_generation(request: Request):
+    data = await request.json()
+    return await handle_cv_generate(data)
 
 @router.post("/cv/update")
-async def cv_update(request: CVUpdateRequest):
-    try:
-        session_manager = get_profile_session_manager()
-        vector_store_id = session_manager.get_vector_store_id(request.session_id)
-        if not vector_store_id:
-            raise HTTPException(
-                status_code=404, 
-                detail="Session not found or expired. Start a new session."
-            )
-        prompt = load_prompt("cv_update.txt")
-        logger.info(f"[CV UPDATE] Using vector store {vector_store_id}")
-        update_input = f"""
-{prompt}
-
-Current CV: {json.dumps(request.current_cv, indent=2)}
-
-Update Request: {request.update_request}
-
-Job Description: {request.job_description}
-"""
-        response = openai_client.responses.create(
-            model="gpt-4o",
-            input=update_input,
-            tools=[{
-                "type": "file_search",
-                "vector_store_ids": [vector_store_id]
-            }],
-            temperature=0.3
-        )
-        content = None
-        for output_item in response.output:
-            if output_item.type == "message":
-                for content_item in output_item.content:
-                    if content_item.type == "output_text":
-                        content = content_item.text
-                        break
-                break
-        if not content:
-            raise Exception("No content found in response")
-        try:
-            updated_cv = json.loads(content)
-            return {
-                **updated_cv,
-                "session_id": request.session_id
-            }
-        except Exception as e:
-            parsed = try_parse_json_from_string(content)
-            if parsed:
-                return {
-                    **parsed,
-                    "session_id": request.session_id
-                }
-            logger.error(f"[CV UPDATE] Failed to parse response as JSON: {e}")
-            return {
-                "error": "Failed to parse LLM response as JSON",
-                "raw_response": content[:1000],
-                "session_id": request.session_id
-            }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"CV update failed: {e}")
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Failed to update CV: {str(e)}"
-        )
+async def cv_update(request: Request):
+    data = await request.json()
+    return await handle_cv_update(data)
 
 @router.post("/cv/generate-single-thread")
 async def cv_generate_single_thread(request: Request):
