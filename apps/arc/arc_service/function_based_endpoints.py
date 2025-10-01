@@ -28,7 +28,7 @@ def parse_json_response(response_text: str) -> Dict[str, Any]:
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse JSON response: {e}")
         logger.error(f"Response text: {text[:500]}...")
-        raise HTTPException(status_code=500, detail="Failed to parse LLM response as JSON")
+        raise HTTPException(status_code=500, detail={"error": "Failed to parse LLM response as JSON", "raw_response": text[:1000]})
 
 async def session_start(profile: Dict[str, Any], user_id: str = None) -> Dict[str, Any]:
     try:
@@ -123,13 +123,21 @@ Current CV:
             user_message=update_message,
             model="gpt-4o"
         )
-        updated_cv = parse_json_response(response_text)
+        logger.info(f"[CV UPDATE] Raw LLM response: {response_text[:1000]}")
+        try:
+            updated_cv = parse_json_response(response_text)
+        except HTTPException as e:
+            logger.error(f"[CV UPDATE] JSON parsing failed. Returning raw response.")
+            raise
         updated_cv.update({
             "session_id": session_id,
             "generation_method": "function_based",
             "update_request": update_request,
             "updated_at": int(time.time())
         })
+        # Ensure certifications are handled gracefully
+        if "certifications" not in updated_cv.get("updated_cv", {}):
+            updated_cv["updated_cv"]["certifications"] = []
         return updated_cv
     except ValueError as e:
         logger.error(f"Session error: {e}")
