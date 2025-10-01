@@ -34,6 +34,12 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 profile_manager = ProfileFileManager(openai_client)
 
+import os
+PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../../prompts")
+def load_prompt(filename):
+    with open(os.path.join(PROMPT_DIR, filename), "r", encoding="utf-8") as f:
+        return f.read()
+
 class CVPreviewRequest(BaseModel):
     session_id: str = Field(..., description="Active session identifier")
     job_description: str = Field(..., description="Job description to analyze against")
@@ -46,10 +52,11 @@ async def cv_preview(request: CVPreviewRequest):
         if not file_id:
             raise HTTPException(status_code=404, detail="Session not found or expired. Start a new session.")
         client = OpenAI()
+        prompt = load_prompt("keyword_extraction.txt")
         response = client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[
-                {"role": "system", "content": "You are a CV analysis expert. Analyze the uploaded profile against the job description and return JSON insights."},
+                {"role": "system", "content": prompt},
                 {"role": "user", "content": f"Analyze this job description: {request.job_description}", "attachments": [{"file_id": file_id, "tools": [{"type": "file_search"}]}]}
             ],
             temperature=0.3
