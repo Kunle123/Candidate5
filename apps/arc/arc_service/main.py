@@ -1,19 +1,5 @@
 import logging
-import os
-
-def print_prompt_file_info():
-    prompt_path = "/app/prompts/cv_preview.txt"
-    if os.path.exists(prompt_path):
-        size = os.path.getsize(prompt_path)
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            first_200 = f.read(200)
-        print(f"[DEBUG] cv_preview.txt exists, size: {size} bytes, first 200 chars: {first_200}")
-    else:
-        print("[DEBUG] cv_preview.txt does NOT exist in /app/prompts/")
-
-print_prompt_file_info()
-
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 from fastapi import FastAPI
 import os
 from api.v1.router import api_router
