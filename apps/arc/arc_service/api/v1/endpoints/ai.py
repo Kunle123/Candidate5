@@ -62,11 +62,38 @@ async def cv_preview(request: CVPreviewRequest):
             ],
             temperature=0.3
         )
+        content = response.choices[0].message.content
+        def try_parse_json_from_string(s):
+            import re
+            s = s.strip()
+            # Remove triple backticks and optional 'json' after them
+            if s.startswith('```json'):
+                s = s[7:]
+            if s.startswith('```'):
+                s = s[3:]
+            if s.endswith('```'):
+                s = s[:-3]
+            s = s.strip()
+            try:
+                return json.loads(s)
+            except Exception:
+                return None
+        # Try direct JSON parse
         try:
-            analysis_result = json.loads(response.choices[0].message.content)
-        except json.JSONDecodeError:
-            analysis_result = {"raw_response": response.choices[0].message.content}
-        return {"preview_ready": True, "session_id": request.session_id, **analysis_result}
+            analysis_result = json.loads(content)
+            return {"preview_ready": True, "session_id": request.session_id, **analysis_result}
+        except Exception:
+            # Try to parse after cleaning markdown
+            parsed = try_parse_json_from_string(content)
+            if parsed:
+                return {"preview_ready": True, "session_id": request.session_id, **parsed}
+            # Fallback: return raw string
+            return {
+                "preview_ready": True,
+                "session_id": request.session_id,
+                "raw_response": content,
+                "error": "Could not parse LLM response as JSON"
+            }
     except HTTPException:
         raise
     except Exception as e:
