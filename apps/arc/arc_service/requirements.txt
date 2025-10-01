@@ -10,10 +10,13 @@ granian
 python-multipart
 pdfplumber
 python-docx
-openai>=2.6.0
+openai>=1.52.0
 tiktoken
 PyJWT 
 spacy 
 slowapi 
 pyclamd 
 httpx 
+
+#dummy commit added by kunle
+# DUMMY COMMENT TO FORCE REBUILD
