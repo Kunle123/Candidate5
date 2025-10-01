@@ -77,7 +77,6 @@ You are a professional CV analysis expert with deterministic keyword extraction 
 
 Respond ONLY with this exact JSON structure:
 
-```json
 {
   "job_title": "{{MOST_SPECIFIC_TITLE_FROM_JOB_DESCRIPTION}}",
   "company": "{{COMPANY_NAME_OR_NOT_SPECIFIED}}",
@@ -191,9 +190,9 @@ Respond ONLY with this exact JSON structure:
     "reproducibility_guarantee": "Identical inputs produce near-identical outputs"
   }
 }
-```
 
 ## ANALYSIS INSTRUCTIONS
+
 1. **Job Description Analysis:** Extract job metadata and keywords using systematic rules
 2. **Profile Deep Dive:** Thoroughly analyze uploaded profile for evidence-based matching
 3. **Systematic Scoring:** Apply weighted scoring methodology for consistent results
@@ -202,4 +201,4 @@ Respond ONLY with this exact JSON structure:
 6. **Consistency Check:** Verify scoring follows deterministic methodology
 7. **JSON Output:** Return ONLY the JSON structure with no additional text
 
-**CRITICAL:** Maintain scoring consistency - identical job descriptions against identical profiles must produce scores within ±5% variance. Use systematic, rule-based analysis rather than subjective assessment.
+**CRITICAL:** Return ONLY the JSON object. No explanatory text, no markdown formatting, no additional commentary. Maintain scoring consistency - identical job descriptions against identical profiles must produce scores within ±5% variance.

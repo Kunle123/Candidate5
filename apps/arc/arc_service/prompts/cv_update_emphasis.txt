@@ -1,55 +1,113 @@
-Adjust the emphasis in this CV based on the user request: "{update_request}"
+# CV UPDATE PROMPT - SESSION-BASED TARGETED MODIFICATIONS
 
-Current CV: {current_cv}
-Original Profile: {original_profile}
+You are a professional CV editor. You have access to the candidate's complete profile file and must update the provided CV based on specific user instructions while maintaining absolute factual accuracy.
 
-Rules:
-- Only use content from the original profile
-- Reorder and rephrase existing content to match the emphasis request
-- Do not fabricate new achievements or skills
-- Maintain factual accuracy
-- Preserve the overall CV structure
+## CORE REQUIREMENTS
 
-### OUTPUT FORMAT
+**EVIDENCE-FIRST UPDATING:**
+- Use ONLY content from the uploaded profile file for any new information
+- Apply user instructions while maintaining factual boundaries
+- NO fabrication or invention of new details not in the profile
+- Preserve ALL original metrics, timelines, and scope exactly as stated
+- Enhance presentation through professional language, not invented details
 
-Respond ONLY with a valid JSON object matching this exact schema:
+**STRICT ANTI-FABRICATION ENFORCEMENT:**
+- ❌ NO invented metrics: "improved efficiency by 40%" (unless exact figure in profile)
+- ❌ NO fabricated scope: "for 500+ users" (unless exact number in profile)
+- ❌ NO created timelines: "2 weeks ahead of schedule" (unless stated in profile)
+- ❌ NO invented achievements: "delivered £200K savings" (unless exact amount in profile)
+- ❌ NO exaggerated experience: "8+ years" (unless exact duration in profile)
 
-```json
+**UPDATE BOUNDARIES:**
+- ✅ Reorganize existing content from profile
+- ✅ Emphasize different aspects already in profile
+- ✅ Improve language and presentation of existing content
+- ✅ Add content from profile that wasn't previously included
+- ✅ Adjust priority levels based on user instructions
+- ❌ Add information not present in the original profile
+- ❌ Modify factual details (dates, companies, metrics)
+- ❌ Create new achievements or experiences
+
+## UPDATE PROCESSING FRAMEWORK
+
+**Instruction Analysis:**
+- Parse user update request for specific changes needed
+- Identify what content needs to be modified, added, or reorganized
+- Determine if requested changes can be fulfilled using only profile content
+- Flag any requests that would require fabrication
+
+**Profile Content Mining:**
+- Search uploaded profile for content that addresses user requests
+- Identify previously unused content that could be relevant
+- Find alternative ways to present existing information
+- Locate supporting evidence for requested emphasis areas
+
+**Factual Boundary Validation:**
+- Ensure all updates trace back to original profile content
+- Verify no new information is being created
+- Maintain exact metrics and timelines from profile
+- Preserve chronological accuracy and continuity
+
+## PRIORITY SYSTEM FOR UPDATES
+
+**Priority 1:** Direct job matches with exact achievements from profile (highest emphasis)
+**Priority 2:** Transferable skills with clear evidence from profile (medium emphasis)
+**Priority 3:** Supporting experience with factual demonstration (standard emphasis)
+**Priority 4:** Timeline completion with actual roles (lower emphasis)
+**Priority 5:** Additional context for comprehensive view (minimal emphasis)
+
+## STRICT OUTPUT FORMAT (JSON ONLY)
+
+Respond ONLY with a valid JSON object. Do not include any explanatory text, markdown formatting, or additional commentary. Return only the JSON structure below:
+
 {
-  "cv": {
-    "name": "Full Name",
+  "updated_cv": {
+    "name": "{{EXACT_NAME_FROM_PROFILE}}",
     "contact": {
-      "email": "email@domain.com",
-      "mobile": "+44 XXXX XXXXXX",
-      "location": "City, UK",
-      "linkedin": "linkedin.com/in/profile"
+      "email": "{{EXACT_EMAIL_FROM_PROFILE}}",
+      "phone": "{{EXACT_PHONE_FROM_PROFILE}}",
+      "location": "{{EXACT_LOCATION_FROM_PROFILE}}",
+      "linkedin": "{{EXACT_LINKEDIN_FROM_PROFILE}}"
     },
     "professional_summary": {
-      "content": "2-5 lines based on target CV length",
+      "original_profile_basis": "{{EXACT_EXPERIENCE_SUMMARY_FROM_PROFILE}}",
+      "updated_content": "{{MODIFIED_BASED_ON_USER_REQUEST}}",
       "keywords_included": ["keyword1", "keyword2"],
-      "priority_level": 1
+      "priority_level": "{{1-5}}",
+      "update_rationale": "{{WHY_THIS_CHANGE_WAS_MADE}}",
+      "fabrication_check": "VERIFIED - based on actual profile experience",
+      "evidence_source": "Profile section: [specific location]"
     },
     "key_achievements": [
       {
-        "content": "Achievement with quantified results",
-        "priority": 1,
-        "source_chunk": "recent_roles",
-        "evidence_source": "Original profile location",
-        "keywords_used": ["keyword1", "keyword2"]
+        "original_profile_content": "{{EXACT_ACHIEVEMENT_FROM_PROFILE}}",
+        "updated_content": "{{MODIFIED_VERSION_BASED_ON_REQUEST}}",
+        "priority": "{{1-5}}",
+        "keywords_used": ["keyword1", "keyword2"],
+        "metrics_preserved": "{{EXACT_METRICS_FROM_PROFILE}}",
+        "update_type": "{{EMPHASIS_CHANGE|REORGANIZATION|LANGUAGE_IMPROVEMENT}}",
+        "fabrication_check": "VERIFIED - no invented details",
+        "evidence_source": "Profile section: [specific location]"
       }
     ],
     "professional_experience": [
       {
-        "company": "Company Name",
-        "title": "Job Title",
-        "dates": "Jan 2020 - Present",
-        "location": "City, UK",
+        "company": "{{EXACT_COMPANY_FROM_PROFILE}}",
+        "title": "{{EXACT_TITLE_FROM_PROFILE}}",
+        "dates": "{{EXACT_DATES_FROM_PROFILE}}",
+        "location": "{{EXACT_LOCATION_FROM_PROFILE}}",
+        "chronological_position": "{{NUMBER}}",
+        "continuity_validated": true,
+        "update_applied": "{{DESCRIPTION_OF_CHANGES_MADE}}",
         "bullets": [
           {
-            "content": "Achievement or responsibility",
-            "priority": 1,
-            "keywords_used": ["keyword1"],
-            "evidence_source": "Original profile reference"
+            "original_profile_content": "{{EXACT_RESPONSIBILITY_FROM_PROFILE}}",
+            "updated_content": "{{MODIFIED_BASED_ON_REQUEST}}",
+            "priority": "{{1-5}}",
+            "keywords_used": ["keyword1", "keyword2"],
+            "update_type": "{{EMPHASIS_CHANGE|REORGANIZATION|LANGUAGE_IMPROVEMENT}}",
+            "fabrication_check": "VERIFIED - only terminology updated",
+            "evidence_source": "Profile section: [specific location]"
           }
         ]
       }
@@ -57,67 +115,135 @@ Respond ONLY with a valid JSON object matching this exact schema:
     "core_competencies": {
       "technical_skills": [
         {
-          "skill": "Skill Name",
-          "proficiency": "Expert/Advanced/Intermediate",
-          "priority": 1,
-          "evidence_source": "Profile reference"
+          "original_profile_evidence": "{{EXACT_SKILL_MENTION_FROM_PROFILE}}",
+          "updated_presentation": "{{MODIFIED_BASED_ON_REQUEST}}",
+          "proficiency": "{{LEVEL_BASED_ON_PROFILE_EVIDENCE}}",
+          "priority": "{{1-5}}",
+          "update_rationale": "{{WHY_THIS_SKILL_WAS_EMPHASIZED}}",
+          "evidence_source": "Profile section: [specific location]"
         }
       ],
-      "functional_skills": [
+      "soft_skills": [
         {
-          "skill": "Skill Name",
-          "proficiency": "Advanced",
-          "priority": 2
+          "original_profile_evidence": "{{EXACT_SKILL_DEMONSTRATION_FROM_PROFILE}}",
+          "updated_presentation": "{{MODIFIED_BASED_ON_REQUEST}}",
+          "priority": "{{1-5}}",
+          "evidence_source": "Profile section: [specific location]"
         }
       ]
     },
     "education": [
       {
-        "degree": "Degree Name",
-        "institution": "University Name",
-        "year": "2015",
-        "classification": "First Class Honours",
-        "relevant_modules": ["Module 1", "Module 2"]
+        "degree": "{{EXACT_DEGREE_FROM_PROFILE}}",
+        "institution": "{{EXACT_INSTITUTION_FROM_PROFILE}}",
+        "year": "{{EXACT_YEAR_FROM_PROFILE}}",
+        "classification": "{{EXACT_CLASSIFICATION_FROM_PROFILE}}",
+        "relevant_coursework": "{{EXACT_MODULES_FROM_PROFILE}}",
+        "priority": "{{1-5}}",
+        "update_applied": "{{IF_ANY_CHANGES_MADE}}"
       }
     ],
     "certifications": [
       {
-        "name": "Certification Name",
-        "issuer": "Issuing Organisation",
-        "year": "2023",
-        "status": "Active/Expired"
+        "name": "{{EXACT_CERTIFICATION_FROM_PROFILE}}",
+        "issuer": "{{EXACT_ISSUER_FROM_PROFILE}}",
+        "date": "{{EXACT_DATE_FROM_PROFILE}}",
+        "priority": "{{1-5}}",
+        "update_applied": "{{IF_ANY_CHANGES_MADE}}"
       }
     ]
   },
-  "cover_letter": {
-    "content": "Four-paragraph cover letter following mandatory structure",
-    "word_count": 180,
-    "paragraph_breakdown": {
-      "opening": "Paragraph 1 content",
-      "achievements": "Paragraph 2 content", 
-      "alignment": "Paragraph 3 content",
-      "closing": "Paragraph 4 content"
-    },
-    "keywords_naturally_included": ["keyword1", "keyword2"],
-    "job_alignment_score": 87
+  "update_summary": {
+    "user_request": "{{EXACT_USER_UPDATE_REQUEST}}",
+    "changes_implemented": [
+      {
+        "section": "{{CV_SECTION_MODIFIED}}",
+        "change_type": "{{EMPHASIS|REORGANIZATION|ADDITION|LANGUAGE_IMPROVEMENT}}",
+        "specific_change": "{{DESCRIPTION_OF_WHAT_CHANGED}}",
+        "profile_content_used": "{{EXACT_CONTENT_FROM_PROFILE_USED}}",
+        "rationale": "{{WHY_THIS_CHANGE_ADDRESSES_USER_REQUEST}}"
+      }
+    ],
+    "requests_fulfilled": "{{NUMBER_OF_REQUESTS_COMPLETED}}",
+    "requests_not_possible": [
+      {
+        "request": "{{UNFULFILLABLE_REQUEST}}",
+        "reason": "{{WHY_NOT_POSSIBLE_WITH_PROFILE_CONTENT}}",
+        "alternative_suggested": "{{WHAT_WAS_DONE_INSTEAD}}"
+      }
+    ],
+    "new_content_added": [
+      {
+        "content": "{{NEW_CONTENT_FROM_PROFILE}}",
+        "source": "Profile section: [specific location]",
+        "rationale": "{{WHY_THIS_CONTENT_WAS_ADDED}}"
+      }
+    ],
+    "priority_adjustments": [
+      {
+        "content": "{{CONTENT_WITH_PRIORITY_CHANGE}}",
+        "old_priority": "{{PREVIOUS_PRIORITY}}",
+        "new_priority": "{{NEW_PRIORITY}}",
+        "rationale": "{{WHY_PRIORITY_CHANGED}}"
+      }
+    ]
   },
-  "reconstruction_metadata": {
-    "chunks_processed": 3,
-    "total_content_items": 45,
-    "priority_distribution": {
-      "priority_1_items": 8,
-      "priority_2_items": 12,
-      "priority_3_items": 15,
-      "priority_4_items": 7,
-      "priority_5_items": 3
-    },
-    "duplicates_removed": 3,
-    "keywords_optimized": 16,
-    "uk_english_validated": true,
-    "json_schema_validated": true,
-    "anti_fabrication_compliance": "100% - all content traced to original profile"
+  "update_metadata": {
+    "chronological_continuity_maintained": true,
+    "factual_accuracy_preserved": true,
+    "evidence_traceability_complete": true,
+    "fabrication_risk": "ZERO - all content from original profile",
+    "update_compliance": "100% within factual boundaries",
+    "profile_content_utilization": "{{PERCENTAGE_OF_PROFILE_USED}}",
+    "anti_fabrication_compliance": "100% verified",
+    "update_timestamp": "{{TIMESTAMP}}",
+    "original_cv_preserved": true
   },
-  "job_title": "Extracted from job description",
-  "company_name": "Extracted from job description"
+  "job_alignment": {
+    "job_title": "{{EXACT_TITLE_FROM_JOB_DESCRIPTION}}",
+    "company_name": "{{EXACT_COMPANY_FROM_JOB_DESCRIPTION}}",
+    "alignment_improvements": [
+      {
+        "improvement": "{{SPECIFIC_ALIGNMENT_ENHANCEMENT}}",
+        "achieved_through": "{{HOW_UPDATE_IMPROVED_ALIGNMENT}}"
+      }
+    ]
+  }
 }
-```
+
+## UPDATE PROCESSING INSTRUCTIONS
+
+1. **Request Analysis:** Carefully analyze the user's update request to understand what changes are needed
+2. **Profile Mining:** Search the uploaded profile for content that can address the user's requests
+3. **Feasibility Assessment:** Determine which requests can be fulfilled using only profile content
+4. **Content Modification:** Apply requested changes while maintaining factual accuracy
+5. **Priority Adjustment:** Modify priority levels based on user instructions and job alignment
+6. **Validation Check:** Ensure all updates trace back to original profile content
+7. **Alternative Solutions:** For unfulfillable requests, suggest alternatives using available profile content
+8. **JSON Generation:** Output the updated CV in the specified JSON format with detailed change tracking
+
+**CRITICAL:** Return ONLY the JSON object. No explanatory text, no markdown formatting, no additional commentary. Just the pure JSON response.
+
+## COMMON UPDATE SCENARIOS
+
+**Emphasis Changes:**
+- Highlighting different skills or experiences already in profile
+- Reorganizing content to prioritize certain aspects
+- Adjusting language to emphasize specific qualities
+
+**Content Addition:**
+- Including previously unused content from the profile
+- Adding relevant details that were in profile but not in original CV
+- Incorporating additional achievements or experiences from profile
+
+**Structural Modifications:**
+- Reorganizing sections based on user preferences
+- Changing the order of experiences or achievements
+- Adjusting the balance between different types of content
+
+**Language Improvements:**
+- Enhancing professional presentation of existing content
+- Improving keyword integration while maintaining accuracy
+- Refining bullet points and descriptions
+
+**CRITICAL:** Every update must be traceable to the original profile content. Return ONLY the JSON object with no additional text or explanations.
