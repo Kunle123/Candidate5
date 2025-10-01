@@ -4,6 +4,9 @@ WORKDIR /app
 
 COPY requirements.txt ./
 
+# Force uninstall any old openai version before installing requirements
+RUN pip uninstall -y openai || true
+
 # Force install correct OpenAI version and compatible dependencies
 RUN pip install --no-cache-dir --force-reinstall openai==1.52.0
 RUN pip install --no-cache-dir --force-reinstall httpx==0.25.0
