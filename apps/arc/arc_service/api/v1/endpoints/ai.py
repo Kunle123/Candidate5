@@ -84,8 +84,9 @@ async def cv_generate(request: CVGenerateRequest):
         if not file_id:
             raise HTTPException(status_code=404, detail="Session not found or expired. Start a new session.")
         client = OpenAI()
+        prompt = load_prompt("cv_generate.txt")
         messages = [
-            {"role": "system", "content": "You are a professional CV writer. Use the uploaded profile to create tailored CV content."}
+            {"role": "system", "content": prompt}
         ]
         sections = ["professional_summary", "work_experience", "skills", "education"]
         cv_sections = {}
@@ -94,13 +95,6 @@ async def cv_generate(request: CVGenerateRequest):
                 "role": "user",
                 "content": f"""
 Generate the {section} section for this job description: {request.job_description}
-
-Requirements:
-- Tailor to job requirements
-- Use relevant keywords
-- Professional tone
-
-Return only the {section} content.
 """,
                 "attachments": [
                     {"file_id": file_id, "tools": [{"type": "file_search"}]}
@@ -147,10 +141,11 @@ async def cv_update(request: Request):
         return JSONResponse(status_code=400, content={"error": "currentCV, updateRequest, originalProfile, and jobDescription are required"})
     profile_file_id = await handle_large_profile(profile, profile_manager)
     try:
+        prompt = load_prompt("cv_update.txt")
         response = openai_client.chat.completions.create(
             model="gpt-4-turbo",
             messages=[
-                {"role": "system", "content": "You are a CV editor. Update the existing CV based on user instructions."},
+                {"role": "system", "content": prompt},
                 {
                     "role": "user",
                     "content": f"""
@@ -158,9 +153,6 @@ Current CV: {json.dumps(current_cv)}
 
 Update Request: {update_request}
 Job Description: {job_description}
-
-Please update the CV according to the request while maintaining professional quality.
-Return the updated CV in the same JSON structure.
 """,
                     "attachments": [
                         {"file_id": profile_file_id, "tools": [{"type": "file_search"}]}
