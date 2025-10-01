@@ -7,7 +7,7 @@ including starting sessions with profile uploads and ending sessions with cleanu
 
 import logging
 from typing import Optional
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from function_based_endpoints import handle_session_start, handle_session_end
@@ -60,7 +60,7 @@ class SessionInfoResponse(BaseModel):
 @session_router.post("/start")
 async def start_cv_session(request: Request):
     data = await request.json()
-    return await handle_session_start(data)
+    return await handle_session_start(data, request)
 
 
 @session_router.post("/end")

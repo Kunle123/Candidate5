@@ -1,10 +1,13 @@
 import json
 import logging
 from typing import Dict, Any
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from function_based_profile_manager import get_profile_manager
+import httpx
 
 logger = logging.getLogger(__name__)
+
+USER_SERVICE_URL_TEMPLATE = "https://api-gw-production.up.railway.app/api/v1/users/{user_id}/all_sections"
 
 def load_prompt(filename: str) -> str:
     try:
@@ -147,9 +150,27 @@ Current CV:
         raise HTTPException(status_code=500, detail=f"Failed to update CV: {str(e)}")
 
 # FastAPI endpoint implementations
-async def handle_session_start(request_data: Dict[str, Any]) -> Dict[str, Any]:
+async def handle_session_start(request_data: Dict[str, Any], request: Request = None) -> Dict[str, Any]:
     profile = request_data.get("profile")
     user_id = request_data.get("user_id")
+    # If profile is missing or empty, but user_id is present, auto-fetch profile
+    if (not profile or profile == {}) and user_id and request is not None:
+        auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=400, detail="Authorization header required to auto-fetch profile")
+        try:
+            async with httpx.AsyncClient() as client:
+                url = USER_SERVICE_URL_TEMPLATE.format(user_id=user_id)
+                resp = await client.get(url, headers={"Authorization": auth_header})
+                if resp.status_code == 200:
+                    profile = resp.json()
+                    logger.info(f"Fetched profile for user {user_id} from user service.")
+                else:
+                    logger.warning(f"Failed to fetch profile for user {user_id}: {resp.status_code} {resp.text}")
+                    raise HTTPException(status_code=404, detail=f"Could not fetch profile for user {user_id}")
+        except Exception as e:
+            logger.error(f"Error fetching profile for user {user_id}: {e}")
+            raise HTTPException(status_code=500, detail=f"Error fetching profile for user {user_id}: {e}")
     if not profile:
         raise HTTPException(status_code=400, detail="Profile data is required")
     return await session_start(profile, user_id)
