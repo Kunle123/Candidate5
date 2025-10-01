@@ -11,6 +11,7 @@ from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from profile_session_manager import get_profile_session_manager
+from utils.profile_fetch import get_user_profile
 
 logger = logging.getLogger(__name__)
 
@@ -58,19 +59,30 @@ class SessionInfoResponse(BaseModel):
 
 
 @session_router.post("/start", response_model=StartSessionResponse)
-async def start_cv_session(request: StartSessionRequest):
+async def start_cv_session(request: StartSessionRequest, http_request: Request):
     """
     Start a new CV workflow session.
     """
     try:
-        if not request.profile:
-            raise HTTPException(status_code=400, detail="Profile data is required and cannot be empty")
+        profile = request.profile or {}
+        # If profile is empty, try to fetch from user service
+        if not profile or not profile.get("name") or not profile.get("email"):
+            user_id = request.user_id
+            # Get token from Authorization header
+            auth_header = http_request.headers.get("authorization")
+            if not user_id or not auth_header or not auth_header.lower().startswith("bearer "):
+                raise HTTPException(status_code=400, detail="Profile data is required and cannot be empty, and user_id and Authorization token are required to fetch profile.")
+            token = auth_header.split(" ", 1)[1]
+            try:
+                profile = await get_user_profile(user_id, token)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to fetch profile from user service: {str(e)}")
         required_fields = ['name', 'email']
-        missing_fields = [field for field in required_fields if not request.profile.get(field)]
+        missing_fields = [field for field in required_fields if not profile.get(field)]
         if missing_fields:
             raise HTTPException(status_code=400, detail=f"Profile missing required fields: {', '.join(missing_fields)}")
         session_manager = get_profile_session_manager()
-        session_id = await session_manager.start_session(profile=request.profile, user_id=request.user_id)
+        session_id = await session_manager.start_session(profile=profile, user_id=request.user_id)
         session_info = session_manager.get_session_info(session_id)
         logger.info(f"Started CV session {session_id} for user {request.user_id}")
         return StartSessionResponse(
