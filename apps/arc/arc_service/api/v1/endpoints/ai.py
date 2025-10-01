@@ -74,10 +74,19 @@ async def cv_preview(request: CVPreviewRequest):
             if s.endswith('```'):
                 s = s[:-3]
             s = s.strip()
+            # Try direct parse
             try:
                 return json.loads(s)
             except Exception:
-                return None
+                pass
+            # Try to extract first JSON object using regex
+            match = re.search(r'\{[\s\S]*\}', s)
+            if match:
+                try:
+                    return json.loads(match.group(0))
+                except Exception:
+                    pass
+            return None
         # Try direct JSON parse
         try:
             analysis_result = json.loads(content)
