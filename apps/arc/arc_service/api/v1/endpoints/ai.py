@@ -53,8 +53,9 @@ async def cv_preview(request: CVPreviewRequest):
             raise HTTPException(status_code=404, detail="Session not found or expired. Start a new session.")
         client = OpenAI()
         prompt = load_prompt("cv_preview.txt")
+        logger.debug(f"[DEBUG] Loaded cv_preview.txt prompt (first 200 chars): {prompt[:200]}")
         response = client.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-4-1106-preview",
             messages=[
                 {"role": "system", "content": prompt},
                 {"role": "user", "content": f"Analyze this job description: {request.job_description}", "attachments": [{"file_id": file_id, "tools": [{"type": "file_search"}]}]}
@@ -85,6 +86,7 @@ async def cv_generate(request: CVGenerateRequest):
             raise HTTPException(status_code=404, detail="Session not found or expired. Start a new session.")
         client = OpenAI()
         prompt = load_prompt("cv_generate.txt")
+        logger.info(f"[DEBUG] System prompt for CV generate: {prompt[:500]}")
         messages = [
             {"role": "system", "content": prompt}
         ]
@@ -101,7 +103,7 @@ Generate the {section} section for this job description: {request.job_descriptio
                 ]
             })
             response = client.chat.completions.create(
-                model="gpt-4-turbo",
+                model="gpt-4-1106-preview",
                 messages=messages
             )
             section_content = response.choices[0].message.content
@@ -115,7 +117,7 @@ Generate the {section} section for this job description: {request.job_descriptio
             "content": f"Now generate a cover letter for this job: {request.job_description}"
         })
         cover_response = client.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-4-1106-preview",
             messages=messages
         )
         return {
@@ -142,8 +144,9 @@ async def cv_update(request: Request):
     profile_file_id = await handle_large_profile(profile, profile_manager)
     try:
         prompt = load_prompt("cv_update.txt")
+        logger.info(f"[DEBUG] System prompt for CV update: {prompt[:500]}")
         response = openai_client.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-4-1106-preview",
             messages=[
                 {"role": "system", "content": prompt},
                 {
@@ -189,17 +192,16 @@ async def cv_generate_single_thread(request: Request):
     file = client.files.create(file=file_obj, purpose="assistants")
     file_id = file.id
     try:
-        # 2. Compose prompt
-        prompt = f"""
-You are a professional CV writer. Using the attached profile, generate a complete CV and cover letter tailored to the following job description:\n\n{job_description}\n\nReturn the result as a JSON object with keys: cv, cover_letter.
-"""
+        # 2. Load and send the full prompt
+        prompt = load_prompt("cv_generate.txt")
+        logger.info(f"[DEBUG] System prompt for single-thread generate: {prompt[:500]}")
         response = client.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-4-1106-preview",
             messages=[
-                {"role": "system", "content": "You are a professional CV writer."},
+                {"role": "system", "content": prompt},
                 {
                     "role": "user",
-                    "content": prompt,
+                    "content": f"Generate a complete CV and cover letter tailored to the following job description:\n\n{job_description}\n\nReturn the result as a JSON object with keys: cv, cover_letter.",
                     "attachments": [
                         {"file_id": file_id, "tools": [{"type": "file_search"}]}
                     ]
