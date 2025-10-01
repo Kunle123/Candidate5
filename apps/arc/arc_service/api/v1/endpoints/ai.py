@@ -40,6 +40,32 @@ def load_prompt(filename):
     with open(os.path.join(PROMPT_DIR, filename), "r", encoding="utf-8") as f:
         return f.read()
 
+# Utility: Robust JSON extraction from LLM output
+import re
+def try_parse_json_from_string(s):
+    s = s.strip()
+    # Remove triple backticks and optional 'json' after them
+    if s.startswith('```json'):
+        s = s[7:]
+    if s.startswith('```'):
+        s = s[3:]
+    if s.endswith('```'):
+        s = s[:-3]
+    s = s.strip()
+    # Try direct parse
+    try:
+        return json.loads(s)
+    except Exception:
+        pass
+    # Try to extract first JSON object using regex
+    match = re.search(r'\{[\s\S]*\}', s)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except Exception:
+            pass
+    return None
+
 class CVPreviewRequest(BaseModel):
     session_id: str = Field(..., description="Active session identifier")
     job_description: str = Field(..., description="Job description to analyze against")
@@ -63,30 +89,6 @@ async def cv_preview(request: CVPreviewRequest):
             temperature=0.3
         )
         content = response.choices[0].message.content
-        def try_parse_json_from_string(s):
-            import re
-            s = s.strip()
-            # Remove triple backticks and optional 'json' after them
-            if s.startswith('```json'):
-                s = s[7:]
-            if s.startswith('```'):
-                s = s[3:]
-            if s.endswith('```'):
-                s = s[:-3]
-            s = s.strip()
-            # Try direct parse
-            try:
-                return json.loads(s)
-            except Exception:
-                pass
-            # Try to extract first JSON object using regex
-            match = re.search(r'\{[\s\S]*\}', s)
-            if match:
-                try:
-                    return json.loads(match.group(0))
-                except Exception:
-                    pass
-            return None
         # Try direct JSON parse
         try:
             analysis_result = json.loads(content)
@@ -143,11 +145,12 @@ Generate the {section} section for this job description: {request.job_descriptio
                 messages=messages
             )
             section_content = response.choices[0].message.content
-            # Try to parse as JSON, fallback to string
-            try:
-                parsed_section = json.loads(section_content)
+            # Use robust JSON parsing
+            parsed_section = try_parse_json_from_string(section_content)
+            if parsed_section is not None:
                 cv_sections[section] = parsed_section
-            except Exception:
+            else:
+                logger.error(f"[CV GENERATE] Failed to parse section '{section}' as JSON. Raw: {section_content[:300]}")
                 cv_sections[section] = {"raw": section_content, "error": "Section could not be parsed as JSON"}
             messages.append({
                 "role": "assistant",
@@ -162,13 +165,15 @@ Generate the {section} section for this job description: {request.job_descriptio
             messages=messages
         )
         cover_content = cover_response.choices[0].message.content
-        try:
-            parsed_cover = json.loads(cover_content)
-        except Exception:
-            parsed_cover = {"raw": cover_content, "error": "Cover letter could not be parsed as JSON"}
+        parsed_cover = try_parse_json_from_string(cover_content)
+        if parsed_cover is not None:
+            cover_letter = parsed_cover
+        else:
+            logger.error(f"[CV GENERATE] Failed to parse cover letter as JSON. Raw: {cover_content[:300]}")
+            cover_letter = {"raw": cover_content, "error": "Cover letter could not be parsed as JSON"}
         return {
             "cv": cv_sections,
-            "cover_letter": parsed_cover,
+            "cover_letter": cover_letter,
             "strategy": "session_based_conversation",
             "job_description": request.job_description
         }
