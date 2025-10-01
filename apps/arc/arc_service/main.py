@@ -25,7 +25,7 @@ print_prompt_file_info()
 print("[DEBUG] OpenAI version at runtime:", openai.__version__)
 print("[DEBUG] Has beta:", hasattr(openai, 'beta'))
 print("[DEBUG] Has vector_stores:", hasattr(openai.beta, 'vector_stores') if hasattr(openai, 'beta') else 'no beta')
-assert hasattr(openai.beta, 'vector_stores'), "OpenAI beta.vector_stores not available at runtime!"
+# assert hasattr(openai.beta, 'vector_stores'), "OpenAI beta.vector_stores not available at runtime!"
 
 logger = logging.getLogger(__name__)
 

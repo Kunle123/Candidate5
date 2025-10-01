@@ -10,7 +10,7 @@ granian
 python-multipart
 pdfplumber
 python-docx
-git+https://github.com/openai/openai-python.git@main
+openai>=1.52.0
 tiktoken
 PyJWT 
 spacy 
