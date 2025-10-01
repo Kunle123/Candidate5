@@ -7,6 +7,7 @@ from api.v1.endpoints.session_endpoints import session_router
 from api.v1.endpoints.ai import router as ai_router
 from profile_session_manager import initialize_profile_session_manager
 from openai import OpenAI
+import openai
 
 
 def print_prompt_file_info():
@@ -19,7 +20,12 @@ def print_prompt_file_info():
     else:
         print("[DEBUG] cv_preview.txt does NOT exist in /app/prompts/")
 
+print("=== [ARC MAIN.PY ENTRYPOINT TEST] If you see this, /app/main.py is running as the entrypoint! ===")
 print_prompt_file_info()
+print("[DEBUG] OpenAI version at runtime:", openai.__version__)
+print("[DEBUG] Has beta:", hasattr(openai, 'beta'))
+print("[DEBUG] Has vector_stores:", hasattr(openai.beta, 'vector_stores') if hasattr(openai, 'beta') else 'no beta')
+assert hasattr(openai.beta, 'vector_stores'), "OpenAI beta.vector_stores not available at runtime!"
 
 logger = logging.getLogger(__name__)
 
