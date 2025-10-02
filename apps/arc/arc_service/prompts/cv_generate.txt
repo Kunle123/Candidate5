@@ -1,374 +1,296 @@
-**🚨🚨🚨 FUNCTION-BASED CV GENERATION - PRIORITY & TOGGLE SYSTEM 🚨🚨🚨**
+**🚨🚨🚨 FUNCTION-BASED CV GENERATION - ZERO FABRICATION ENFORCEMENT 🚨🚨🚨**
 
 **JSON OUTPUT ONLY:** Return ONLY the JSON object. No explanatory text, markdown, or code blocks.
 
 **🚨🚨🚨 CRITICAL: PROFILE FUNCTION ACCESS REQUIREMENT 🚨🚨🚨**
-- You MUST have already called the get_candidate_profile function and received the candidate's actual profile data
-- Use ONLY the information provided in the profile function response - never fabricate or assume details
-- Every piece of information in the CV must be traceable to the candidate's actual profile data
-- If specific information is not in the profile, do not include it or mark it as unavailable
-
-**🚨🚨🚨 CRITICAL: ZERO FABRICATION POLICY 🚨🚨🚨**
-- NEVER invent, fabricate, or create any information not explicitly provided in the profile function response
-- ONLY use data directly from the profile function and job description
-- DO NOT enhance, embellish, or add details not in the profile function response
-- WHEN IN DOUBT: Use exact wording from profile function response or omit the information
+- You MUST call the get_candidate_profile function FIRST to access the candidate's actual profile data
+- Use ONLY the information provided in the profile function response
+- NEVER fabricate, invent, or create information not in the profile function response
+- Every piece of content must be traceable to the candidate's actual profile data
 
 **🚨🚨🚨 MANDATORY PRIVACY PROTECTION 🚨🚨🚨**
 - **Name Field:** MUST use placeholder "{{CANDIDATE_NAME}}" - NEVER use actual names
 - **Contact Info:** MUST use placeholder "{{CONTACT_INFO}}" - NEVER use actual contact details
 - **Email/Phone/Address:** ALL contact information MUST be replaced with "{{CONTACT_INFO}}"
-- This applies to ALL sections including summary, experience, and cover letter
 
-**🚨🚨🚨 CV LENGTH & PRIORITY SYSTEM 🚨🚨🚨**
+**🚨🚨🚨 AGGRESSIVE ANTI-FABRICATION ENFORCEMENT 🚨🚨🚨**
 
-**COMPREHENSIVE CV GENERATION FOR MULTIPLE LENGTHS:**
-Generate ONE comprehensive CV with priority-based content that enables frontend to create:
+**ZERO TOLERANCE FABRICATION POLICY:**
+- **NO ENHANCEMENT** of any details beyond what is explicitly stated in profile function response
+- **NO INFERENCE** of skills, metrics, or details not explicitly mentioned
+- **NO EMBELLISHMENT** of achievements, scope, or impact beyond profile statements
+- **NO ADDITION** of logical-seeming details that are not explicitly provided
+- **NO EXPANSION** of timelines, team sizes, or project scope beyond profile data
+- **NO ASSUMPTION** of standard industry practices or typical responsibilities
 
-**LONG CV (4+ pages):** All Priority 1-5 content, all sections enabled
-**MEDIUM CV (3 pages):** Priority 1-3 content, core sections enabled  
-**SHORT CV (2 pages):** Priority 1-2 content, essential sections only
+**EXPLICIT FABRICATION EXAMPLES TO AVOID:**
 
-**ALL CV VARIANTS MUST BE VIABLE STANDALONE DOCUMENTS**
+**❌ METRIC FABRICATION:**
+```
+Profile says: "Improved team efficiency"
+WRONG: "Improved team efficiency by 25%"
+CORRECT: "Improved team efficiency"
+```
 
-**PRIORITY ASSIGNMENT RULES:**
+**❌ SKILL INFERENCE:**
+```
+Profile says: "Worked with databases"
+WRONG: "Expert in SQL, MySQL, PostgreSQL, Oracle"
+CORRECT: "Worked with databases"
+```
 
-**Priority 1 (CRITICAL - Must appear in ALL CV lengths):**
-- Most recent role bullets with strongest job keyword matches from profile
-- Core technical skills directly matching job requirements from profile
-- Essential qualifications and certifications from profile
-- Key achievements with quantifiable impact from profile
-- Professional summary (always included)
+**❌ ACHIEVEMENT EMBELLISHMENT:**
+```
+Profile says: "Led successful project"
+WRONG: "Led successful £2M project delivering 40% ROI to stakeholders"
+CORRECT: "Led successful project"
+```
 
-**Priority 2 (HIGH - Appears in Medium & Long CVs):**
-- Recent role bullets with good job alignment from profile
-- Important technical and soft skills from profile
-- Significant achievements from recent roles in profile
-- Relevant education and certifications from profile
-- Supporting experience bullets from profile
+**❌ SCOPE EXPANSION:**
+```
+Profile says: "Managed team"
+WRONG: "Managed cross-functional team of 15 across 3 departments"
+CORRECT: "Managed team"
+```
 
-**Priority 3 (MEDIUM - Appears in Long CVs):**
-- Mid-career role bullets with moderate relevance from profile
-- Additional skills and competencies from profile
-- Earlier career achievements from profile
-- Supporting qualifications from profile
-- Professional development from profile
+**❌ TIMELINE INFERENCE:**
+```
+Profile says: "Project manager at TechCorp"
+WRONG: "Senior Project Manager leading digital transformation initiatives"
+CORRECT: "Project manager at TechCorp"
+```
 
-**Priority 4 (LOW - Long CV supplementary content):**
-- Earlier career roles for timeline completion from profile
-- General skills and competencies from profile
-- Additional certifications from profile
-- Volunteer work and interests from profile
+**❌ RESPONSIBILITY ASSUMPTION:**
+```
+Profile says: "Software developer"
+WRONG: "Software developer responsible for full-stack development, code reviews, and mentoring junior developers"
+CORRECT: "Software developer"
+```
 
-**Priority 5 (OPTIONAL - Long CV completeness):**
-- Very early career details from profile
-- Basic skills for completeness from profile
-- References and additional information from profile
+**🚨🚨🚨 CONSERVATIVE CONTENT GENERATION RULES 🚨🚨🚨**
 
-**🚨🚨🚨 SECTION TOGGLE SYSTEM 🚨🚨🚨**
+**CONTENT EXPANSION BOUNDARIES:**
+- ✅ **Use exact wording** from profile function response when possible
+- ✅ **Combine related statements** from profile function response
+- ✅ **Improve grammar and flow** without adding new information
+- ✅ **Organise existing information** for better presentation
+- ❌ **NEVER add percentages, numbers, or metrics** not in profile
+- ❌ **NEVER specify technologies** not explicitly mentioned in profile
+- ❌ **NEVER add team sizes, budgets, or scope** not stated in profile
+- ❌ **NEVER infer seniority levels** beyond what's stated in profile
+- ❌ **NEVER add industry-standard responsibilities** not mentioned in profile
 
-**TOGGLE-ABLE SECTIONS (Frontend Control):**
-- **achievements_section:** Can be turned on/off independently
-- **competencies_section:** Can be turned on/off independently  
-- **education_section:** Can be turned on/off independently
-- **certifications_section:** Can be turned on/off independently
-- **projects_section:** Can be turned on/off independently
-- **languages_section:** Can be turned on/off independently
-- **interests_section:** Can be turned on/off independently
+**QUOTE-FIRST POLICY:**
+- **When in doubt, quote directly** from profile function response
+- **Prefer exact profile language** over paraphrasing
+- **Use profile terminology** rather than industry-standard terms
+- **Maintain profile tone** and level of detail
 
-**NON-TOGGLE-ABLE SECTIONS (Always Present):**
-- **personal_information:** Always included
-- **professional_summary:** Always included
-- **professional_experience:** Always included (core CV requirement)
+**🚨🚨🚨 MANDATORY FABRICATION CHECKPOINTS 🚨🚨🚨**
 
-**🚨🚨🚨 COMPREHENSIVE CONTENT REQUIREMENTS 🚨🚨🚨**
+**Before writing each bullet point, verify:**
+1. **Is this information explicitly stated** in the profile function response?
+2. **Am I adding any details** not present in the profile?
+3. **Am I inferring any skills or metrics** not mentioned?
+4. **Am I using exact profile language** or paraphrasing conservatively?
+5. **Would the candidate recognise** this description as their own experience?
 
-**PROFESSIONAL SUMMARY (Always Priority 1):**
-- 4-6 complete sentences (80-120 words)
-- Lead with STRONGEST job keyword matches from profile function response
-- Cover: total years experience + key skills + industry focus + value proposition from profile
-- Must work standalone in Short CV and support longer versions
+**Before writing each achievement, verify:**
+1. **Is this achievement explicitly mentioned** in the profile function response?
+2. **Are all metrics and outcomes** directly from the profile?
+3. **Am I adding context or scope** not provided in the profile?
+4. **Is the impact statement** based solely on profile information?
 
-**PROFESSIONAL EXPERIENCE (Priority 1-5 bullets per role):**
-- **INCLUDE ALL ROLES** from profile function response in chronological order
-- **PRESERVE ALL DATES** exactly as provided in profile function response
-- **MAINTAIN CAREER CONTINUITY** - no gaps where profile shows continuous work
+**Before listing each skill, verify:**
+1. **Is this skill explicitly mentioned** in the profile function response?
+2. **Am I inferring related skills** not stated in the profile?
+3. **Is the proficiency level** based on profile information or assumption?
+4. **Am I adding technologies** that seem logical but aren't mentioned?
 
-**BULLET DISTRIBUTION PER ROLE:**
-- **Most Recent Role:** 6-8 bullets (3 Priority 1, 2 Priority 2, 2-3 Priority 3)
-- **Recent Roles:** 4-6 bullets (2 Priority 1, 2 Priority 2, 1-2 Priority 3)
-- **Mid-Career Roles:** 3-4 bullets (1 Priority 2, 2 Priority 3, 1 Priority 4)
-- **Earlier Roles:** 2-3 bullets (1-2 Priority 4, 1 Priority 5)
+**🚨🚨🚨 CONTENT GENERATION FOCUS 🚨🚨🚨**
 
-**ACHIEVEMENTS SECTION (Toggle-able, Priority 1-3):**
-- 8-12 achievement bullets spanning complete career from profile
-- Draw from ALL roles in profile function response
-- **Priority 1:** Bullets with strongest job keyword alignment from profile
-- **Priority 2:** Bullets with good relevance and quantifiable impact from profile
-- **Priority 3:** Bullets for career breadth and progression from profile
-- Each bullet 15-25 words minimum
+**PRIMARY OBJECTIVE:** Generate comprehensive, detailed CV content using ONLY profile function data that reaches target page lengths:
+- **LONG CV:** 4+ pages of substantial, detailed content from profile
+- **MEDIUM CV:** 3 pages of well-rounded professional content from profile
+- **SHORT CV:** 2 pages of essential, impactful content from profile
 
-**CORE COMPETENCIES SECTION (Toggle-able, Priority 1-4):**
-- **Technical Skills:** Extract from profile function response
-  - Priority 1: Skills directly matching job requirements
-  - Priority 2: Related/transferable skills
-  - Priority 3: Additional technical skills
-  - Priority 4: Supporting technical skills
-- **Soft Skills:** Extract from profile function response
-  - Priority 1: Key soft skills for role
-  - Priority 2: Supporting interpersonal skills
-  - Priority 3: Additional professional skills
+**CONTENT DEPTH STRATEGY:**
+- **Use ALL available information** from profile function response
+- **Combine related profile statements** for comprehensive descriptions
+- **Present profile information** in professional, detailed format
+- **Organise profile content** effectively for maximum impact
+- **Expand on profile details** only by providing full context from profile
 
-**EDUCATION SECTION (Toggle-able, Priority 1-3):**
-- All degrees and qualifications from profile function response
-- **Priority 1:** Core degree and job-relevant qualifications
-- **Priority 2:** Additional degrees and professional qualifications
-- **Priority 3:** Professional development and training
+**🚨🚨🚨 PRIORITY SYSTEM FOR CV LENGTH CONTROL 🚨🚨🚨**
 
-**CERTIFICATIONS SECTION (Toggle-able, Priority 1-3):**
-- All certifications from profile function response
-- **Priority 1:** Job-relevant and current certifications
-- **Priority 2:** Industry-relevant certifications
-- **Priority 3:** Additional professional certifications
+**PRIORITY LEVELS:**
+- **Priority 1:** CRITICAL content - appears in ALL CV lengths (Short/Medium/Long)
+- **Priority 2:** HIGH importance - appears in Medium & Long CVs
+- **Priority 3:** MEDIUM importance - appears in Long CVs only
+- **Priority 4:** SUPPLEMENTARY content - Long CVs only
+- **Priority 5:** COMPREHENSIVE content - Long CVs only
 
-**🚨🚨🚨 INTELLIGENT KEYWORD ALIGNMENT 🚨🚨🚨**
+**CONTENT DISTRIBUTION TARGET:**
+- **Priority 1:** 30% of content (essential for all CVs)
+- **Priority 2:** 25% of content (important for Medium/Long)
+- **Priority 3:** 20% of content (valuable for Long)
+- **Priority 4:** 15% of content (supplementary for Long)
+- **Priority 5:** 10% of content (comprehensive for Long)
 
-**SMART KEYWORD SUBSTITUTION:**
-When profile function response contains related/equivalent terms, substitute with job keywords for maximum alignment:
+**🚨🚨🚨 EVIDENCE-FIRST CONTENT GENERATION 🚨🚨🚨**
 
-**SUBSTITUTION RULES:**
-- ONLY substitute when profile contains equivalent/related technology or skill
-- NEVER fabricate - must have evidence in profile function response
-- Use format: "{{JOB_KEYWORD}} ({{PROFILE_TERM}})" when both are valid
-- Prioritize job keywords in first 2-3 bullets of each role
-- **MAINTAIN EXACT DATES AND CHRONOLOGY** during substitution
+**MANDATORY PROCESS:**
+1. **Extract ALL relevant information** from profile function response
+2. **Organise content by importance** and job relevance using only profile data
+3. **Generate detailed descriptions** using exclusively profile information
+4. **Assign appropriate priorities** based on profile content and job alignment
+5. **Ensure sufficient content volume** using comprehensive profile utilisation
 
-**🚨🚨🚨 JSON OUTPUT SCHEMA 🚨🚨🚨**
+**CONTENT BOUNDARIES:**
+- ✅ Use ALL relevant information from profile function response
+- ✅ Present profile information in detailed, professional format
+- ✅ Include all achievements, metrics, and scope mentioned in profile
+- ✅ Organise profile content effectively for maximum impact
+- ✅ Combine related profile statements for comprehensive descriptions
+- ❌ **NEVER add information not present in profile function response**
+- ❌ **NEVER modify factual details (dates, companies, metrics)**
+- ❌ **NEVER create achievements or experiences not in profile**
+- ❌ **NEVER infer skills, technologies, or responsibilities not stated**
+- ❌ **NEVER add metrics, percentages, or numbers not in profile**
+
+**🚨🚨🚨 STREAMLINED JSON OUTPUT SCHEMA 🚨🚨🚨**
 
 ```json
 {
-  "cv_variants": {
-    "short_cv_pages": 2,
-    "medium_cv_pages": 3,
-    "long_cv_pages": "{{ESTIMATED_PAGES_FROM_CONTENT}}",
-    "all_variants_viable": true
-  },
   "cv": {
     "personal_information": {
       "name": "{{CANDIDATE_NAME}}",
       "contact": "{{CONTACT_INFO}}",
-      "professional_title": "{{TITLE_DERIVED_FROM_PROFILE}}",
-      "location": "{{CONTACT_INFO}}",
-      "always_included": true,
-      "toggle_able": false
+      "professional_title": "{{EXACT_TITLE_FROM_PROFILE_OR_GENERIC_IF_NOT_SPECIFIED}}",
+      "location": "{{CONTACT_INFO}}"
     },
     "professional_summary": {
-      "content": "{{SUMMARY_FROM_PROFILE_WITH_JOB_ALIGNMENT}}",
-      "word_count": "{{ACTUAL_WORD_COUNT}}",
-      "keywords_included": ["{{KEYWORDS_FROM_JOB_MATCHING_PROFILE}}"],
-      "career_span_mentioned": "{{YEARS_FROM_PROFILE}}",
-      "priority": 1,
-      "always_included": true,
-      "toggle_able": false,
-      "evidence_source": "Profile function: {{SPECIFIC_SECTIONS_USED}}"
+      "content": "{{SUMMARY_USING_ONLY_PROFILE_INFORMATION_WITH_JOB_ALIGNMENT}}",
+      "priority": 1
     },
     "professional_experience": {
-      "always_included": true,
-      "toggle_able": false,
-      "total_roles": "{{COUNT_FROM_PROFILE}}",
-      "career_continuity_maintained": true,
       "roles": [
         {
-          "company": "{{COMPANY_FROM_PROFILE}}",
-          "title": "{{TITLE_FROM_PROFILE}}", 
-          "start_date": "{{START_DATE_FROM_PROFILE}}",
-          "end_date": "{{END_DATE_FROM_PROFILE}}",
-          "location": "{{LOCATION_FROM_PROFILE}}",
-          "chronological_position": "{{POSITION_NUMBER}}",
+          "company": "{{EXACT_COMPANY_NAME_FROM_PROFILE}}",
+          "title": "{{EXACT_JOB_TITLE_FROM_PROFILE}}",
+          "start_date": "{{EXACT_START_DATE_FROM_PROFILE}}",
+          "end_date": "{{EXACT_END_DATE_FROM_PROFILE}}",
+          "location": "{{EXACT_LOCATION_FROM_PROFILE_OR_EMPTY_IF_NOT_STATED}}",
           "bullets": [
             {
-              "content": "{{RESPONSIBILITY_FROM_PROFILE_WITH_JOB_KEYWORDS}}",
-              "keywords_used": ["{{JOB_KEYWORDS_MATCHING_PROFILE}}"],
-              "priority": "{{1-5_BASED_ON_RELEVANCE}}",
-              "word_count": "{{ACTUAL_COUNT}}",
-              "appears_in_short_cv": "{{TRUE_IF_PRIORITY_1_OR_2}}",
-              "appears_in_medium_cv": "{{TRUE_IF_PRIORITY_1_2_OR_3}}",
-              "appears_in_long_cv": true,
-              "evidence_source": "Profile function: {{SPECIFIC_LOCATION}}"
+              "content": "{{DETAILED_DESCRIPTION_USING_ONLY_PROFILE_STATEMENTS_NO_ADDITIONS}}",
+              "priority": "{{1_TO_5_BASED_ON_PROFILE_IMPORTANCE_AND_JOB_RELEVANCE}}"
             }
-          ],
-          "total_bullets": "{{ACTUAL_COUNT}}",
-          "priority_1_bullets": "{{COUNT}}",
-          "priority_2_bullets": "{{COUNT}}",
-          "priority_3_bullets": "{{COUNT}}"
+          ]
         }
       ]
     },
-    "achievements_section": {
-      "toggle_able": true,
-      "section_enabled": true,
-      "total_achievements": "{{COUNT_FROM_PROFILE}}",
-      "achievements": [
-        {
-          "content": "{{ACHIEVEMENT_FROM_PROFILE_WITH_JOB_ALIGNMENT}}",
-          "priority": "{{1-3_BASED_ON_RELEVANCE}}",
-          "career_period": "{{PERIOD_FROM_PROFILE}}",
-          "keywords_used": ["{{JOB_KEYWORDS_MATCHING_PROFILE}}"],
-          "appears_in_short_cv": "{{TRUE_IF_PRIORITY_1_OR_2}}",
-          "appears_in_medium_cv": "{{TRUE_IF_PRIORITY_1_2_OR_3}}",
-          "appears_in_long_cv": true,
-          "evidence_source": "Profile function: {{SPECIFIC_LOCATION}}"
-        }
-      ],
-      "priority_1_count": "{{COUNT}}",
-      "priority_2_count": "{{COUNT}}",
-      "priority_3_count": "{{COUNT}}"
+    "achievements": [
+      {
+        "content": "{{ACHIEVEMENT_DESCRIPTION_USING_ONLY_PROFILE_INFORMATION_NO_EMBELLISHMENT}}",
+        "priority": "{{1_TO_3_BASED_ON_PROFILE_SIGNIFICANCE_AND_JOB_RELEVANCE}}"
+      }
+    ],
+    "technical_skills": {
+      "priority_1": ["{{ONLY_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE_MATCHING_JOB}}"],
+      "priority_2": ["{{ONLY_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE}}"],
+      "priority_3": ["{{ONLY_ADDITIONAL_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE}}"],
+      "priority_4": ["{{ONLY_SUPPLEMENTARY_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE}}"]
     },
-    "competencies_section": {
-      "toggle_able": true,
-      "section_enabled": true,
-      "technical_skills": [
-        {
-          "skill": "{{SKILL_FROM_PROFILE_WITH_JOB_ALIGNMENT}}",
-          "proficiency": "{{LEVEL_FROM_PROFILE}}",
-          "years_experience": "{{YEARS_FROM_PROFILE}}",
-          "priority": "{{1-4_BASED_ON_JOB_RELEVANCE}}",
-          "appears_in_short_cv": "{{TRUE_IF_PRIORITY_1_OR_2}}",
-          "appears_in_medium_cv": "{{TRUE_IF_PRIORITY_1_2_OR_3}}",
-          "appears_in_long_cv": true,
-          "evidence_source": "Profile function: {{SPECIFIC_LOCATION}}"
-        }
-      ],
-      "soft_skills": [
-        {
-          "skill": "{{SOFT_SKILL_FROM_PROFILE}}",
-          "priority": "{{1-3_BASED_ON_JOB_RELEVANCE}}",
-          "appears_in_short_cv": "{{TRUE_IF_PRIORITY_1_OR_2}}",
-          "appears_in_medium_cv": "{{TRUE_IF_PRIORITY_1_2_OR_3}}",
-          "appears_in_long_cv": true,
-          "evidence_source": "Profile function: {{SPECIFIC_LOCATION}}"
-        }
-      ],
-      "total_technical_skills": "{{COUNT}}",
-      "total_soft_skills": "{{COUNT}}"
+    "soft_skills": {
+      "priority_1": ["{{ONLY_SOFT_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE_MATCHING_JOB}}"],
+      "priority_2": ["{{ONLY_SOFT_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE}}"],
+      "priority_3": ["{{ONLY_ADDITIONAL_SOFT_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE}}"]
     },
-    "education_section": {
-      "toggle_able": true,
-      "section_enabled": "{{TRUE_IF_EDUCATION_IN_PROFILE}}",
-      "education": [
-        {
-          "degree": "{{DEGREE_FROM_PROFILE}}",
-          "institution": "{{INSTITUTION_FROM_PROFILE}}",
-          "graduation_date": "{{DATE_FROM_PROFILE}}",
-          "classification": "{{GRADE_FROM_PROFILE}}",
-          "priority": "{{1-3_BASED_ON_JOB_RELEVANCE}}",
-          "appears_in_short_cv": "{{TRUE_IF_PRIORITY_1_OR_2}}",
-          "appears_in_medium_cv": "{{TRUE_IF_PRIORITY_1_2_OR_3}}",
-          "appears_in_long_cv": true,
-          "evidence_source": "Profile function: {{SPECIFIC_LOCATION}}"
-        }
-      ]
-    },
-    "certifications_section": {
-      "toggle_able": true,
-      "section_enabled": "{{TRUE_IF_CERTIFICATIONS_IN_PROFILE}}",
-      "certifications": [
-        {
-          "name": "{{CERTIFICATION_FROM_PROFILE}}",
-          "issuer": "{{ISSUER_FROM_PROFILE}}",
-          "date": "{{DATE_FROM_PROFILE}}",
-          "priority": "{{1-3_BASED_ON_JOB_RELEVANCE}}",
-          "appears_in_short_cv": "{{TRUE_IF_PRIORITY_1_OR_2}}",
-          "appears_in_medium_cv": "{{TRUE_IF_PRIORITY_1_2_OR_3}}",
-          "appears_in_long_cv": true,
-          "evidence_source": "Profile function: {{SPECIFIC_LOCATION}}"
-        }
-      ]
-    },
-    "projects_section": {
-      "toggle_able": true,
-      "section_enabled": "{{TRUE_IF_PROJECTS_IN_PROFILE}}",
-      "projects": "{{PROJECTS_FROM_PROFILE_OR_EMPTY_ARRAY}}"
-    },
-    "languages_section": {
-      "toggle_able": true,
-      "section_enabled": "{{TRUE_IF_LANGUAGES_IN_PROFILE}}",
-      "languages": "{{LANGUAGES_FROM_PROFILE_OR_EMPTY_ARRAY}}"
-    },
-    "interests_section": {
-      "toggle_able": true,
-      "section_enabled": "{{TRUE_IF_INTERESTS_IN_PROFILE}}",
-      "interests": "{{INTERESTS_FROM_PROFILE_OR_EMPTY_ARRAY}}"
-    }
+    "education": [
+      {
+        "degree": "{{EXACT_DEGREE_FROM_PROFILE}}",
+        "institution": "{{EXACT_INSTITUTION_FROM_PROFILE}}",
+        "graduation_date": "{{EXACT_DATE_FROM_PROFILE_OR_EMPTY_IF_NOT_STATED}}",
+        "classification": "{{EXACT_GRADE_FROM_PROFILE_OR_EMPTY_IF_NOT_STATED}}",
+        "priority": "{{1_TO_3_BASED_ON_PROFILE_RELEVANCE}}"
+      }
+    ],
+    "certifications": [
+      {
+        "name": "{{EXACT_CERTIFICATION_NAME_FROM_PROFILE}}",
+        "issuer": "{{EXACT_ISSUING_ORGANISATION_FROM_PROFILE}}",
+        "date": "{{EXACT_DATE_FROM_PROFILE_OR_EMPTY_IF_NOT_STATED}}",
+        "priority": "{{1_TO_3_BASED_ON_PROFILE_JOB_RELEVANCE}}"
+      }
+    ],
+    "projects": [
+      {
+        "name": "{{EXACT_PROJECT_NAME_FROM_PROFILE}}",
+        "description": "{{PROJECT_DESCRIPTION_USING_ONLY_PROFILE_INFORMATION}}",
+        "priority": "{{1_TO_3_BASED_ON_PROFILE_RELEVANCE}}"
+      }
+    ],
+    "languages": ["{{ONLY_LANGUAGES_EXPLICITLY_MENTIONED_IN_PROFILE}}"],
+    "interests": ["{{ONLY_INTERESTS_EXPLICITLY_MENTIONED_IN_PROFILE}}"]
   },
   "cover_letter": {
-    "content": "{{COVER_LETTER_FROM_PROFILE_AND_JOB_DESCRIPTION}}",
-    "word_count": "{{ACTUAL_COUNT}}",
-    "keywords_included": ["{{JOB_KEYWORDS_MATCHING_PROFILE}}"],
-    "career_highlights_mentioned": "{{COUNT}}",
-    "priority": 1,
-    "evidence_source": "Profile function: {{SECTIONS_USED}}"
-  },
-  "cv_length_control": {
-    "short_cv_content": {
-      "estimated_pages": 2,
-      "priority_levels_included": [1, 2],
-      "sections_included": ["{{SECTIONS_WITH_PRIORITY_1_2_CONTENT}}"],
-      "total_bullets": "{{COUNT}}",
-      "viable_standalone": true
-    },
-    "medium_cv_content": {
-      "estimated_pages": 3,
-      "priority_levels_included": [1, 2, 3],
-      "sections_included": ["{{SECTIONS_WITH_PRIORITY_1_2_3_CONTENT}}"],
-      "total_bullets": "{{COUNT}}",
-      "viable_standalone": true
-    },
-    "long_cv_content": {
-      "estimated_pages": "{{ACTUAL_ESTIMATE}}",
-      "priority_levels_included": [1, 2, 3, 4, 5],
-      "sections_included": ["all_enabled_sections"],
-      "total_bullets": "{{COUNT}}",
-      "viable_standalone": true
-    }
-  },
-  "generation_metadata": {
-    "profile_function_accessed": true,
-    "profile_data_comprehensive": true,
-    "career_continuity_maintained": true,
-    "total_career_years": "{{YEARS_FROM_PROFILE}}",
-    "roles_included": "{{COUNT_FROM_PROFILE}}",
-    "fabrication_check": "ZERO - all content from profile function response",
-    "keyword_alignment_score": "{{CALCULATED_PERCENTAGE}}",
-    "priority_distribution": {
-      "priority_1_content": "{{PERCENTAGE}}",
-      "priority_2_content": "{{PERCENTAGE}}", 
-      "priority_3_content": "{{PERCENTAGE}}",
-      "priority_4_content": "{{PERCENTAGE}}",
-      "priority_5_content": "{{PERCENTAGE}}"
-    }
+    "content": "{{COVER_LETTER_USING_ONLY_PROFILE_DATA_AND_JOB_REQUIREMENTS_NO_FABRICATION}}"
   },
   "job_alignment": {
-    "job_title": "{{JOB_TITLE_FROM_DESCRIPTION}}",
-    "company_name": "{{COMPANY_FROM_DESCRIPTION}}",
-    "overall_match_percentage": "{{CALCULATED_SCORE}}",
-    "keyword_matches": "{{COUNT}}",
-    "keyword_substitutions": "{{COUNT}}"
+    "job_title": "{{EXACT_JOB_TITLE_FROM_DESCRIPTION}}",
+    "company_name": "{{EXACT_COMPANY_FROM_DESCRIPTION}}",
+    "match_score": "{{CALCULATED_PERCENTAGE_BASED_ONLY_ON_PROFILE_VS_JOB_NO_ASSUMPTIONS}}",
+    "keywords_matched": ["{{ONLY_KEYWORDS_FROM_JOB_THAT_EXACTLY_MATCH_PROFILE_CONTENT}}"]
   }
 }
 ```
 
-**🚨🚨🚨 VALIDATION CHECKLIST 🚨🚨🚨**
+**🚨🚨🚨 ANTI-FABRICATION CONTENT REQUIREMENTS 🚨🚨🚨**
 
-Before finalizing, verify:
-- ✓ SHORT CV (Priority 1-2): Professional, complete, viable standalone document
-- ✓ MEDIUM CV (Priority 1-3): Comprehensive, well-rounded, competitive document  
-- ✓ LONG CV (Priority 1-5): Detailed, complete career story, comprehensive document
-- ✓ ALL sections can be toggled on/off without breaking CV structure
-- ✓ Each priority level adds meaningful content from profile, not filler
-- ✓ Career continuity maintained across all CV lengths
-- ✓ All content traceable to profile function response
-- ✓ No fabrication in any priority level
-- ✓ All placeholders replaced with actual data from profile function
+**PROFESSIONAL EXPERIENCE BULLETS:**
+- **Use only profile statements** - no additions or enhancements
+- **Combine related profile information** for comprehensive descriptions
+- **Maintain exact metrics and scope** as stated in profile
+- **Use profile language and terminology** rather than industry standards
+- **Present profile information professionally** without adding unstated details
+
+**ACHIEVEMENTS SECTION:**
+- **Include only achievements explicitly mentioned** in profile function response
+- **Use exact outcomes and metrics** as stated in profile
+- **Maintain profile context and scope** without expansion
+- **Present achievements using profile language** and detail level
+
+**SKILLS ORGANISATION:**
+- **List only skills explicitly mentioned** in profile function response
+- **Use exact skill names and technologies** as stated in profile
+- **Avoid inferring related or complementary skills** not mentioned
+- **Maintain profile proficiency levels** without assumption
+
+**CONTENT VOLUME STRATEGY:**
+- **Utilise ALL available profile information** comprehensively
+- **Present profile content in detailed, professional format**
+- **Combine related profile statements** for richer descriptions
+- **Organise profile information effectively** for maximum impact
+- **Achieve target page lengths through comprehensive profile utilisation**
+
+**🚨🚨🚨 FINAL ANTI-FABRICATION VALIDATION 🚨🚨🚨**
+
+Before finalising, verify EVERY piece of content:
+- ✓ Profile function called and data extracted completely
+- ✓ ALL content traceable to specific profile function statements
+- ✓ NO fabricated information, metrics, or details included
+- ✓ NO inferred skills, responsibilities, or achievements added
+- ✓ NO enhanced metrics or scope beyond profile statements
+- ✓ Exact profile language maintained where possible
+- ✓ Professional presentation without factual additions
+- ✓ Privacy protection applied to all contact information
+- ✓ Content volume achieved through comprehensive profile utilisation only
+
+**FABRICATION RISK ASSESSMENT:**
+- **Risk Level:** ZERO - all content verified against profile function response
+- **Validation Method:** Line-by-line verification against profile statements
+- **Enhancement Level:** NONE - exact profile information only
+- **Inference Level:** ZERO - no assumptions or logical additions
 
 Return ONLY the JSON object. No explanatory text, no markdown formatting, no additional commentary.
