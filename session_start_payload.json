@@ -1,0 +1,28 @@
+{
+  "profile": {
+    "work_experience": [
+      {"company": "Allpay Ltd. (Dosh Mobile App)", "title": "Mobile App Project Manager", "start_date": "Feb 2025", "end_date": "Present", "description": ["Led the end-to-end delivery of a new payments mobile app, managing both offshore and onshore development teams and ensuring robust pilot delivery and roll-out planning.", "Orchestrated comprehensive mobile payments application delivery managing offshore and onshore development teams.", "Directed technical feasibility assessments and implementation strategies for digital wallet solutions ensuring compliance and Open banking (PSD2) alignment.", "Led the end-to-end technical review and feasibility analysis for digital wallet implementation, ensuring compliance with security standards and seamless integration with existing payment systems.", "Coordinated integration of 20+ suppliers, including fraud detection and open banking, embedding technology change across the organisation.", "Coordinated integration of 20+ suppliers including fraud detection and open banking capabilities.", "Developed and implemented internal integration standards and APIs, supporting governance and reporting requirements.", "Worked within ITIL Service Management framework, prioritising backlog with business product owners and aligning multi-disciplinary teams for successful project outcomes.", "Engaged stakeholders at all levels to expedite delivery, ensuring alignment and effective communication throughout the project lifecycle."]},
+      {"company": "Transport for London (TfL)", "title": "Digital Channels & Payments Delivery Lead", "start_date": "Jun 2023", "end_date": "Feb 2025", "description": ["Led the development and implementation of integration standards for a road user charging platform on Azure Stack, utilizing Azure Integration Services (AIS) to connect apps, data, and services across cloud and on-premises environments.", "Managed end-to-end development of integration standards for road user charging platform on Azure Stack.", "Facilitated cross-functional teams and third-party vendors delivering digital wallet functionality.", "Coordinated cross-functional teams and third-party vendors to deliver digital wallet functionality, enabling in-app payments and enhancing customer convenience during the booking journey.", "Published interface specifications for debt recovery agencies ensuring seamless data exchange.", "Published an interface specification for third-party debt recovery agencies to ensure seamless data exchange and compliance.", "Developed and deployed a single sign-on platform that integrated Oyster and TfL systems, enhancing user experience and security.", "Introduced direct debit capability and integrated a payments platform with the road user charging system, ensuring robust and secure transaction processing.", "Managed and coordinated teams responsible for the development, testing, and deployment of payment and digital channel solutions, leveraging AIS to streamline integration processes.", "Ensured all integrations and developments adhered to relevant data integration standards and protocols to maintain data interoperability, compatibility, and quality."]}
+    ],
+    "education": [
+      {"institution": "Manchester Metropolitan University", "degree": "BEng (Hons)", "field": "Electronic and Electrical Engineering", "start_date": "1993", "end_date": "1997"},
+      {"institution": "Test University", "degree": "BSc Computer Science", "field": "Computer Science", "start_date": "2018-09-01", "end_date": "2021-06-30", "description": "Test education"}
+    ],
+    "skills": [
+      {"skill": "Product ownership"},
+      {"skill": "Digital products"},
+      {"skill": "Process improvement"},
+      {"skill": "Release management"},
+      {"skill": "API development"},
+      {"skill": "Python"}
+    ],
+    "projects": [
+      {"name": "Dosh Mobile App", "description": ["Orchestrated comprehensive mobile payments application delivery managing offshore and onshore development teams.", "Directed technical feasibility assessments and implementation strategies for digital wallet solutions ensuring compliance and Open banking (PSD2) alignment.", "Coordinated integration of 20+ suppliers including fraud detection and open banking capabilities."]},
+      {"name": "My Project", "description": "Test project"}
+    ],
+    "certifications": [
+      {"name": "My Certification", "issuer": "Test Issuer", "year": "2024"}
+    ]
+  },
+  "user_id": "ccd431f3-afa5-4a9d-9b64-d8a0aa5a78cf"
+}

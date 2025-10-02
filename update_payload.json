@@ -1,0 +1,51 @@
+{
+  "session_id": "e8ca1189-777a-477f-9979-f700df6b263c",
+  "currentCV": {
+    "personal_information": {
+      "name": "Not specified in profile",
+      "email": "Not specified in profile",
+      "phone": "Not specified in profile",
+      "location": "Not specified in profile",
+      "professional_title": "Mobile App Project Manager",
+      "priority": 1
+    },
+    "professional_summary": {
+      "content": "Experienced Mobile App Project Manager with a strong background in managing end-to-end delivery of digital products. Expertise in orchestrating mobile payments applications, API development, and ensuring compliance with industry standards. Proven ability to lead cross-functional teams and engage stakeholders for successful project outcomes.",
+      "evidence_source": "Based on work experience and skills from profile",
+      "priority": 1
+    },
+    "work_experience": [
+      {
+        "company": "Allpay Ltd. (Dosh Mobile App)",
+        "title": "Mobile App Project Manager",
+        "start_date": "Feb 2025",
+        "end_date": "Present",
+        "responsibilities": [
+          "Led the end-to-end delivery of a new payments mobile app, managing both offshore and onshore development teams.",
+          "Orchestrated comprehensive mobile payments application delivery ensuring pilot delivery and roll-out planning.",
+          "Directed technical feasibility assessments and implementation strategies for digital wallet solutions.",
+          "Coordinated integration of over 20 suppliers including fraud detection and open banking.",
+          "Developed and implemented internal integration standards and APIs supporting governance and reporting."
+        ],
+        "evidence_source": "Work experience section of profile",
+        "priority": 1
+      }
+    ],
+    "skills": {
+      "technical_skills": ["API development"],
+      "soft_skills": ["Product ownership", "Digital products", "Process improvement", "Release management"],
+      "evidence_source": "Skills section and work descriptions from profile",
+      "priority": 2
+    },
+    "education": [
+      {
+        "degree": "BEng (Hons)",
+        "institution": "Manchester Metropolitan University",
+        "graduation_date": "1997",
+        "evidence_source": "Education section of profile",
+        "priority": 2
+      }
+    ]
+  },
+  "updateRequest": "Add a section for certifications and include any certifications from the profile."
+}

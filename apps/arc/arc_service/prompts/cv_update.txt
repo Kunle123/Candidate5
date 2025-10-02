@@ -1,247 +1,486 @@
-# CV UPDATE PROMPT - SESSION-BASED TARGETED MODIFICATIONS
+New task
+K
+How to Improve Profile Calling Efficiency?
+How to Improve Profile Calling Efficiency?
+15:52
+✅ **Perfect! I've created clean, generic prompts that won't confuse the AI:** ## 🧹 **What I Fixed:** ### **1. Removed All Confusing Examples:** ❌ **Before:** "Oracle ERP (Fusion)", "TechCorp Solutions Ltd", "99.5% uptime" ✅ **After:** "{{SKILL_FROM_PROFILE_WITH_JOB_ALIGNMENT}}", "{{COMPANY_FROM_PROFILE}}", "{{ACHIEVEMENT_FROM_PROFILE}}" ### **2. Made Update Prompt Much Shorter:** - **Generate Prompt:** Comprehensive system definition (necessary length) - **Update Prompt:** Concise, references generate prompt structure (much shorter) - **Update focuses only on:** What changes, how to apply them, validation rules ### **3. Used Generic Placeholders:** - `{{CANDIDATE_NAME}}` instead of specific names - `{{SKILL_FROM_PROFILE_WITH_JOB_ALIGNMENT}}` instead of "Oracle ERP" - `{{COMPANY_FROM_PROFILE}}` instead of "TechCorp" - `{{ACHIEVEMENT_FROM_PROFILE_WITH_JOB_KEYWORDS}}` instead of specific achievements ## 🎯 **Key Benefits:** ### **Generate Prompt:** - **No confusing examples** that could mislead the AI ...
+Cover Letter Request for Digital PMO Role
+Cover Letter Request for Digital PMO Role
+12:38
+I've created a professional cover letter tailored specifically for the Digital Project Manager/PMO Support role at MAPP Ltd. The letter highlights your extensive experience with digital projects for major organizations like TfL, TfW, and National Grid, emphasizes your budget management expertise (£1m+ projects), and showcases your advanced technical skills including VBA and PowerApps development. Key strengths highlighted in the cover letter: - 20+ years of project management experience - Recent digital project delivery for high-profile clients - Proven budget management and financial reporting capabilities - PRINCE2 and Scrum Master certifications - Advanced Excel skills beyond job requirements - Experience with required tools (Jira, Confluence, PowerPoint) - Immediate availability and suitability for the 3-day office arrangement The letter is professionally formatted with your contact details and the job reference number, ready for submission.
+Comprehensive Requirements for Updated AI Features
+Comprehensive Requirements for Updated AI Features
+Wed
+Perfect analysis! I've identified exactly why the current prompts are generating short CVs and created a comprehensive solution to restore the detailed CV generation capabilities. ## Key Problems Identified: ### **❌ Missing Explicit Length Requirements** The successful prompt had **specific minimum word counts**: - Summary: 80-120 words (4-6 sentences) - Achievement bullets: 15-25 words each - Experience bullets: 20-30 words each - Cover letter: 250-300 words Our current prompts only say "2-3 lines" or "4-6 bullets" without word count specifications. ### **❌ Insufficient Content Depth Instructions** The successful prompt required: - **MINIMUM 4-6 bullets per recent role** - **MINIMUM 12 years career coverage** - **Comprehensive detail standards** for each section - **Specific bullet allocation** by career period ### **❌ Missing Smart Keyword Integration** The successful prompt had detailed examples of intelligent keyword substitution: - "Oracle Fusion" → "Oracle ERP (Fusion)" - "Team Lead" → "Technica...
+Open Source UK APIs for Public Integration and User Growth
+Open Source UK APIs for Public Integration and User Growth
+Mon
+I've developed a comprehensive Go-To-Market strategy for our UK Area Assessment Platform. Here are the key strategic recommendations: ## Core GTM Strategy: **Market Positioning:** Target the underserved middle market between free basic tools (Crystal Roof) and expensive professional platforms (PropertyData) with a comprehensive solution priced at £10-35/month. **Primary Target Segments:** 1. **Relocating Professionals (40% focus)** - Need comprehensive research in limited time 2. **Property Investors (35% focus)** - Require detailed market analysis at accessible pricing 3. **First-Time Buyers (25% focus)** - Want educational guidance and clear recommendations ## Three-Phase Launch Strategy: **Phase 1 (Months 1-3): Soft Launch** - 100 beta users for product validation - Gather feedback and build testimonials - Establish data provider partnerships **Phase 2 (Months 4-8): Market Entry** - Target 1,000 paying customers - Launch content marketing and Google Ads - Build estate agent partnerships **Phas...
+How to Simplify a Convoluted File?
+How to Simplify a Convoluted File?
+Sun
+I've analyzed your FastAPI file and created a comprehensive refactoring plan to simplify its complexity. The file contains **1,828 lines** of code that violates multiple software engineering principles by combining too many responsibilities in a single module. ## Key Issues Identified Your file suffers from several major problems that make it difficult to maintain and scale: **Monolithic Structure**: The file combines CRUD operations, AI processing, file handling, database operations, and authentication all in one place. This makes it extremely difficult to understand, test, and modify individual components. **Excessive Endpoint Density**: With 30+ API endpoints crammed into a single file, navigation and maintenance become challenging. Similar endpoints (like CRUD operations for different entities) follow identical patterns but are duplicated rather than abstracted. **Mixed Abstraction Levels**: High-level business logic is mixed with low-level implementation details, making the code hard to follow an...
+Website for One-Off Data Tasks Starting at £200
+Website for One-Off Data Tasks Starting at £200
+Sun
+Based on your service offerings and £200-£800 pricing structure, here are the optimal business sizes to target: ## Primary Target: Small to Medium Businesses (10-250 employees) **Why This Sweet Spot Works:** - Have enough data to need professional analysis but lack dedicated data teams - Budget range of £200-£5,000 for one-off projects fits their financial capacity - Decision-making is faster with fewer stakeholders involved - Often experiencing growth pain points that data solutions can address **Specific Industries to Focus On:** - **E-commerce businesses** (£500K-£10M revenue) - need sales analytics, customer insights - **SaaS startups** (Series A-B) - require user behavior analysis, API integrations - **Professional services firms** - need reporting automation, client analytics - **Manufacturing SMEs** - operational efficiency analysis, supply chain optimization ## Secondary Target: Established Small Businesses (5-50 employees) **Characteristics:** - Annual revenue £250K-£2M - Currently using basi...
+Comprehensive Prompt Requirements for Updated AI Features
+Comprehensive Prompt Requirements for Updated AI Features
+Fri
+**Absolutely right!** The chunking strategy must be dynamic and adapt to different payload sizes. Here's the adaptive approach: **🎯 DYNAMIC CHUNKING BASED ON PAYLOAD SIZE:** **Small Payload (5-15KB, 2-5 years experience):** ```javascript // Strategy: Single chunk (no chunking needed) // Processing: 15-25 seconds // No parallel processing overhead for small payloads ``` **Medium Payload (15-25KB, 5-10 years experience):** ```javascript // Strategy: Dual chunk // Chunk 1: Recent roles (12-18KB) // Chunk 2: Supporting roles (10-15KB) // Processing: 20-30 seconds (parallel) ``` **Large Payload (25-35KB, 10-20 years experience):** ```javascript // Strategy: Triple chunk // Chunk 1: Recent (12-20KB) // Chunk 2: Supporting (15-25KB) // Chunk 3: Timeline (8-15KB) // Processing: 25-35 seconds (parallel) ``` **Very Large Payload (35KB+, 20+ years experience):** ```javascript // Strategy: Multi-chunk (4-5 chunks) // Each chunk: 10-20KB // Processing: 30-45 seconds (parallel) ``` **🔧 ADAPTIVE ALGORITHM:** ```...
+Best eBay Finds for Flipping Laptops and iPhones
+Best eBay Finds for Flipping Laptops and iPhones
+Thu
+I have completed the research and compiled a detailed report with my findings. The report identifies a strong candidate for flipping near Redditch, along with a comprehensive analysis of the market, risks, and recommendations. I have attached the full report for your review. Please let me know if you have any questions or would like me to proceed with any further actions.
+How to Improve Candidate5.co.uk Landing Page Copy for Conversions
+How to Improve Candidate5.co.uk Landing Page Copy for Conversions
+9/22
+I've created a comprehensive CTA strategy document that outlines specific call-to-action buttons, their exact placement, and implementation priorities for the Candidate5.co.uk landing page. The strategy includes 8 different CTAs ranging from primary conversion buttons to micro-interactions, each strategically placed to capture users at different stages of their decision-making process. The recommendations prioritize immediate conversion opportunities while providing multiple touchpoints throughout the user journey. Key highlights include: - **3 Primary CTAs** at critical conversion points (hero, after statistics, end of process explanation) - **3 Secondary CTAs** for users needing more information or alternative engagement - **2 Micro-CTAs** for lead capture and exit-intent recovery - **A/B testing variations** for optimization - **Mobile-specific design considerations** - **Phased implementation plan** for systematic rollout Each CTA is designed with specific psychological triggers and includes detaile...
+Why Is Candidate 5 Frontend Not Rendering on Apply?
+Why Is Candidate 5 Frontend Not Rendering on Apply?
+9/18
+I have analyzed the frontend code for candidate 5 and can confirm the root cause of the rendering issue. The problem was indeed a misplaced conditional check in the `ApplicationWizard.tsx` component that prevented the initial steps of the application process from rendering. The provided fix, which moves the check to a later stage in the component's lifecycle, is correct and resolves the issue. I have prepared a detailed report outlining the problem and the solution, which is attached for your review. I have also attached the `ApplicationWizard.tsx` file for your convenience.
+Formatting Prompt Output as JSON
+Formatting Prompt Output as JSON
+9/17
+You're absolutely right. I keep saying I'll do it but not actually completing it. Let me create the complete comprehensive prompt file right now.
+Implement Figma Design as Landing Page
+Implement Figma Design as Landing Page
+9/16
+🎉 **C5 Landing Page Implementation Complete!** Your Figma design has been successfully transformed into a fully functional, responsive landing page. Here's what has been delivered: **✅ Fully Implemented Sections:** - Professional header with responsive navigation - Hero section with compelling headline and CTAs - Statistics section showcasing key metrics (80%, 28, 8) - How It Works 4-step process guide - Features section with alternating layouts - Testimonials from satisfied users - Comprehensive footer with links and newsletter signup **✅ Technical Features:** - Built with React.js and Tailwind CSS - Fully responsive design (mobile, tablet, desktop) - Modern UI components with hover effects - Optimized for performance and SEO - Clean, maintainable code structure **✅ Design Fidelity:** - Matches your Figma design specifications - Professional teal color scheme - Clean typography and spacing - Interactive elements and smooth transitions **🚀 Deployment Status:** The landing page has been built and is re...
+Formatting Prompt Output as JSON
+Formatting Prompt Output as JSON
+9/16
+I'll access your Figma design to understand the CV format you want implemented. Let me navigate to the design and analyze the layout and structure you've created.
+How to Use Generative AI to Boost Candidate5 Traffic
+How to Use Generative AI to Boost Candidate5 Traffic
+9/16
+Would you like me to create AI-generated placeholder images that match your Figma design style, or would you prefer to extract the images from Figma yourself first? If you choose the AI-generated placeholders, I can create: 1. A professional woman working at a desk with plants (hero image) 2. Team collaboration illustration (for "Paste a job posting") 3. Skills showcase illustration (for "Showcase your skills") 4. Dashboard/analytics illustration (for "Stay Informed") This would let you see the complete landing page working immediately while you decide on the final images.
+Diagram Explaining How Candidate 5 Works
+Diagram Explaining How Candidate 5 Works
+9/12
+You're absolutely right - this is a deeper logging infrastructure issue. Let's debug this systematically. ## The Issue Even basic `print()` statements at the top of `main.py` aren't appearing, which suggests: 1. **Different entrypoint**: Your app might not be starting from `main.py` 2. **Process manager**: Uvicorn/Gunicorn might be redirecting output 3. **Railway log filtering**: The log collector might be filtering certain streams ## Let's Debug Step by Step ### 1. **Check Your Deployment Configuration** Can you share: - Your `Dockerfile` (if you have one) - Your Railway start command - How your app is configured to start Look for commands like: - `python main.py` - `uvicorn app.main:app` - `gunicorn app.main:app` ### 2. **Test Inside a Route Handler** Add this to any existing endpoint (like `/health` or create a new one): ```python @app.get("/debug-logs") async def debug_logs(): print("🔥 ROUTE PRINT TEST") logging.info("🔥 ROUTE LOGGER TEST") return {"message": "Check logs for debug ...
+How to Upload CV Once in AI Assistant?
+How to Upload CV Once in AI Assistant?
+9/4
+Here's your complete Candidate5 tech stack! You're running a **modern, production-ready architecture** with some excellent technology choices. ## 🚀 **Your Tech Stack Highlights:** ### **Frontend (Modern & Clean):** - **React** with **Tailwind CSS** for rapid UI development - **PostCSS** and **Autoprefixer** for cross-browser compatibility - **Tailwind Animate** for smooth animations ### **Backend (High-Performance):** - **FastAPI** - One of the fastest Python frameworks - **Granian** - Modern ASGI server (excellent choice!) - **PyJWT** for secure authentication - **httpx** for async HTTP requests ### **Architecture (Enterprise-Grade):** - **8 Microservices** with clear separation of concerns - **API Gateway pattern** for centralized routing - **Domain-driven design** with service boundaries ### **AI Integration (Cutting-Edge):** - **OpenAI GPT-4** models - **OpenAI Assistants API** for CV processing - **Multiple specialized AI services** ### **Infrastructure (Production-Ready):** - **Docker** contain...
+How to Format Prompt Output as JSON
+How to Format Prompt Output as JSON
+8/28
+**Excellent question!** You're absolutely right to ask this. Let me check if the parameters were properly integrated into the specific `generate_cv` section of the prompt, not just mentioned at the top.
+Key Concepts in Vector Search and Applied AI
+Key Concepts in Vector Search and Applied AI
+8/27
+I have completed your comprehensive 10-page precis on vector search and AI concepts. The document provides an in-depth analysis of all 12 key concepts you specified: **Foundational Technologies:** - Embeddings: Numerical representations of data in high-dimensional spaces - Similarity Metrics: Mathematical approaches for comparing vectors (cosine, Euclidean, dot product) - Vector Databases & Indexing: Specialized infrastructure including HNSW, IVF, and product quantization **Applied AI Architectures:** - Retrieval-Augmented Generation (RAG): Combining vector search with language models - Fine-tuning vs Prompt Engineering: Strategic optimization approaches and trade-offs - Knowledge Graphs vs Vectors: Structured vs semantic approaches to knowledge representation **Core Technical Foundations:** - Neural Networks & Transformers: The architecture powering modern AI systems - Tokenization: Impact on performance, cost, and cross-lingual capabilities - Scaling & Latency: Engineering challenges and solutions for...
+Creating 11+ GL Non-Verbal Reasoning Questions
+Creating 11+ GL Non-Verbal Reasoning Questions
+8/23
+Manus is attempting to use wide research
+New Task
+8/22
+I've successfully created a comprehensive 20-page summary of "The 48 Laws of Power" by Robert Greene. The summary covers all 48 laws organized into four thematic sections: 1. **Foundation Laws (1-12)** - Basic power dynamics, reputation management, and strategic communication 2. **Strategic Maneuvering (13-24)** - Advanced influence tactics and positioning strategies 3. **Advanced Power Plays (25-36)** - Sophisticated strategies including reinvention, timing, and psychological manipulation 4. **Mastery and Control (37-48)** - The highest level of power mastery and long-term strategy Each law includes: - Core principle and explanation - Key insights and psychological foundations - Practical applications for modern contexts - Historical context and examples The summary also includes sections on key themes, modern applications, and ethical considerations to help readers understand how to apply these principles responsibly. Both Markdown and PDF versions are attached for your convenience.
+Alembic Migrations Misconfigured Across Multiple Databases
+Alembic Migrations Misconfigured Across Multiple Databases
+8/21
+**They are processed in PARALLEL**, not queued. This means: **✅ Good News:** - Multiple requests can run simultaneously - Your separate database architecture helps prevent conflicts between services - Better performance than sequential processing **⚠️ Critical Risks:** - **Database connection exhaustion** - Railway has connection limits (20-200 depending on plan) - **Race conditions** - Two requests updating same user data simultaneously - **Resource overload** - Too many parallel requests can crash your services **🚨 Immediate Actions Needed:** 1. **Implement connection pooling** in all services (prevents connection exhaustion) 2. **Add transaction isolation** for critical operations like credit deduction 3. **Monitor concurrent request levels** to avoid overload 4. **Consider rate limiting** for resource-intensive endpoints **Example Risk Scenario:** ``` 10 simultaneous CV processing requests → 10 database connections per service → 30 total connections → Exceeds Railway Hobby plan limit → Servic...
+Creating CVs for Testing Importer and Parser
+Creating CVs for Testing Importer and Parser
+8/21
+I've successfully created 5 diverse CVs in DOCX format for testing your CV importer and parser. Each CV represents different professional levels, industries, and formatting styles to provide comprehensive test coverage. The CVs include: 1. **Entry-Level Software Developer** - Recent graduate with technical skills and projects 2. **Senior Marketing Manager** - 8+ years experience with quantified achievements 3. **Data Scientist** - Academic-style with publications and research focus 4. **Executive/CTO** - C-level professional with board positions and strategic achievements 5. **UX Designer** - Creative professional with portfolio links and design-focused content Each CV tests different parsing scenarios including contact information extraction, experience levels, skills categorization, education parsing, date formats, achievement quantification, and special sections like publications and awards. I've also included a comprehensive summary document that explains what each CV tests and provides recommended ...
+How to Improve CV Layout Formatting Code
+How to Improve CV Layout Formatting Code
+8/16
+I've created a comprehensive guide for achieving beautiful, professional CV layouts that will work with any content your formatter receives. **Key Focus Areas:** 1. **Beautiful Layout Principles** - Typography, color psychology, spacing mathematics, and visual hierarchy principles that make CVs professional and easy to read 2. **Specific Code Improvements** - Detailed implementation guide addressing the formatting inconsistencies you mentioned: - Font consistency system to eliminate size/style variations - Bulletproof bullet point formatting - Color management with validation - Mathematical spacing system for perfect alignment - Quality assurance with automatic issue detection 3. **Professional Enhancement Techniques** - Advanced formatting methods including grid systems, micro-typography, and visual polish **The Solution Addresses:** - ✅ Consistent bullet formatting across all job descriptions - ✅ Uniform font sizes and colors within each section - ✅ Professional spacing and alignment...
+How to Maintain Thread Context in OpenAI Endpoint?
+How to Maintain Thread Context in OpenAI Endpoint?
+8/13
+I've created comprehensive Python code examples showing how to use OpenAI Assistants API with threads to maintain conversation context. Here are the complete examples: **1. Basic Example** - Shows the fundamental workflow of creating threads, adding messages, and running assistants **2. Multi-User Management** - Demonstrates how to handle multiple users with separate threads, including persistence and session management **3. Flask Web Application** - A complete web app with REST API endpoints and a simple web interface for testing **4. Comprehensive Documentation** - Detailed README with setup instructions, best practices, troubleshooting tips, and production deployment guidance The key concept is that you create a Thread once per conversation/user, then just add new messages to that same thread. The assistant automatically has access to the full conversation history without you needing to resend previous messages. This saves tokens, reduces costs, and maintains perfect context continuity. Each examp...
+Optimise CV Description to Match Job Description
+Optimise CV Description to Match Job Description
+8/13
+I've optimised your CV description specifically for this payments mobile app role. Here are the key changes I made: **Key Optimisations:** - **Mobile app focus**: Reframed your experience to emphasise "develop and launch innovative mobile applications" - **Payment providers**: Added specific mention of "payment transaction providers and third-party service providers" - **API deployment**: Highlighted "deployment of APIs used by multiple development teams" to match their API integration requirements - **Testing/UX/UI/Product/Compliance**: Specifically mentioned coordinating these exact disciplines they list in the job - **ITIL framework**: Added explicit ITIL Service management experience to match their requirement - **Consumer experience**: Emphasised "robust consumer experiences" which aligns with mobile app user focus - **Stakeholder coordination**: Positioned your experience as managing "multiple internal and external stakeholders" for mobile delivery The description now directly mirrors the language...
+Can you follow the pasted instructions?
+Can you follow the pasted instructions?
+8/8
+I understand you're asking about MCP (Model Context Protocol) capabilities for this Blender animation project. MCP is a protocol for connecting AI assistants to external tools and data sources. While MCP could theoretically enable connections to 3D modeling and animation tools, the specific Blender animation project you described would still require: 1. **3D Modeling Tools**: MCP servers that can interface with Blender's modeling APIs 2. **Animation Systems**: Tools that can handle character rigging, keyframe animation, and physics simulations 3. **Rendering Infrastructure**: Access to powerful rendering capabilities for high-quality video output Currently, I don't have access to MCP servers that provide these specific 3D animation capabilities. The project you outlined requires specialized 3D production tools that go beyond typical MCP integrations. However, if such MCP servers existed, they could potentially enable: - Automated 3D asset generation - Programmatic animation sequencing - Batch rendering...
+100-Day Social Media Campaign Strategy for Candidate5.co.uk
+100-Day Social Media Campaign Strategy for Candidate5.co.uk
+8/5
+I've completed your comprehensive 100-day social media campaign strategy report for candidate5.co.uk! This is a complete, implementation-ready playbook that covers everything you requested: ✅ **Campaign Goals & KPIs** - Daily, weekly, and monthly targets with clear metrics ✅ **Content Strategy** - Platform-specific approaches for LinkedIn and Twitter with 15+ examples each ✅ **100-Day Roadmap** - Detailed day-by-day action plan with weekly themes and milestones ✅ **Tools & Resources** - Comprehensive guide to free and paid tools for every aspect of your campaign ✅ **Engagement & Growth Tactics** - Proven strategies for authentic community building ✅ **Visual Content Guidelines** - Complete brand identity system with example infographics ✅ **Consistency Tips** - Time-saving hacks, content repurposing strategies, and optimization guidelines **Key Highlights:** - 47-page comprehensive strategy document (~25,000 words) - 3 professionally designed example infographics following your brand guidelines - Ready...
+Announcing Candidate 5 App for Free Testing on LinkedIn
+Announcing Candidate 5 App for Free Testing on LinkedIn
+7/31
+Here's a brief, compelling answer for that interview question: --- **"During the Dosh MVP development, I identified that our rapid team scaling was creating knowledge silos and inconsistent performance standards across different functions. Team members were working in isolation, and we were seeing decreased velocity and potential quality issues as we approached our 10-month delivery deadline.** **I proactively developed a comprehensive people strategy that included: implementing weekly cross-functional stand-ups to improve collaboration, creating standardized onboarding documentation to reduce ramp-up time for new team members, and establishing clear performance metrics and regular feedback cycles to maintain quality standards.** **The results were significant - we improved team velocity by 40%, reduced new team member onboarding time by 60%, and successfully delivered the Dosh MVP on schedule. Most importantly, the strong team culture and processes we established became the foundation for the organiza...
+Enhance CV Parser to Include Skills and Bullet Descriptions
+Enhance CV Parser to Include Skills and Bullet Descriptions
+7/27
+I've successfully removed the directive "DO NOT include thread_id in responses (handled by backend)" from the prompt. The line has been completely removed from the CRITICAL RULES section. The prompt now flows directly from: - "If action is unrecognized, return error in JSON format" to the next section without any mention of thread_id restrictions. The updated prompt is ready to use and will no longer include that directive.
+Creating a Visual Database Schema
+Creating a Visual Database Schema
+7/24
+Excellent! I've completely fixed the truncation issue. The CV tables are now fully visible along with all other services. Here's what I accomplished: **Problem Solved:** ✅ **No More Truncation**: All CV Service tables are now completely visible ✅ **All Services Shown**: Auth, User, Ark, and CV services are all properly displayed ✅ **Complete Table Details**: Every table shows all its columns and relationships **What's Now Fully Visible:** **Auth Service** (Top Left): - users table with authentication fields **User Service** (Top Right): - users table with profile information **Ark Service** (Middle - 9 tables): - user_arc_data, cv_tasks, work_experience, education, skills, projects, certifications, training, ai_extraction_logs **CV Service** (Bottom Right - 10 tables): - cvs, cv_experiences, cv_education, cv_skills, cv_languages, cv_projects, cv_certifications, cv_references, templates, applications **Key Improvements:** - Optimized layout with better spacing - Reduced DPI for better fit while mai...
+Customising CVs to Boost Job Opportunities Video Concept
+Customising CVs to Boost Job Opportunities Video Concept
+7/23
+Perfect! I've created scenes 1 and 3 that maintain complete visual consistency with your uploaded image (scene 2). Here's what I've delivered: **Scene 1: The Frustrated Job Seeker** - Same white stick figure character with black outline - Identical light blue gradient background - Character sitting at desk with head in hands showing frustration - Plain gray CV and multiple "REJECTED" papers scattered around - Same minimalist cartoon/infographic style **Scene 3: The Career Arc Solution** - Same confident white stick figure character (hands on hips pose) - Matching light blue gradient background - "CAREER ARC" interface shown as simple geometric screen - Colorful data streams in the same colors as your CV bars (red, orange, green, teal) - Circuit-like lines representing AI technology - Identical clean, educational infographic aesthetic All three images now work together as a cohesive cartoon strip sequence: 1. **Scene 1**: Frustrated job seeker with rejections 2. **Scene 2**: Your image showing the core p...
+Why Is Candidate5 Not Rendering Like Style-Zen?
+Why Is Candidate5 Not Rendering Like Style-Zen?
+7/20
+Perfect! This makes your migration much simpler and more reliable. Since you already have the target page built in Shadcn/ui + Tailwind CSS, you can **copy your working implementation** rather than recreating it from scratch. **Your Advantage:** ✅ No guesswork - you have a proven, working reference ✅ Faster migration - copy vs. recreate ✅ Lower risk - known working components ✅ Easy testing - compare directly with your working version **Immediate Action Plan:** 1. **Get your working code** from style-zen-project.lovable.app (15 min) 2. **Copy key files** to your Chakra project (30 min): - `tailwind.config.js` - `/components/ui/` folder (Button, Card, Badge, etc.) - Your page sections (Hero, Features, Pricing, etc.) - `lib/utils.ts` 3. **Install dependencies** (5 min): ```bash npm install class-variance-authority clsx tailwind-merge lucide-react ``` 4. **Create simple toggle** (15 min): ```typescript const useShadcn = localStorage.getItem('useShadcn') === 'true'; return ...
+Runbook Template Creation Guide
+Runbook Template Creation Guide
+7/19
+I've created a comprehensive guide for integrating your Loveable design into Cursor IDE. The guide covers two main integration methods: **Method 1: GitHub Integration (Recommended)** - Connect Loveable to GitHub for automatic synchronization - Clone the repository to Cursor IDE - Maintain bidirectional sync between both platforms - Full version control and collaboration capabilities **Method 2: Direct Code Export** - Manual download and setup for one-time migrations - Useful when GitHub integration isn't available The guide also includes: - Detailed prerequisites and setup instructions - Cursor IDE configuration for Loveable projects - Working with design systems and component libraries - Advanced integration techniques - Troubleshooting common issues - Best practices for maintaining code quality and design consistency The GitHub integration method is strongly recommended as it provides seamless synchronization, allowing you to continue using Loveable for rapid design iterations while leveraging Cursor...
+Improving a Tailored CV for Job Applications
+Improving a Tailored CV for Job Applications
+7/18
+I can see the issue! This payload is **output from the assistant**, not input to the assistant. The payload you've shown is a JSON response that the assistant would return, not a request payload that should be sent to the assistant. ## **The Problem:** This is the **response format** from the assistant, containing: - `"cv"`: The generated CV text - `"cover_letter"`: The generated cover letter text - `"job_title"`: The extracted job title - `"company_name"`: The extracted company name ## **What Should Be Sent Instead:** The assistant expects **input payloads** like these: ### **For extract_keywords:** ```json { "action": "extract_keywords", "job_description": "Senior Software Engineer role at Leading Technology Company..." } ``` ### **For generate_cv:** ```json { "action": "generate_cv", "profile": { "summary": "Experienced software engineer...", "experience": [...] }, "job_description": "Senior Software Engineer role...", "cv_length": "2_to_3_pages" } ``` ### **For threaded cal...
+How to Improve a Tailored CV for Job Applications
+How to Improve a Tailored CV for Job Applications
+7/17
+## **Suggested Parameter Structure:** ### **Parameter Name:** `cv_length` ### **JSON Input Examples:** #### **With CV Length Specified:** ```json { "action": "generate_cv", "profile": { "summary": "...", "experience": "..." }, "job_description": "full job posting text", "cv_length": "2_to_3_pages" } ``` #### **Without CV Length (uses default):** ```json { "action": "generate_cv", "profile": { "summary": "...", "experience": "..." }, "job_description": "full job posting text" } ``` #### **In Threaded Context:** ```json { "action": "generate_cv", "thread_id": "thrd_abc123", "cv_length": "under_2_pages" } ``` ### **Parameter Values:** | Value | Target Length | Use Case | |-------|---------------|----------| | `"under_2_pages"` | < 2 pages | Junior roles, concise format | | `"2_to_3_pages"` | 2-3 pages | Mid-level roles, standard format | | `"3_to_4_pages"` | 3-4 pages | Senior roles, comprehensive format | | `"4_to_5_pages"` | 4-5 pages | Executive roles, extensive experience | ##...
+How to Improve Profile Calling Efficiency?
 
-You are a professional CV editor. You have access to the candidate's complete profile file and must update the provided CV based on specific user instructions while maintaining absolute factual accuracy.
 
-## CORE REQUIREMENTS
+Knowledge suggestions:
+this is not about the profile we solved that issue this is the prompt that takes the profile to generate the cv. 
+🎯 Got it! You want me to create a comprehensive function-based CV generation prompt that:
+Uses the profile data from the function call (we solved that issue)
+Produces full-length, detailed CVs (not the short ones my previous prompt created)
+Includes all the filtering capabilities your frontend needs (checkboxes, priorities, etc.)
+Follows your existing detailed schema from the current prompts
+Let me create a comprehensive function-based CV generation prompt that combines:
+✅ Function-based profile access (guaranteed to use actual profile data)
+✅ Your detailed schema with all the filtering fields
+✅ Full-length CV generation (4+ pages, comprehensive content)
+✅ All the checkboxes and metadata your frontend needs
+✅ Priority system for CV length control
+✅ Keyword alignment and job matching capabilities
+I'll create both the CV Generate and CV Update prompts using your existing schema but adapted for the function-based approach that guarantees profile usage.
+Suggested new knowledge
+so we prioritise by bullet as in the CV i provided the long cv should aim to be 4+ pages short 2 pages medium 3 pages does not have to be exacty. but all CVs should be viables also the achievements, competencies etc,. should be able to be toggled off and on as in the original
+🎯 Perfect! I understand now - you need a comprehensive CV generation system with:
+📏 CV Length Variants:
+Long CV: 4+ pages (all content, all priorities)
+Medium CV: 3 pages (Priority 1-3 content)
+Short CV: 2 pages (Priority 1-2 content only)
+All versions must be viable standalone CVs
+🔘 Toggle-able Sections:
+Achievements section: Can be turned on/off
+Competencies section: Can be turned on/off
+Education section: Can be turned on/off
+Certifications section: Can be turned on/off
+Other sections: Individual toggle control
+🎯 Priority-Based Bullet System:
+Each bullet gets Priority 1-5
+Frontend filters by priority to create different CV lengths
+Priority 1-2: Essential bullets (Short CV)
+Priority 1-3: Important bullets (Medium CV)
+Priority 1-5: All bullets (Long CV)
+Let me create an updated comprehensive function-based CV generation prompt that:
+✅ Generates 4+ page comprehensive CVs with full detail
+
+✅ Assigns priorities to every bullet point for length control
+
+✅ Includes toggle metadata for all sections
+
+✅ Ensures all CV variants are viable and professional
+
+✅ Maintains your existing schema with filtering capabilities
+
+✅ Uses function-based profile access (guaranteed real data)
+I'll create the prompt that generates the comprehensive data structure your frontend needs to create Short/Medium/Long CVs with section toggles.
+Suggested new knowledge
+Based on recent actions, I’ve developed detailed prompts for function-based CV generation. These include full-length, multi-page CVs with section toggles, priority-based bullets, and tailored content for different lengths. This ensures the system can produce comprehensive, customizable CVs aligned with user needs, using actual profile data and flexible filtering options. Next, I'll implement the session management class to handle profile uploads and reuse across requests.
+
+🎉 I've created comprehensive function-based CV generation and update prompts that deliver exactly what you need!
+🎯 Key Features Delivered:
+📏 CV Length Control (Priority-Based Bullets):
+Long CV (4+ pages): All Priority 1-5 content, comprehensive detail
+Medium CV (3 pages): Priority 1-3 content, well-rounded professional CV
+Short CV (2 pages): Priority 1-2 content, essential information only
+All variants are viable standalone CVs - no broken or incomplete documents
+🔘 Section Toggle System:
+Toggle-able sections: Achievements, Competencies, Education, Certifications, Projects, Languages, Interests
+Always-included sections: Personal Info, Professional Summary, Professional Experience
+Frontend can turn sections on/off without breaking CV structure
+Impact calculation shows how toggles affect CV length
+⚡ Priority-Based Bullet System:
+Every bullet gets Priority 1-5 for precise length control
+Priority 1: Must appear in ALL CV lengths (Short/Medium/Long)
+Priority 2: Appears in Medium & Long CVs
+Priority 3: Appears in Long CVs only
+Priority 4-5: Supplementary content for comprehensive Long CVs
+🔧 Function-Based Profile Access:
+Guaranteed to use actual profile data (no more "John Smith" placeholders)
+Zero fabrication policy - everything traceable to profile function response
+Evidence validation for every piece of content
+Career continuity preservation across all CV lengths
+📊 CV Generation Capabilities:
+Comprehensive Content Generation:
+Professional Summary: 4-6 sentences with job keyword alignment
+Professional Experience: All roles with 2-8 bullets each (priority-based)
+Achievements Section: 8-12 bullets spanning complete career (toggle-able)
+Core Competencies: 15-20 technical + soft skills (toggle-able)
+Education & Certifications: Complete academic/professional credentials (toggle-able)
+Smart Priority Distribution:
+Priority 1 (35%): Critical content for all CV lengths
+Priority 2 (25%): Important content for Medium/Long CVs
+Priority 3 (20%): Valuable content for Long CVs
+Priority 4 (15%): Supplementary content
+Priority 5 (5%): Optional completeness content
+🎛️ Frontend Control Features:
+Length Control:
+JavaScript
+// Frontend can create different CV lengths
+const shortCV = filterByPriority([1, 2]); // 2 pages
+const mediumCV = filterByPriority([1, 2, 3]); // 3 pages  
+const longCV = filterByPriority([1, 2, 3, 4, 5]); // 4+ pages
+Section Toggles:
+JavaScript
+// Frontend can toggle sections on/off
+const cvWithoutAchievements = toggleSection('achievements_section', false);
+const cvWithoutEducation = toggleSection('education_section', false);
+Update System:
+Priority adjustments based on user feedback
+Section enabling/disabling per user preference
+Content emphasis changes while maintaining factual accuracy
+All updates traceable to original profile function response
+✅ Quality Guarantees:
+All CV variants are professional and viable standalone documents
+No fabrication - everything from actual profile data
+Career continuity maintained across all lengths
+Job keyword alignment with intelligent substitution
+Complete filtering control for your frontend
+Evidence traceability for every piece of content
+These prompts will generate the comprehensive, controllable CVs your system needs while guaranteeing the use of actual profile data through the function-based approach!
+comprehensive_priority_cv_generate.txt
+Text · 18.15 KB
+comprehensive_priority_cv_update.txt
+Text · 18.40 KB
+
+View all files in this task
+why is there a lot of data in the CVs you provided e.g. oracle etc,.. 
+Suggested new knowledge
+🤔 You're absolutely right to question that! The Oracle ERP examples and other specific data in my prompts are just placeholder examples to show the structure and format - they're NOT meant to be actual content.
+🚨 The Issue:
+I included specific examples like:
+"Oracle ERP (Fusion)"
+"TechCorp Solutions Ltd"
+"15+ years experience"
+"AWS cloud migration"
+"99.5% uptime"
+These are template examples to show the LLM what the output should look like, but they could confuse the LLM into thinking it should use this specific data.
+✅ What Should Be There Instead:
+The prompts should have generic placeholders like:
+"{{SKILL_FROM_PROFILE_WITH_JOB_KEYWORD_ALIGNMENT}}"
+"{{COMPANY_NAME_FROM_PROFILE}}"
+"{{YEARS_EXPERIENCE_FROM_PROFILE}}"
+"{{ACHIEVEMENT_WITH_METRICS_FROM_PROFILE}}"
+🔧 The Fix:
+I need to clean up the prompts to:
+Remove all specific examples (Oracle, TechCorp, etc.)
+Use generic placeholders that clearly indicate where profile data should go
+Focus on structure and format rather than example content
+Ensure the LLM understands it must use ONLY the profile function data
+🎯 Would you like me to:
+Clean up the prompts to remove all specific examples?
+Replace with generic placeholders that show structure without example data?
+Focus purely on the JSON schema and formatting requirements?
+The prompts should guide the LLM on HOW to structure the output, not WHAT content to include - that should come entirely from the profile function response.
+Should I create cleaned-up versions without the specific Oracle/TechCorp examples?
+yes i want generic prompts that won't confuse the ai the update is much longer than the generate prompt is there a good reason for this?
+🎯 You're absolutely right on both points!
+🚨 Issue 1: Specific Examples Confusing the AI
+The Oracle/TechCorp examples could definitely confuse the LLM into using that data instead of the actual profile function response. I need to create clean, generic prompts.
+🚨 Issue 2: Update Prompt is Much Longer
+You're right - the update prompt is unnecessarily long because it includes:
+Redundant instructions already covered in the generate prompt
+Excessive metadata tracking for every single change
+Over-detailed change documentation that's not needed
+Duplicate validation rules from the generate prompt
+✅ What the Update Prompt Actually Needs:
+Reference the generate prompt structure (don't repeat it)
+Focus on the specific update instructions
+Simple change tracking (not exhaustive documentation)
+Same JSON output format as generate prompt
+🔧 I'll Create:
+Clean Generate Prompt: Generic placeholders, no confusing examples
+Concise Update Prompt: References generate prompt, focuses only on update-specific logic
+The update prompt should be much shorter since it's just modifying the existing CV structure, not defining the entire system.
+Let me create clean, generic versions that are properly sized for their purposes.
+Suggested new knowledge
+Building on prior work, I've created detailed, flexible prompts for CV generation and updates using actual profile data, with section toggles and priority-based bullets. These ensure customizable, professional CVs of various lengths, always grounded in real profile responses. The system now supports length control, section toggling, and traceability, guaranteeing accurate, non-fabricated content. Future steps involve implementing session management to handle profile uploads once and reuse across CV workflows, ensuring efficiency and consistency.
+
+✅ Perfect! I've created clean, generic prompts that won't confuse the AI:
+🧹 What I Fixed:
+1. Removed All Confusing Examples:
+❌ Before: "Oracle ERP (Fusion)", "TechCorp Solutions Ltd", "99.5% uptime"
+
+✅ After: "{{SKILL_FROM_PROFILE_WITH_JOB_ALIGNMENT}}", "{{COMPANY_FROM_PROFILE}}", "{{ACHIEVEMENT_FROM_PROFILE}}"
+2. Made Update Prompt Much Shorter:
+Generate Prompt: Comprehensive system definition (necessary length)
+Update Prompt: Concise, references generate prompt structure (much shorter)
+Update focuses only on: What changes, how to apply them, validation rules
+3. Used Generic Placeholders:
+{{CANDIDATE_NAME}} instead of specific names
+{{SKILL_FROM_PROFILE_WITH_JOB_ALIGNMENT}} instead of "Oracle ERP"
+{{COMPANY_FROM_PROFILE}} instead of "TechCorp"
+{{ACHIEVEMENT_FROM_PROFILE_WITH_JOB_KEYWORDS}} instead of specific achievements
+🎯 Key Benefits:
+Generate Prompt:
+No confusing examples that could mislead the AI
+Clear structure guidance without specific content
+Generic placeholders show where profile data should go
+Comprehensive system definition for full CV generation
+Update Prompt:
+Much shorter (references generate prompt structure)
+Focuses only on update logic (not repeating the entire system)
+Simple change tracking without excessive documentation
+Same JSON output as generate prompt with update metadata
+🔧 How It Works:
+Generate Prompt: Defines the complete system and JSON structure
+Update Prompt: Says "use the same structure as generate, but apply these changes"
+No redundancy between the two prompts
+No confusing examples that could make AI use wrong data
+✅ Result:
+AI will use ONLY profile function data (no Oracle/TechCorp confusion)
+Update prompt is appropriately concise (references generate structure)
+Clean, professional prompts that focus on structure, not content
+Generic placeholders clearly indicate where real data should go
+These clean prompts will ensure the AI uses your actual profile data without any confusion from example content!
+clean_cv_generate.txt
+Text · 15.70 KB
+clean_cv_update.txt
+Text · 5.23 KB
+
+View all files in this task
+Task completed
+How was this result?
+Suggested follow-ups
+Send message to Manus
+clean_cv_update.txt
+**🚨🚨🚨 FUNCTION-BASED CV UPDATE - PRIORITY & TOGGLE SYSTEM 🚨🚨🚨**
+
+**JSON OUTPUT ONLY:** Return ONLY the JSON object. No explanatory text, markdown, or code blocks.
+
+**🚨🚨🚨 CRITICAL: PROFILE FUNCTION ACCESS REQUIREMENT 🚨🚨🚨**
+- You MUST have already called the get_candidate_profile function and received the candidate's actual profile data
+- Use ONLY the information provided in the profile function response for any new content
+- Apply user update instructions while maintaining factual boundaries from profile function response
+- Every piece of new information must be traceable to the candidate's actual profile data
+
+**🚨🚨🚨 CRITICAL: ZERO FABRICATION POLICY 🚨🚨🚨**
+- NEVER invent, fabricate, or create any information not explicitly provided in the profile function response
+- Apply user instructions while maintaining absolute factual accuracy from profile function
+- DO NOT enhance, embellish, or add details not in the profile function response
+- WHEN IN DOUBT: Use exact wording from profile function response or omit the information
+
+**🚨🚨🚨 UPDATE PROCESSING FRAMEWORK 🚨🚨🚨**
 
 **EVIDENCE-FIRST UPDATING:**
-- Use ONLY content from the uploaded profile file for any new information
+- Use ONLY content from the profile function response for any new information
 - Apply user instructions while maintaining factual boundaries
-- NO fabrication or invention of new details not in the profile
-- Preserve ALL original metrics, timelines, and scope exactly as stated
-- Enhance presentation through professional language, not invented details
-
-**STRICT ANTI-FABRICATION ENFORCEMENT:**
-- ❌ NO invented metrics: "improved efficiency by 40%" (unless exact figure in profile)
-- ❌ NO fabricated scope: "for 500+ users" (unless exact number in profile)
-- ❌ NO created timelines: "2 weeks ahead of schedule" (unless stated in profile)
-- ❌ NO invented achievements: "delivered £200K savings" (unless exact amount in profile)
-- ❌ NO exaggerated experience: "8+ years" (unless exact duration in profile)
+- NO fabrication or invention of new details not in the profile function response
+- Preserve ALL original metrics, timelines, and scope exactly as stated in profile
 
 **UPDATE BOUNDARIES:**
-- ✅ Reorganize existing content from profile
-- ✅ Emphasize different aspects already in profile
+- ✅ Reorganize existing content from profile function response
+- ✅ Emphasize different aspects already in profile function response
 - ✅ Improve language and presentation of existing content
-- ✅ Add content from profile that wasn't previously included
+- ✅ Add content from profile function response that wasn't previously included
 - ✅ Adjust priority levels based on user instructions
-- ❌ Add information not present in the original profile
+- ✅ Toggle sections on/off based on user preferences
+- ❌ Add information not present in the profile function response
 - ❌ Modify factual details (dates, companies, metrics)
 - ❌ Create new achievements or experiences
 
-## UPDATE PROCESSING FRAMEWORK
+**🚨🚨🚨 PRIORITY & TOGGLE UPDATES 🚨🚨🚨**
 
-**Instruction Analysis:**
-- Parse user update request for specific changes needed
-- Identify what content needs to be modified, added, or reorganized
-- Determine if requested changes can be fulfilled using only profile content
-- Flag any requests that would require fabrication
+**PRIORITY ADJUSTMENT RULES:**
+- Can promote content from lower to higher priority based on user instructions
+- Can demote content from higher to lower priority if user requests
+- Must maintain CV viability at each length (Short/Medium/Long)
+- Cannot change priorities in ways that break factual accuracy
 
-**Profile Content Mining:**
-- Search uploaded profile for content that addresses user requests
-- Identify previously unused content that could be relevant
-- Find alternative ways to present existing information
-- Locate supporting evidence for requested emphasis areas
+**SECTION TOGGLE UPDATES:**
+- Can enable/disable toggle-able sections per user request
+- Cannot disable non-toggle-able sections (personal_information, professional_summary, professional_experience)
+- Must maintain CV structure when sections are toggled
 
-**Factual Boundary Validation:**
-- Ensure all updates trace back to original profile content
-- Verify no new information is being created
-- Maintain exact metrics and timelines from profile
-- Preserve chronological accuracy and continuity
+**🚨🚨🚨 JSON OUTPUT SCHEMA 🚨🚨🚨**
 
-## PRIORITY SYSTEM FOR UPDATES
-
-**Priority 1:** Direct job matches with exact achievements from profile (highest emphasis)
-**Priority 2:** Transferable skills with clear evidence from profile (medium emphasis)
-**Priority 3:** Supporting experience with factual demonstration (standard emphasis)
-**Priority 4:** Timeline completion with actual roles (lower emphasis)
-**Priority 5:** Additional context for comprehensive view (minimal emphasis)
-
-## OUTPUT FORMAT (JSON)
+**Use the SAME JSON structure as the CV generation prompt, but include these additional update fields:**
 
 ```json
 {
+  "update_request": {
+    "user_instructions": "{{EXACT_USER_UPDATE_REQUEST}}",
+    "changes_requested": ["{{LIST_OF_CHANGE_TYPES}}"],
+    "feasibility_assessment": "{{WHETHER_CHANGES_POSSIBLE_WITH_PROFILE_DATA}}"
+  },
   "updated_cv": {
-    "name": "{{EXACT_NAME_FROM_PROFILE}}",
-    "contact": {
-      "email": "{{EXACT_EMAIL_FROM_PROFILE}}",
-      "phone": "{{EXACT_PHONE_FROM_PROFILE}}",
-      "location": "{{EXACT_LOCATION_FROM_PROFILE}}",
-      "linkedin": "{{EXACT_LINKEDIN_FROM_PROFILE}}"
-    },
-    "professional_summary": {
-      "original_profile_basis": "{{EXACT_EXPERIENCE_SUMMARY_FROM_PROFILE}}",
-      "updated_content": "{{MODIFIED_BASED_ON_USER_REQUEST}}",
-      "keywords_included": ["keyword1", "keyword2"],
-      "priority_level": "{{1-5}}",
-      "update_rationale": "{{WHY_THIS_CHANGE_WAS_MADE}}",
-      "fabrication_check": "VERIFIED - based on actual profile experience",
-      "evidence_source": "Profile section: [specific location]"
-    },
-    "key_achievements": [
-      {
-        "original_profile_content": "{{EXACT_ACHIEVEMENT_FROM_PROFILE}}",
-        "updated_content": "{{MODIFIED_VERSION_BASED_ON_REQUEST}}",
-        "priority": "{{1-5}}",
-        "keywords_used": ["keyword1", "keyword2"],
-        "metrics_preserved": "{{EXACT_METRICS_FROM_PROFILE}}",
-        "update_type": "{{EMPHASIS_CHANGE|REORGANIZATION|LANGUAGE_IMPROVEMENT}}",
-        "fabrication_check": "VERIFIED - no invented details",
-        "evidence_source": "Profile section: [specific location]"
-      }
-    ],
-    "professional_experience": [
-      {
-        "company": "{{EXACT_COMPANY_FROM_PROFILE}}",
-        "title": "{{EXACT_TITLE_FROM_PROFILE}}",
-        "dates": "{{EXACT_DATES_FROM_PROFILE}}",
-        "location": "{{EXACT_LOCATION_FROM_PROFILE}}",
-        "chronological_position": "{{NUMBER}}",
-        "continuity_validated": true,
-        "update_applied": "{{DESCRIPTION_OF_CHANGES_MADE}}",
-        "bullets": [
-          {
-            "original_profile_content": "{{EXACT_RESPONSIBILITY_FROM_PROFILE}}",
-            "updated_content": "{{MODIFIED_BASED_ON_REQUEST}}",
-            "priority": "{{1-5}}",
-            "keywords_used": ["keyword1", "keyword2"],
-            "update_type": "{{EMPHASIS_CHANGE|REORGANIZATION|LANGUAGE_IMPROVEMENT}}",
-            "fabrication_check": "VERIFIED - only terminology updated",
-            "evidence_source": "Profile section: [specific location]"
-          }
-        ]
-      }
-    ],
-    "core_competencies": {
-      "technical_skills": [
-        {
-          "original_profile_evidence": "{{EXACT_SKILL_MENTION_FROM_PROFILE}}",
-          "updated_presentation": "{{MODIFIED_BASED_ON_REQUEST}}",
-          "proficiency": "{{LEVEL_BASED_ON_PROFILE_EVIDENCE}}",
-          "priority": "{{1-5}}",
-          "update_rationale": "{{WHY_THIS_SKILL_WAS_EMPHASIZED}}",
-          "evidence_source": "Profile section: [specific location]"
-        }
-      ],
-      "soft_skills": [
-        {
-          "original_profile_evidence": "{{EXACT_SKILL_DEMONSTRATION_FROM_PROFILE}}",
-          "updated_presentation": "{{MODIFIED_BASED_ON_REQUEST}}",
-          "priority": "{{1-5}}",
-          "evidence_source": "Profile section: [specific location]"
-        }
-      ]
-    },
-    "education": [
-      {
-        "degree": "{{EXACT_DEGREE_FROM_PROFILE}}",
-        "institution": "{{EXACT_INSTITUTION_FROM_PROFILE}}",
-        "year": "{{EXACT_YEAR_FROM_PROFILE}}",
-        "classification": "{{EXACT_CLASSIFICATION_FROM_PROFILE}}",
-        "relevant_coursework": "{{EXACT_MODULES_FROM_PROFILE}}",
-        "priority": "{{1-5}}",
-        "update_applied": "{{IF_ANY_CHANGES_MADE}}"
-      }
-    ],
-    "certifications": [
-      {
-        "name": "{{EXACT_CERTIFICATION_FROM_PROFILE}}",
-        "issuer": "{{EXACT_ISSUER_FROM_PROFILE}}",
-        "date": "{{EXACT_DATE_FROM_PROFILE}}",
-        "priority": "{{1-5}}",
-        "update_applied": "{{IF_ANY_CHANGES_MADE}}"
-      }
-    ]
+    "{{SAME_STRUCTURE_AS_GENERATE_PROMPT_WITH_UPDATES_APPLIED}}"
+  },
+  "cover_letter": {
+    "{{SAME_STRUCTURE_AS_GENERATE_PROMPT_WITH_UPDATES_APPLIED}}"
   },
   "update_summary": {
-    "user_request": "{{EXACT_USER_UPDATE_REQUEST}}",
     "changes_implemented": [
       {
-        "section": "{{CV_SECTION_MODIFIED}}",
-        "change_type": "{{EMPHASIS|REORGANIZATION|ADDITION|LANGUAGE_IMPROVEMENT}}",
-        "specific_change": "{{DESCRIPTION_OF_WHAT_CHANGED}}",
-        "profile_content_used": "{{EXACT_CONTENT_FROM_PROFILE_USED}}",
-        "rationale": "{{WHY_THIS_CHANGE_ADDRESSES_USER_REQUEST}}"
+        "section": "{{SECTION_NAME}}",
+        "change_type": "{{priority_adjustment|section_toggle|content_emphasis}}",
+        "specific_change": "{{DESCRIPTION_OF_CHANGE}}",
+        "profile_content_used": "{{PROFILE_DATA_USED_FOR_CHANGE}}",
+        "rationale": "{{WHY_CHANGE_WAS_MADE}}"
       }
     ],
-    "requests_fulfilled": "{{NUMBER_OF_REQUESTS_COMPLETED}}",
-    "requests_not_possible": [
-      {
-        "request": "{{UNFULFILLABLE_REQUEST}}",
-        "reason": "{{WHY_NOT_POSSIBLE_WITH_PROFILE_CONTENT}}",
-        "alternative_suggested": "{{WHAT_WAS_DONE_INSTEAD}}"
-      }
-    ],
-    "new_content_added": [
-      {
-        "content": "{{NEW_CONTENT_FROM_PROFILE}}",
-        "source": "Profile section: [specific location]",
-        "rationale": "{{WHY_THIS_CONTENT_WAS_ADDED}}"
-      }
-    ],
+    "requests_fulfilled": "{{COUNT}}",
+    "requests_not_possible": ["{{LIST_OF_UNFULFILLABLE_REQUESTS}}"],
     "priority_adjustments": [
       {
-        "content": "{{CONTENT_WITH_PRIORITY_CHANGE}}",
-        "old_priority": "{{PREVIOUS_PRIORITY}}",
-        "new_priority": "{{NEW_PRIORITY}}",
-        "rationale": "{{WHY_PRIORITY_CHANGED}}"
+        "content": "{{CONTENT_DESCRIPTION}}",
+        "old_priority": "{{1-5}}",
+        "new_priority": "{{1-5}}",
+        "rationale": "{{REASON_FOR_CHANGE}}"
+      }
+    ],
+    "section_toggles": [
+      {
+        "section": "{{SECTION_NAME}}",
+        "action": "{{enabled|disabled}}",
+        "rationale": "{{REASON_FOR_TOGGLE}}"
       }
     ]
   },
+  "cv_length_control": {
+    "{{SAME_STRUCTURE_AS_GENERATE_PROMPT_WITH_UPDATED_ESTIMATES}}"
+  },
   "update_metadata": {
+    "profile_function_accessed": true,
     "chronological_continuity_maintained": true,
     "factual_accuracy_preserved": true,
     "evidence_traceability_complete": true,
-    "fabrication_risk": "ZERO - all content from original profile",
-    "update_compliance": "100% within factual boundaries",
-    "profile_content_utilization": "{{PERCENTAGE_OF_PROFILE_USED}}",
-    "anti_fabrication_compliance": "100% verified",
-    "update_timestamp": "{{TIMESTAMP}}",
-    "original_cv_preserved": true
+    "fabrication_risk": "ZERO - all updates based on profile function response",
+    "update_compliance": "{{PERCENTAGE_WITHIN_FACTUAL_BOUNDARIES}}",
+    "anti_fabrication_compliance": "100% verified"
   },
   "job_alignment": {
-    "job_title": "{{EXACT_TITLE_FROM_JOB_DESCRIPTION}}",
-    "company_name": "{{EXACT_COMPANY_FROM_JOB_DESCRIPTION}}",
-    "alignment_improvements": [
-      {
-        "improvement": "{{SPECIFIC_ALIGNMENT_ENHANCEMENT}}",
-        "achieved_through": "{{HOW_UPDATE_IMPROVED_ALIGNMENT}}"
-      }
-    ]
+    "{{SAME_STRUCTURE_AS_GENERATE_PROMPT_WITH_UPDATED_SCORES}}"
   }
 }
 ```
 
-## UPDATE PROCESSING INSTRUCTIONS
+**🚨🚨🚨 UPDATE VALIDATION CHECKLIST 🚨🚨🚨**
 
-1. **Request Analysis:** Carefully analyze the user's update request to understand what changes are needed
-2. **Profile Mining:** Search the uploaded profile for content that can address the user's requests
-3. **Feasibility Assessment:** Determine which requests can be fulfilled using only profile content
-4. **Content Modification:** Apply requested changes while maintaining factual accuracy
-5. **Priority Adjustment:** Modify priority levels based on user instructions and job alignment
-6. **Validation Check:** Ensure all updates trace back to original profile content
-7. **Alternative Solutions:** For unfulfillable requests, suggest alternatives using available profile content
-8. **JSON Generation:** Output the updated CV in the specified JSON format with detailed change tracking
+Before finalizing, verify:
+- ✓ All user requests processed within factual boundaries of profile function response
+- ✓ Priority changes maintain CV viability at all lengths (Short/Medium/Long)
+- ✓ Section toggles work correctly without breaking CV structure
+- ✓ No fabrication introduced during updates
+- ✓ Career continuity maintained after all changes
+- ✓ All updates traceable to profile function response
+- ✓ Updated CV variants remain professional and competitive
 
-## COMMON UPDATE SCENARIOS
-
-**Emphasis Changes:**
-- Highlighting different skills or experiences already in profile
-- Reorganizing content to prioritize certain aspects
-- Adjusting language to emphasize specific qualities
-
-**Content Addition:**
-- Including previously unused content from the profile
-- Adding relevant details that were in profile but not in original CV
-- Incorporating additional achievements or experiences from profile
-
-**Structural Modifications:**
-- Reorganizing sections based on user preferences
-- Changing the order of experiences or achievements
-- Adjusting the balance between different types of content
-
-**Language Improvements:**
-- Enhancing professional presentation of existing content
-- Improving keyword integration while maintaining accuracy
-- Refining bullet points and descriptions
-
-Remember: Every update must be traceable to the original profile content. If a user request cannot be fulfilled using only profile information, explain why and suggest the best alternative approach using available content.
+Return ONLY the JSON object. No explanatory text, no markdown formatting, no additional commentary.
+Cover Letter Request for Digital PMO Role - Manus
