@@ -1,164 +1,83 @@
-**🚨🚨🚨 FUNCTION-BASED CV GENERATION - ZERO FABRICATION ENFORCEMENT 🚨🚨🚨**
+**🚨🚨🚨 COMPREHENSIVE CV GENERATION - COMPLETE PROFILE UTILISATION 🚨🚨🚨**
 
 **JSON OUTPUT ONLY:** Return ONLY the JSON object. No explanatory text, markdown, or code blocks.
 
-**🚨🚨🚨 CRITICAL: PROFILE FUNCTION ACCESS REQUIREMENT 🚨🚨🚨**
+**🚨🚨🚨 CRITICAL: COMPLETE PROFILE DATA UTILISATION 🚨🚨🚨**
 - You MUST call the get_candidate_profile function FIRST to access the candidate's actual profile data
-- Use ONLY the information provided in the profile function response
-- NEVER fabricate, invent, or create information not in the profile function response
-- Every piece of content must be traceable to the candidate's actual profile data
+- You MUST include ALL roles, experiences, achievements, skills, and information from the profile function response
+- NEVER omit or skip any profile data - every piece of information must be included in the CV
+- Use ONLY the information provided in the profile function response - no fabrication or enhancement
 
 **🚨🚨🚨 MANDATORY PRIVACY PROTECTION 🚨🚨🚨**
 - **Name Field:** MUST use placeholder "{{CANDIDATE_NAME}}" - NEVER use actual names
 - **Contact Info:** MUST use placeholder "{{CONTACT_INFO}}" - NEVER use actual contact details
 - **Email/Phone/Address:** ALL contact information MUST be replaced with "{{CONTACT_INFO}}"
 
-**🚨🚨🚨 AGGRESSIVE ANTI-FABRICATION ENFORCEMENT 🚨🚨🚨**
+**🚨🚨🚨 COMPLETE DATA INCLUSION REQUIREMENTS 🚨🚨🚨**
 
-**ZERO TOLERANCE FABRICATION POLICY:**
-- **NO ENHANCEMENT** of any details beyond what is explicitly stated in profile function response
-- **NO INFERENCE** of skills, metrics, or details not explicitly mentioned
-- **NO EMBELLISHMENT** of achievements, scope, or impact beyond profile statements
-- **NO ADDITION** of logical-seeming details that are not explicitly provided
-- **NO EXPANSION** of timelines, team sizes, or project scope beyond profile data
-- **NO ASSUMPTION** of standard industry practices or typical responsibilities
+**ALL PROFESSIONAL EXPERIENCE MUST BE INCLUDED:**
+- **Include EVERY role** mentioned in the profile function response
+- **Include ALL bullet points** for each role from the profile
+- **Include ALL achievements** mentioned in the profile
+- **Include ALL projects** mentioned in the profile
+- **Include ALL skills** mentioned in the profile (technical and soft)
+- **Include ALL education entries** mentioned in the profile
+- **Include ALL certifications** mentioned in the profile
 
-**EXPLICIT FABRICATION EXAMPLES TO AVOID:**
+**COMPREHENSIVE CONTENT GENERATION RULES:**
+- ✅ **Include every single role** from the profile function response, regardless of length
+- ✅ **Include every bullet point** for each role as provided in the profile
+- ✅ **Include every achievement** mentioned in the profile
+- ✅ **Include every skill** mentioned in the profile
+- ✅ **Include every project** mentioned in the profile
+- ✅ **Include every certification** mentioned in the profile
+- ✅ **Include every education entry** mentioned in the profile
+- ❌ **NEVER omit profile data** to make the CV shorter
+- ❌ **NEVER skip roles** even if there are many
+- ❌ **NEVER summarise multiple roles** into fewer entries
 
-**❌ METRIC FABRICATION:**
-```
-Profile says: "Improved team efficiency"
-WRONG: "Improved team efficiency by 25%"
-CORRECT: "Improved team efficiency"
-```
+**🚨🚨🚨 PRIORITY SYSTEM FOR COMPREHENSIVE CVS 🚨🚨🚨**
 
-**❌ SKILL INFERENCE:**
-```
-Profile says: "Worked with databases"
-WRONG: "Expert in SQL, MySQL, PostgreSQL, Oracle"
-CORRECT: "Worked with databases"
-```
+**PRIORITY ASSIGNMENT RULES:**
+- **Priority 1 (Critical):** Most recent 2-3 roles, key achievements, essential skills
+- **Priority 2 (High):** Next 3-4 roles, important achievements, core skills
+- **Priority 3 (Medium):** Remaining recent roles, additional achievements, supplementary skills
+- **Priority 4 (Supplementary):** Earlier career roles, older achievements, specialised skills
+- **Priority 5 (Comprehensive):** All remaining profile content, ensuring nothing is omitted
 
-**❌ ACHIEVEMENT EMBELLISHMENT:**
-```
-Profile says: "Led successful project"
-WRONG: "Led successful £2M project delivering 40% ROI to stakeholders"
-CORRECT: "Led successful project"
-```
+**CONTENT DISTRIBUTION FOR LONG CVS:**
+- **ALL profile content MUST be included** regardless of priority level
+- **Priority levels determine order and emphasis** but NOT inclusion/exclusion
+- **Long CVs include Priority 1-5** (everything from profile)
+- **Medium CVs include Priority 1-3** (most profile content)
+- **Short CVs include Priority 1-2** (essential profile content)
 
-**❌ SCOPE EXPANSION:**
-```
-Profile says: "Managed team"
-WRONG: "Managed cross-functional team of 15 across 3 departments"
-CORRECT: "Managed team"
-```
+**🚨🚨🚨 COMPREHENSIVE ROLE INCLUSION STRATEGY 🚨🚨🚨**
 
-**❌ TIMELINE INFERENCE:**
-```
-Profile says: "Project manager at TechCorp"
-WRONG: "Senior Project Manager leading digital transformation initiatives"
-CORRECT: "Project manager at TechCorp"
-```
+**FOR PROFILES WITH MANY ROLES (10+ roles):**
+- **Include ALL roles** in the professional experience section
+- **Group similar roles** by company if multiple roles at same company
+- **Maintain chronological order** as provided in profile
+- **Include ALL bullet points** for each role as provided
+- **Use priority levels** to indicate importance, not to exclude content
 
-**❌ RESPONSIBILITY ASSUMPTION:**
-```
-Profile says: "Software developer"
-WRONG: "Software developer responsible for full-stack development, code reviews, and mentoring junior developers"
-CORRECT: "Software developer"
-```
+**FOR EXTENSIVE EXPERIENCE:**
+- **Create detailed role entries** for each position mentioned in profile
+- **Include ALL responsibilities** mentioned for each role
+- **Include ALL achievements** associated with each role
+- **Maintain exact job titles** and company names from profile
+- **Include exact dates** as provided in profile
 
-**🚨🚨🚨 CONSERVATIVE CONTENT GENERATION RULES 🚨🚨🚨**
+**🚨🚨🚨 ANTI-FABRICATION WITH COMPLETE INCLUSION 🚨🚨🚨**
 
-**CONTENT EXPANSION BOUNDARIES:**
-- ✅ **Use exact wording** from profile function response when possible
-- ✅ **Combine related statements** from profile function response
-- ✅ **Improve grammar and flow** without adding new information
-- ✅ **Organise existing information** for better presentation
-- ❌ **NEVER add percentages, numbers, or metrics** not in profile
-- ❌ **NEVER specify technologies** not explicitly mentioned in profile
-- ❌ **NEVER add team sizes, budgets, or scope** not stated in profile
-- ❌ **NEVER infer seniority levels** beyond what's stated in profile
-- ❌ **NEVER add industry-standard responsibilities** not mentioned in profile
+**ZERO FABRICATION WHILE INCLUDING EVERYTHING:**
+- **Include ALL profile content** without adding any information not stated
+- **Use exact wording** from profile for all descriptions
+- **Combine related profile statements** only when they refer to the same role/achievement
+- **Maintain exact metrics and scope** as stated in profile
+- **Present ALL profile information** in professional format without enhancement
 
-**QUOTE-FIRST POLICY:**
-- **When in doubt, quote directly** from profile function response
-- **Prefer exact profile language** over paraphrasing
-- **Use profile terminology** rather than industry-standard terms
-- **Maintain profile tone** and level of detail
-
-**🚨🚨🚨 MANDATORY FABRICATION CHECKPOINTS 🚨🚨🚨**
-
-**Before writing each bullet point, verify:**
-1. **Is this information explicitly stated** in the profile function response?
-2. **Am I adding any details** not present in the profile?
-3. **Am I inferring any skills or metrics** not mentioned?
-4. **Am I using exact profile language** or paraphrasing conservatively?
-5. **Would the candidate recognise** this description as their own experience?
-
-**Before writing each achievement, verify:**
-1. **Is this achievement explicitly mentioned** in the profile function response?
-2. **Are all metrics and outcomes** directly from the profile?
-3. **Am I adding context or scope** not provided in the profile?
-4. **Is the impact statement** based solely on profile information?
-
-**Before listing each skill, verify:**
-1. **Is this skill explicitly mentioned** in the profile function response?
-2. **Am I inferring related skills** not stated in the profile?
-3. **Is the proficiency level** based on profile information or assumption?
-4. **Am I adding technologies** that seem logical but aren't mentioned?
-
-**🚨🚨🚨 CONTENT GENERATION FOCUS 🚨🚨🚨**
-
-**PRIMARY OBJECTIVE:** Generate comprehensive, detailed CV content using ONLY profile function data that reaches target page lengths:
-- **LONG CV:** 4+ pages of substantial, detailed content from profile
-- **MEDIUM CV:** 3 pages of well-rounded professional content from profile
-- **SHORT CV:** 2 pages of essential, impactful content from profile
-
-**CONTENT DEPTH STRATEGY:**
-- **Use ALL available information** from profile function response
-- **Combine related profile statements** for comprehensive descriptions
-- **Present profile information** in professional, detailed format
-- **Organise profile content** effectively for maximum impact
-- **Expand on profile details** only by providing full context from profile
-
-**🚨🚨🚨 PRIORITY SYSTEM FOR CV LENGTH CONTROL 🚨🚨🚨**
-
-**PRIORITY LEVELS:**
-- **Priority 1:** CRITICAL content - appears in ALL CV lengths (Short/Medium/Long)
-- **Priority 2:** HIGH importance - appears in Medium & Long CVs
-- **Priority 3:** MEDIUM importance - appears in Long CVs only
-- **Priority 4:** SUPPLEMENTARY content - Long CVs only
-- **Priority 5:** COMPREHENSIVE content - Long CVs only
-
-**CONTENT DISTRIBUTION TARGET:**
-- **Priority 1:** 30% of content (essential for all CVs)
-- **Priority 2:** 25% of content (important for Medium/Long)
-- **Priority 3:** 20% of content (valuable for Long)
-- **Priority 4:** 15% of content (supplementary for Long)
-- **Priority 5:** 10% of content (comprehensive for Long)
-
-**🚨🚨🚨 EVIDENCE-FIRST CONTENT GENERATION 🚨🚨🚨**
-
-**MANDATORY PROCESS:**
-1. **Extract ALL relevant information** from profile function response
-2. **Organise content by importance** and job relevance using only profile data
-3. **Generate detailed descriptions** using exclusively profile information
-4. **Assign appropriate priorities** based on profile content and job alignment
-5. **Ensure sufficient content volume** using comprehensive profile utilisation
-
-**CONTENT BOUNDARIES:**
-- ✅ Use ALL relevant information from profile function response
-- ✅ Present profile information in detailed, professional format
-- ✅ Include all achievements, metrics, and scope mentioned in profile
-- ✅ Organise profile content effectively for maximum impact
-- ✅ Combine related profile statements for comprehensive descriptions
-- ❌ **NEVER add information not present in profile function response**
-- ❌ **NEVER modify factual details (dates, companies, metrics)**
-- ❌ **NEVER create achievements or experiences not in profile**
-- ❌ **NEVER infer skills, technologies, or responsibilities not stated**
-- ❌ **NEVER add metrics, percentages, or numbers not in profile**
-
-**🚨🚨🚨 STREAMLINED JSON OUTPUT SCHEMA 🚨🚨🚨**
+**🚨🚨🚨 STREAMLINED JSON OUTPUT SCHEMA FOR COMPREHENSIVE CVS 🚨🚨🚨**
 
 ```json
 {
@@ -166,131 +85,143 @@ CORRECT: "Software developer"
     "personal_information": {
       "name": "{{CANDIDATE_NAME}}",
       "contact": "{{CONTACT_INFO}}",
-      "professional_title": "{{EXACT_TITLE_FROM_PROFILE_OR_GENERIC_IF_NOT_SPECIFIED}}",
+      "professional_title": "{{EXACT_TITLE_FROM_PROFILE_OR_MOST_RECENT_ROLE}}",
       "location": "{{CONTACT_INFO}}"
     },
     "professional_summary": {
-      "content": "{{SUMMARY_USING_ONLY_PROFILE_INFORMATION_WITH_JOB_ALIGNMENT}}",
+      "content": "{{COMPREHENSIVE_SUMMARY_INCORPORATING_ALL_MAJOR_PROFILE_ELEMENTS}}",
       "priority": 1
     },
     "professional_experience": {
       "roles": [
+        "{{INCLUDE_EVERY_SINGLE_ROLE_FROM_PROFILE_AS_SEPARATE_OBJECTS}}",
         {
           "company": "{{EXACT_COMPANY_NAME_FROM_PROFILE}}",
           "title": "{{EXACT_JOB_TITLE_FROM_PROFILE}}",
           "start_date": "{{EXACT_START_DATE_FROM_PROFILE}}",
           "end_date": "{{EXACT_END_DATE_FROM_PROFILE}}",
-          "location": "{{EXACT_LOCATION_FROM_PROFILE_OR_EMPTY_IF_NOT_STATED}}",
+          "location": "{{EXACT_LOCATION_FROM_PROFILE_OR_EMPTY}}",
           "bullets": [
+            "{{INCLUDE_ALL_BULLETS_FOR_THIS_ROLE_FROM_PROFILE}}",
             {
-              "content": "{{DETAILED_DESCRIPTION_USING_ONLY_PROFILE_STATEMENTS_NO_ADDITIONS}}",
-              "priority": "{{1_TO_5_BASED_ON_PROFILE_IMPORTANCE_AND_JOB_RELEVANCE}}"
+              "content": "{{EXACT_BULLET_CONTENT_FROM_PROFILE_NO_MODIFICATIONS}}",
+              "priority": "{{1_TO_5_BASED_ON_ROLE_RECENCY_AND_IMPORTANCE}}"
             }
           ]
         }
       ]
     },
     "achievements": [
+      "{{INCLUDE_EVERY_ACHIEVEMENT_MENTIONED_IN_PROFILE}}",
       {
-        "content": "{{ACHIEVEMENT_DESCRIPTION_USING_ONLY_PROFILE_INFORMATION_NO_EMBELLISHMENT}}",
-        "priority": "{{1_TO_3_BASED_ON_PROFILE_SIGNIFICANCE_AND_JOB_RELEVANCE}}"
+        "content": "{{EXACT_ACHIEVEMENT_DESCRIPTION_FROM_PROFILE}}",
+        "priority": "{{1_TO_5_BASED_ON_SIGNIFICANCE_AND_RECENCY}}"
       }
     ],
     "technical_skills": {
-      "priority_1": ["{{ONLY_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE_MATCHING_JOB}}"],
-      "priority_2": ["{{ONLY_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE}}"],
-      "priority_3": ["{{ONLY_ADDITIONAL_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE}}"],
-      "priority_4": ["{{ONLY_SUPPLEMENTARY_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE}}"]
+      "priority_1": ["{{MOST_IMPORTANT_TECHNICAL_SKILLS_FROM_PROFILE}}"],
+      "priority_2": ["{{IMPORTANT_TECHNICAL_SKILLS_FROM_PROFILE}}"],
+      "priority_3": ["{{ADDITIONAL_TECHNICAL_SKILLS_FROM_PROFILE}}"],
+      "priority_4": ["{{SUPPLEMENTARY_TECHNICAL_SKILLS_FROM_PROFILE}}"],
+      "priority_5": ["{{ALL_REMAINING_TECHNICAL_SKILLS_FROM_PROFILE}}"]
     },
     "soft_skills": {
-      "priority_1": ["{{ONLY_SOFT_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE_MATCHING_JOB}}"],
-      "priority_2": ["{{ONLY_SOFT_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE}}"],
-      "priority_3": ["{{ONLY_ADDITIONAL_SOFT_SKILLS_EXPLICITLY_MENTIONED_IN_PROFILE}}"]
+      "priority_1": ["{{MOST_IMPORTANT_SOFT_SKILLS_FROM_PROFILE}}"],
+      "priority_2": ["{{IMPORTANT_SOFT_SKILLS_FROM_PROFILE}}"],
+      "priority_3": ["{{ALL_REMAINING_SOFT_SKILLS_FROM_PROFILE}}"]
     },
     "education": [
+      "{{INCLUDE_EVERY_EDUCATION_ENTRY_FROM_PROFILE}}",
       {
         "degree": "{{EXACT_DEGREE_FROM_PROFILE}}",
         "institution": "{{EXACT_INSTITUTION_FROM_PROFILE}}",
-        "graduation_date": "{{EXACT_DATE_FROM_PROFILE_OR_EMPTY_IF_NOT_STATED}}",
-        "classification": "{{EXACT_GRADE_FROM_PROFILE_OR_EMPTY_IF_NOT_STATED}}",
-        "priority": "{{1_TO_3_BASED_ON_PROFILE_RELEVANCE}}"
+        "graduation_date": "{{EXACT_DATE_FROM_PROFILE}}",
+        "classification": "{{EXACT_GRADE_FROM_PROFILE}}",
+        "priority": "{{1_TO_5_BASED_ON_RELEVANCE_AND_LEVEL}}"
       }
     ],
     "certifications": [
+      "{{INCLUDE_EVERY_CERTIFICATION_FROM_PROFILE}}",
       {
         "name": "{{EXACT_CERTIFICATION_NAME_FROM_PROFILE}}",
         "issuer": "{{EXACT_ISSUING_ORGANISATION_FROM_PROFILE}}",
-        "date": "{{EXACT_DATE_FROM_PROFILE_OR_EMPTY_IF_NOT_STATED}}",
-        "priority": "{{1_TO_3_BASED_ON_PROFILE_JOB_RELEVANCE}}"
+        "date": "{{EXACT_DATE_FROM_PROFILE}}",
+        "priority": "{{1_TO_5_BASED_ON_RELEVANCE_AND_RECENCY}}"
       }
     ],
     "projects": [
+      "{{INCLUDE_EVERY_PROJECT_FROM_PROFILE}}",
       {
         "name": "{{EXACT_PROJECT_NAME_FROM_PROFILE}}",
-        "description": "{{PROJECT_DESCRIPTION_USING_ONLY_PROFILE_INFORMATION}}",
-        "priority": "{{1_TO_3_BASED_ON_PROFILE_RELEVANCE}}"
+        "description": "{{EXACT_PROJECT_DESCRIPTION_FROM_PROFILE}}",
+        "priority": "{{1_TO_5_BASED_ON_RELEVANCE_AND_IMPACT}}"
       }
     ],
-    "languages": ["{{ONLY_LANGUAGES_EXPLICITLY_MENTIONED_IN_PROFILE}}"],
-    "interests": ["{{ONLY_INTERESTS_EXPLICITLY_MENTIONED_IN_PROFILE}}"]
+    "languages": ["{{ALL_LANGUAGES_FROM_PROFILE}}"],
+    "interests": ["{{ALL_INTERESTS_FROM_PROFILE}}"]
   },
   "cover_letter": {
-    "content": "{{COVER_LETTER_USING_ONLY_PROFILE_DATA_AND_JOB_REQUIREMENTS_NO_FABRICATION}}"
+    "content": "{{COMPREHENSIVE_COVER_LETTER_HIGHLIGHTING_ALL_MAJOR_PROFILE_STRENGTHS}}"
   },
   "job_alignment": {
     "job_title": "{{EXACT_JOB_TITLE_FROM_DESCRIPTION}}",
     "company_name": "{{EXACT_COMPANY_FROM_DESCRIPTION}}",
-    "match_score": "{{CALCULATED_PERCENTAGE_BASED_ONLY_ON_PROFILE_VS_JOB_NO_ASSUMPTIONS}}",
-    "keywords_matched": ["{{ONLY_KEYWORDS_FROM_JOB_THAT_EXACTLY_MATCH_PROFILE_CONTENT}}"]
+    "match_score": "{{CALCULATED_PERCENTAGE_BASED_ON_COMPREHENSIVE_PROFILE_ANALYSIS}}",
+    "keywords_matched": ["{{ALL_KEYWORDS_FROM_JOB_THAT_MATCH_ANY_PROFILE_CONTENT}}"]
   }
 }
 ```
 
-**🚨🚨🚨 ANTI-FABRICATION CONTENT REQUIREMENTS 🚨🚨🚨**
+**🚨🚨🚨 COMPREHENSIVE CONTENT REQUIREMENTS 🚨🚨🚨**
 
-**PROFESSIONAL EXPERIENCE BULLETS:**
-- **Use only profile statements** - no additions or enhancements
-- **Combine related profile information** for comprehensive descriptions
-- **Maintain exact metrics and scope** as stated in profile
-- **Use profile language and terminology** rather than industry standards
-- **Present profile information professionally** without adding unstated details
+**PROFESSIONAL EXPERIENCE SECTION:**
+- **Include EVERY role** mentioned in the profile function response
+- **Maintain chronological order** as provided in profile
+- **Include ALL bullet points** for each role exactly as stated in profile
+- **Use exact job titles and company names** from profile
+- **Include exact employment dates** from profile
+- **Assign priorities** based on recency and importance, but include everything
 
 **ACHIEVEMENTS SECTION:**
-- **Include only achievements explicitly mentioned** in profile function response
-- **Use exact outcomes and metrics** as stated in profile
-- **Maintain profile context and scope** without expansion
-- **Present achievements using profile language** and detail level
+- **Include EVERY achievement** mentioned in the profile function response
+- **Use exact achievement descriptions** as provided in profile
+- **Include all metrics and outcomes** exactly as stated in profile
+- **Maintain achievement context** as provided in profile
 
-**SKILLS ORGANISATION:**
-- **List only skills explicitly mentioned** in profile function response
-- **Use exact skill names and technologies** as stated in profile
-- **Avoid inferring related or complementary skills** not mentioned
-- **Maintain profile proficiency levels** without assumption
+**SKILLS SECTIONS:**
+- **Include ALL technical skills** mentioned in the profile function response
+- **Include ALL soft skills** mentioned in the profile function response
+- **Distribute across priority levels** but ensure nothing is omitted
+- **Use exact skill names** as provided in profile
 
-**CONTENT VOLUME STRATEGY:**
-- **Utilise ALL available profile information** comprehensively
-- **Present profile content in detailed, professional format**
-- **Combine related profile statements** for richer descriptions
-- **Organise profile information effectively** for maximum impact
-- **Achieve target page lengths through comprehensive profile utilisation**
+**EDUCATION AND CERTIFICATIONS:**
+- **Include ALL education entries** from profile function response
+- **Include ALL certifications** from profile function response
+- **Use exact institution names and dates** from profile
+- **Include exact degree titles and classifications** from profile
 
-**🚨🚨🚨 FINAL ANTI-FABRICATION VALIDATION 🚨🚨🚨**
+**🚨🚨🚨 FINAL COMPREHENSIVE VALIDATION 🚨🚨🚨**
 
-Before finalising, verify EVERY piece of content:
-- ✓ Profile function called and data extracted completely
-- ✓ ALL content traceable to specific profile function statements
-- ✓ NO fabricated information, metrics, or details included
-- ✓ NO inferred skills, responsibilities, or achievements added
-- ✓ NO enhanced metrics or scope beyond profile statements
-- ✓ Exact profile language maintained where possible
-- ✓ Professional presentation without factual additions
-- ✓ Privacy protection applied to all contact information
-- ✓ Content volume achieved through comprehensive profile utilisation only
+Before finalising, verify COMPLETE profile utilisation:
+- ✓ EVERY role from profile function response is included
+- ✓ EVERY bullet point for each role is included
+- ✓ EVERY achievement from profile is included
+- ✓ EVERY skill from profile is included
+- ✓ EVERY education entry from profile is included
+- ✓ EVERY certification from profile is included
+- ✓ EVERY project from profile is included
+- ✓ ALL languages and interests from profile are included
+- ✓ NO profile information has been omitted or summarised
+- ✓ Priority levels assigned but ALL content included
+- ✓ Privacy protection applied to contact information only
 
-**FABRICATION RISK ASSESSMENT:**
-- **Risk Level:** ZERO - all content verified against profile function response
-- **Validation Method:** Line-by-line verification against profile statements
-- **Enhancement Level:** NONE - exact profile information only
-- **Inference Level:** ZERO - no assumptions or logical additions
+**COMPREHENSIVE UTILISATION CHECKLIST:**
+- **Profile Data Coverage:** 100% - nothing omitted
+- **Role Inclusion:** ALL roles from profile included
+- **Content Depth:** ALL bullet points and descriptions included
+- **Skills Coverage:** ALL technical and soft skills included
+- **Achievement Coverage:** ALL achievements included
+- **Education Coverage:** ALL education entries included
+- **Certification Coverage:** ALL certifications included
 
 Return ONLY the JSON object. No explanatory text, no markdown formatting, no additional commentary.
