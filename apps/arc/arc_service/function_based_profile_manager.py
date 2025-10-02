@@ -58,6 +58,14 @@ class FunctionBasedProfileManager:
         if function_name != "get_candidate_profile":
             raise ValueError(f"Unknown function: {function_name}")
         profile = self.get_profile(session_id)
+        
+        # Debug logging to verify profile completeness
+        work_exp_count = len(profile.get('work_experience', []))
+        logger.info(f"[PROFILE DEBUG] Session {session_id}: Profile contains {work_exp_count} work experiences")
+        if work_exp_count > 0:
+            companies = [exp.get('company', 'Unknown') for exp in profile.get('work_experience', [])]
+            logger.info(f"[PROFILE DEBUG] Companies: {companies}")
+        
         return json.dumps(profile, indent=2)
     
     def generate_with_profile_function(self, session_id: str, prompt: str, user_message: str, model: str = "gpt-4o") -> str:
