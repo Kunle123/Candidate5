@@ -1,14 +1,13 @@
-**🚨🚨🚨 COMPREHENSIVE CV GENERATION - COMPLETE PROFILE UTILISATION 🚨🚨🚨**
+**COMPREHENSIVE CV GENERATION**
 
-**⚠️ CRITICAL REQUIREMENT: INCLUDE ALL 15+ WORK EXPERIENCES FROM PROFILE - NO OMISSIONS ⚠️**
+You are generating a complete CV using the candidate's profile data accessed via the get_candidate_profile function.
 
-**JSON OUTPUT ONLY:** Return ONLY the JSON object. No explanatory text, markdown, or code blocks.
-
-**🚨🚨🚨 CRITICAL: COMPLETE PROFILE DATA UTILISATION 🚨🚨🚨**
-- You MUST call the get_candidate_profile function FIRST to access the candidate's actual profile data
-- You MUST include ALL roles, experiences, achievements, skills, and information from the profile function response
-- NEVER omit or skip any profile data - every piece of information must be included in the CV
-- Use ONLY the information provided in the profile function response - no fabrication or enhancement
+**CRITICAL REQUIREMENTS:**
+1. Call get_candidate_profile function FIRST
+2. Include ALL work experiences from the profile (typically 15+ roles spanning 1997-present)
+3. Include ALL skills, education, certifications, and projects from the profile
+4. Use placeholder "{{CANDIDATE_NAME}}" for name and "{{CONTACT_INFO}}" for contact details
+5. Return ONLY valid JSON - no markdown or explanatory text
 
 **🚨🚨🚨 MANDATORY PRIVACY PROTECTION 🚨🚨🚨**
 - **Name Field:** MUST use placeholder "{{CANDIDATE_NAME}}" - NEVER use actual names
@@ -17,17 +16,12 @@
 
 **🚨🚨🚨 COMPLETE DATA INCLUSION REQUIREMENTS 🚨🚨🚨**
 
-**🚨🚨🚨 MANDATORY: ALL PROFESSIONAL EXPERIENCE INCLUSION 🚨🚨🚨**
-- **Include EVERY SINGLE role** mentioned in the profile function response - NO EXCEPTIONS
-- **Include ALL 17+ work experiences** if present in the profile - NEVER limit to 3-4 roles
-- **Include ALL bullet points** for each role from the profile
-- **Include ALL achievements** mentioned in the profile
-- **Include ALL projects** mentioned in the profile
-- **Include ALL skills** mentioned in the profile (technical and soft)
-- **Include ALL education entries** mentioned in the profile
-- **Include ALL certifications** mentioned in the profile
-- **CAREER SPAN:** Include roles spanning the candidate's entire career from earliest to present
-- **CHRONOLOGICAL ORDER:** List ALL roles in reverse chronological order (most recent first)
+**WORK EXPERIENCE REQUIREMENTS:**
+- List ALL roles from the profile in reverse chronological order (newest first)
+- Include every company, job title, dates, and responsibilities from the profile
+- Do not skip or omit any work experience entries
+- The profile typically contains 15+ roles spanning 25+ years (1997-present)
+- Include roles from companies like: Allpay, TfL, DHSC/UKHSA, Npower, Transport for Wales, Royal Bank of Scotland, First Group, Vodafone, Orange PCS, etc.
 
 **COMPREHENSIVE CONTENT GENERATION RULES:**
 - ✅ **Include every single role** from the profile function response, regardless of length
@@ -205,28 +199,12 @@
 - **Use exact institution names and dates** from profile
 - **Include exact degree titles and classifications** from profile
 
-**🚨🚨🚨 FINAL COMPREHENSIVE VALIDATION 🚨🚨🚨**
-
-Before finalising, verify COMPLETE profile utilisation:
-- ✓ EVERY role from profile function response is included
-- ✓ EVERY bullet point for each role is included
-- ✓ EVERY achievement from profile is included
-- ✓ EVERY skill from profile is included
-- ✓ EVERY education entry from profile is included
-- ✓ EVERY certification from profile is included
-- ✓ EVERY project from profile is included
-- ✓ ALL languages and interests from profile are included
-- ✓ NO profile information has been omitted or summarised
-- ✓ Priority levels assigned but ALL content included
-- ✓ Privacy protection applied to contact information only
-
-**COMPREHENSIVE UTILISATION CHECKLIST:**
-- **Profile Data Coverage:** 100% - nothing omitted
-- **Role Inclusion:** ALL roles from profile included
-- **Content Depth:** ALL bullet points and descriptions included
-- **Skills Coverage:** ALL technical and soft skills included
-- **Achievement Coverage:** ALL achievements included
-- **Education Coverage:** ALL education entries included
-- **Certification Coverage:** ALL certifications included
+**VALIDATION CHECKLIST:**
+Before generating the CV, ensure:
+- ✓ Profile function called and data received
+- ✓ ALL work experiences included (should be 15+ roles)
+- ✓ Complete career timeline from 1997 to present
+- ✓ All skills, education, certifications, and projects included
+- ✓ Privacy placeholders used for personal information
 
 Return ONLY the JSON object. No explanatory text, no markdown formatting, no additional commentary.
