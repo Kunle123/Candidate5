@@ -1,5 +1,7 @@
 **🚨🚨🚨 COMPREHENSIVE CV GENERATION - COMPLETE PROFILE UTILISATION 🚨🚨🚨**
 
+**⚠️ CRITICAL REQUIREMENT: INCLUDE ALL 15+ WORK EXPERIENCES FROM PROFILE - NO OMISSIONS ⚠️**
+
 **JSON OUTPUT ONLY:** Return ONLY the JSON object. No explanatory text, markdown, or code blocks.
 
 **🚨🚨🚨 CRITICAL: COMPLETE PROFILE DATA UTILISATION 🚨🚨🚨**
@@ -15,14 +17,17 @@
 
 **🚨🚨🚨 COMPLETE DATA INCLUSION REQUIREMENTS 🚨🚨🚨**
 
-**ALL PROFESSIONAL EXPERIENCE MUST BE INCLUDED:**
-- **Include EVERY role** mentioned in the profile function response
+**🚨🚨🚨 MANDATORY: ALL PROFESSIONAL EXPERIENCE INCLUSION 🚨🚨🚨**
+- **Include EVERY SINGLE role** mentioned in the profile function response - NO EXCEPTIONS
+- **Include ALL 17+ work experiences** if present in the profile - NEVER limit to 3-4 roles
 - **Include ALL bullet points** for each role from the profile
 - **Include ALL achievements** mentioned in the profile
 - **Include ALL projects** mentioned in the profile
 - **Include ALL skills** mentioned in the profile (technical and soft)
 - **Include ALL education entries** mentioned in the profile
 - **Include ALL certifications** mentioned in the profile
+- **CAREER SPAN:** Include roles spanning the candidate's entire career from earliest to present
+- **CHRONOLOGICAL ORDER:** List ALL roles in reverse chronological order (most recent first)
 
 **COMPREHENSIVE CONTENT GENERATION RULES:**
 - ✅ **Include every single role** from the profile function response, regardless of length
