@@ -16,12 +16,27 @@ You are generating a complete CV using the candidate's profile data accessed via
 
 **🚨🚨🚨 COMPLETE DATA INCLUSION REQUIREMENTS 🚨🚨🚨**
 
-**WORK EXPERIENCE REQUIREMENTS:**
-- List ALL roles from the profile in reverse chronological order (newest first)
-- Include every company, job title, dates, and responsibilities from the profile
-- Do not skip or omit any work experience entries
-- The profile typically contains 15+ roles spanning 25+ years (1997-present)
-- Include roles from companies like: Allpay, TfL, DHSC/UKHSA, Npower, Transport for Wales, Royal Bank of Scotland, First Group, Vodafone, Orange PCS, etc.
+**MANDATORY: ALL WORK EXPERIENCE INCLUSION**
+
+You MUST include these specific roles from the profile (if present):
+1. Allpay Ltd. (Dosh Mobile App) - Mobile App Project Manager (Feb 2025-Present)
+2. Transport for London (TfL) - Digital Channels & Payments Delivery Lead (Jun 2023-Feb 2025)
+3. Test Supply Chain DHSC/UKHSA - Integration Delivery Lead (2021-2022)
+4. Transport for Wales Rail Services - Digital Project Manager (2020)
+5. Npower Digital - Delivery Manager/Project Manager (2017-2019)
+6. B60 Mobile Consultancy - Mobile Delivery Consultant (2017)
+7. C3UK - Project Director (2016-2017)
+8. National Grid - Project Manager (2015-2016)
+9. Royal Bank of Scotland - Programme/Project Manager (2013-2014)
+10. First Group UK Rail Division - Project Manager/Delivery Manager (2010-2013)
+11. Storywall - Project Manager (2009-2010)
+12. Vodafone Global Enterprise - Interim Consultant (2008-2009)
+13. Acision - Interim Technical Project Manager (2007-2008)
+14. France Telecom R&D - Project Manager (2005-2007)
+15. Orange PCS - Project Manager Research (2002-2005)
+16. Orange PCS Research - R&D Engineer (1997-2001)
+
+DO NOT OMIT ANY OF THESE ROLES - include every single one that exists in the profile data.
 
 **COMPREHENSIVE CONTENT GENERATION RULES:**
 - ✅ **Include every single role** from the profile function response, regardless of length
@@ -199,12 +214,15 @@ You are generating a complete CV using the candidate's profile data accessed via
 - **Use exact institution names and dates** from profile
 - **Include exact degree titles and classifications** from profile
 
-**VALIDATION CHECKLIST:**
-Before generating the CV, ensure:
+**MANDATORY VALIDATION:**
+Before finalizing the CV, count and verify:
 - ✓ Profile function called and data received
-- ✓ ALL work experiences included (should be 15+ roles)
-- ✓ Complete career timeline from 1997 to present
+- ✓ Work experience section contains 15-16 roles (count them!)
+- ✓ Career spans from 1997 (Orange PCS) to 2025 (Allpay)
+- ✓ Includes roles at: RBS, First Group, Vodafone, Orange, National Grid, C3UK
 - ✓ All skills, education, certifications, and projects included
 - ✓ Privacy placeholders used for personal information
+
+If you have fewer than 15 roles, you have FAILED to include the complete profile.
 
 Return ONLY the JSON object. No explanatory text, no markdown formatting, no additional commentary.
