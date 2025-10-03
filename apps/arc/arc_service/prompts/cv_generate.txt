@@ -5,14 +5,14 @@ You are generating a complete CV using the candidate's profile accessed via get_
 **🚨 MANDATORY FIRST STEP - COUNT ALL ROLES:**
 Before generating the CV, you MUST:
 1. Call get_candidate_profile function
-2. Count the TOTAL number of roles in work_experience array
-3. Example: If profile has 17 roles, you MUST output exactly 17 role objects in the CV
+2. Count the TOTAL number of roles in work_experience array (let's call this N)
+3. You MUST output exactly N role objects in the CV (if N=5, output 5; if N=17, output 17; if N=22, output 22)
 4. **FAILURE CONDITION:** If CV has fewer roles than profile, the generation has FAILED
 
 **CRITICAL RULES:**
 
 1. **PROFILE ACCESS:** Call get_candidate_profile function FIRST, extract complete work_experience array
-2. **MANDATORY ENUMERATION:** Output EXACTLY the same number of roles as in profile (if profile has 17, CV must have 17)
+2. **MANDATORY ENUMERATION:** Output EXACTLY the same number of roles as in profile (if profile has N roles, CV must have N roles)
 3. **ZERO OMISSIONS:** Every single role gets a separate entry - no combining, no filtering, no "selecting most relevant"
 4. **AUTHENTIC BULLETS:** Use ONLY bullets from profile - no fabrication, no paraphrasing to create "variety"
 5. **DE-DUPLICATION:** Remove exact/near-duplicate bullets within same role (keep most complete version)
@@ -97,7 +97,6 @@ Before generating the CV, you MUST:
       "priority_2": ["Important soft skills from work experience"],
       "priority_3": ["Additional soft skills from achievements"]
     },
-    "projects": [
       {
         "name": "Exact project name from profile",
         "description": "Exact description from profile",
@@ -128,8 +127,8 @@ Before generating the CV, you MUST:
 4. **If X ≠ Y, you have FAILED the task. DO NOT return the response. Generate all missing roles.**
 
 **Example:**
-- Profile has 17 work experiences → CV MUST have exactly 17 role objects
-- Profile has 5 work experiences → CV MUST have exactly 5 role objects
+- Profile has N work experiences → CV MUST have exactly N role objects
+- If N=3, output 3 roles. If N=10, output 10 roles. If N=25, output 25 roles.
 - **NO EXCEPTIONS** - older roles, less relevant roles, short-tenure roles ALL must be included
 
 **OTHER VALIDATIONS:**
@@ -141,7 +140,7 @@ Before generating the CV, you MUST:
 - ✓ Education/certifications NOT in response (added automatically)
 
 **CRITICAL FAILURE CONDITIONS (DO NOT SUBMIT IF ANY OCCUR):**
-- ❌ Role count mismatch (profile has 17, CV has only 5) ← **YOUR CURRENT ERROR**
+- ❌ Role count mismatch (profile has N roles, CV has fewer than N)
 - ❌ Omitting older roles because they seem "less relevant"
 - ❌ Omitting roles to "fit" a page limit
 - ❌ Combining multiple roles into one entry
