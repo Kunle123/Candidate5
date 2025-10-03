@@ -61,12 +61,17 @@ class FunctionBasedProfileManager:
         
         # Debug logging to verify profile completeness
         work_exp_count = len(profile.get('work_experience', []))
-        logger.info(f"[PROFILE DEBUG] Session {session_id}: Profile contains {work_exp_count} work experiences")
+        skills_count = len(profile.get('skills', []))
+        logger.info(f"[PROFILE DEBUG] Session {session_id}: Profile contains {work_exp_count} work experiences, {skills_count} skills")
         if work_exp_count > 0:
             companies = [exp.get('company', 'Unknown') for exp in profile.get('work_experience', [])]
             logger.info(f"[PROFILE DEBUG] Companies: {companies}")
         
-        return json.dumps(profile, indent=2)
+        # Filter out skills array to reduce payload size by ~45%
+        filtered_profile = {k: v for k, v in profile.items() if k != 'skills'}
+        logger.info(f"[PROFILE DEBUG] Filtered out skills array ({skills_count} skills) to reduce payload size")
+        
+        return json.dumps(filtered_profile, indent=2)
     
     def generate_with_profile_function(self, session_id: str, prompt: str, user_message: str, model: str = "gpt-4o") -> str:
         profile_function = self.create_profile_function(session_id)

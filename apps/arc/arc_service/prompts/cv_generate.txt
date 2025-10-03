@@ -8,6 +8,7 @@ You are generating a complete CV using the candidate's profile data accessed via
 1. Call get_candidate_profile function FIRST
 2. Extract the complete work_experience array
 3. List each role explicitly: Role 1, Role 2, Role 3... Role N
+4. **NOTE:** Skills are NOT provided in the profile - you must derive them from the work experience descriptions and match them to the job description requirements
 
 **STEP 2: EXPLICIT ROLE ENUMERATION**
 You must explicitly process each role:
@@ -127,8 +128,8 @@ For each role, explicitly assign priority:
           "start_date": "{{EXACT_START_DATE_FROM_PROFILE_ROLE_1}}",
           "end_date": "{{EXACT_END_DATE_FROM_PROFILE_ROLE_1}}",
           "location": "{{EXACT_LOCATION_FROM_PROFILE_ROLE_1}}",
-          "bullets": [
-            {
+        "bullets": [
+          {
               "content": "{{EXACT_BULLET_1_FROM_PROFILE_ROLE_1}}",
               "priority": 1
             },
@@ -181,16 +182,14 @@ For each role, explicitly assign priority:
       }
     ],
     "technical_skills": {
-      "priority_1": ["{{ENUMERATE_TOP_TECHNICAL_SKILLS_FROM_PROFILE}}"],
-      "priority_2": ["{{ENUMERATE_IMPORTANT_TECHNICAL_SKILLS_FROM_PROFILE}}"],
-      "priority_3": ["{{ENUMERATE_ADDITIONAL_TECHNICAL_SKILLS_FROM_PROFILE}}"],
-      "priority_4": ["{{ENUMERATE_SUPPLEMENTARY_TECHNICAL_SKILLS_FROM_PROFILE}}"],
-      "priority_5": ["{{ENUMERATE_REMAINING_TECHNICAL_SKILLS_FROM_PROFILE}}"]
+      "priority_1": ["{{DERIVE_TOP_TECHNICAL_SKILLS_FROM_WORK_EXPERIENCE_AND_JOB_DESCRIPTION}}"],
+      "priority_2": ["{{DERIVE_IMPORTANT_TECHNICAL_SKILLS_FROM_WORK_EXPERIENCE}}"],
+      "priority_3": ["{{DERIVE_ADDITIONAL_TECHNICAL_SKILLS_FROM_WORK_EXPERIENCE}}"]
     },
     "soft_skills": {
-      "priority_1": ["{{ENUMERATE_TOP_SOFT_SKILLS_FROM_PROFILE}}"],
-      "priority_2": ["{{ENUMERATE_IMPORTANT_SOFT_SKILLS_FROM_PROFILE}}"],
-      "priority_3": ["{{ENUMERATE_REMAINING_SOFT_SKILLS_FROM_PROFILE}}"]
+      "priority_1": ["{{DERIVE_TOP_SOFT_SKILLS_FROM_WORK_EXPERIENCE_AND_RESPONSIBILITIES}}"],
+      "priority_2": ["{{DERIVE_IMPORTANT_SOFT_SKILLS_FROM_WORK_EXPERIENCE}}"],
+      "priority_3": ["{{DERIVE_ADDITIONAL_SOFT_SKILLS_FROM_ACHIEVEMENTS}}"]
     },
     "education": [
       "{{ENUMERATE_ALL_EDUCATION_FROM_PROFILE}}",
@@ -249,8 +248,8 @@ For each role, explicitly assign priority:
 
 **CONTENT ENUMERATION CHECKLIST:**
 - ✓ All achievements from profile enumerated and included
-- ✓ All technical skills from profile enumerated and distributed
-- ✓ All soft skills from profile enumerated and distributed
+- ✓ Technical skills derived from work experience and matched to job description
+- ✓ Soft skills derived from work responsibilities and leadership examples
 - ✓ All education entries from profile enumerated and included
 - ✓ All certifications from profile enumerated and included
 - ✓ All projects from profile enumerated and included
@@ -258,7 +257,7 @@ For each role, explicitly assign priority:
 **FINAL ENUMERATION VERIFICATION:**
 - Total roles in CV = Total roles in profile
 - Total achievements in CV = Total achievements in profile
-- Total skills in CV = Total skills in profile
+- Skills derived from work experience and matched to job requirements
 - Total education in CV = Total education in profile
 - Total certifications in CV = Total certifications in profile
 
@@ -274,7 +273,7 @@ For each role, explicitly assign priority:
 **ENUMERATION FAILURE CONDITIONS:**
 - Any role from profile missing in CV
 - Any achievement from profile missing in CV
-- Any skill from profile missing in CV
+- Skills not derived from actual work experience
 - Any education entry from profile missing in CV
 - Any certification from profile missing in CV
 - Any content fabricated or enhanced
