@@ -47,17 +47,8 @@ class FunctionBasedProfileManager:
         """Create functions for batched role access (groups of 5)"""
         return [
             {
-                "name": "get_role_count",
-                "description": "Get the total number of work experience roles in the candidate's profile. Call this FIRST to determine how many batches to request.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            },
-            {
                 "name": "get_roles_batch",
-                "description": "Get a batch of 5 work experience roles starting from a specific index. Call this multiple times to get all roles (batch 0-4, then 5-9, then 10-14, etc).",
+                "description": "Get a batch of 5 work experience roles starting from a specific index. You MUST call this multiple times to get all roles. The batch indices will be provided in the system prompt.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -67,15 +58,6 @@ class FunctionBasedProfileManager:
                         }
                     },
                     "required": ["start_index"]
-                }
-            },
-            {
-                "name": "get_candidate_metadata",
-                "description": "Get candidate's basic information, projects, languages, and interests (but NOT work experience - use get_roles_batch for that).",
-                "parameters": {
-                    "type": "object",
-                    "properties": {},
-                    "required": []
                 }
             }
         ]
@@ -96,12 +78,7 @@ class FunctionBasedProfileManager:
         """Handle batched and legacy profile function calls"""
         profile = self.get_profile(session_id)
         
-        if function_name == "get_role_count":
-            count = len(profile.get('work_experience', []))
-            logger.info(f"[BATCHED] Session {session_id}: Returning role count = {count}")
-            return json.dumps({"role_count": count, "batch_size": 5})
-        
-        elif function_name == "get_roles_batch":
+        if function_name == "get_roles_batch":
             if not arguments or 'start_index' not in arguments:
                 raise ValueError("get_roles_batch requires 'start_index' parameter")
             start_idx = arguments['start_index']
@@ -117,12 +94,6 @@ class FunctionBasedProfileManager:
             }
             logger.info(f"[BATCHED] Session {session_id}: Returning roles {start_idx}-{start_idx+len(batch)-1} of {len(work_exp)} total")
             return json.dumps(batch_info, indent=2)
-        
-        elif function_name == "get_candidate_metadata":
-            # Return everything EXCEPT work_experience
-            metadata = {k: v for k, v in profile.items() if k not in ['work_experience', 'skills', 'education', 'certifications']}
-            logger.info(f"[BATCHED] Session {session_id}: Returning metadata (excluding work_experience, skills, education, certs)")
-            return json.dumps(metadata, indent=2)
         
         elif function_name == "get_candidate_profile":
             # Legacy full profile return
@@ -179,10 +150,34 @@ class FunctionBasedProfileManager:
     
     def generate_with_batched_roles(self, session_id: str, prompt: str, user_message: str, model: str = "gpt-4o") -> str:
         """Generate CV using batched role access (5 roles at a time)"""
+        profile = self.get_profile(session_id)
         profile_functions = self.create_profile_functions(session_id)
         
+        # Calculate batch information upfront
+        work_exp = profile.get('work_experience', [])
+        total_roles = len(work_exp)
+        batch_size = 5
+        batch_indices = list(range(0, total_roles, batch_size))
+        
+        # Extract metadata to include in prompt (small data)
+        metadata = {k: v for k, v in profile.items() if k not in ['work_experience', 'skills', 'education', 'certifications']}
+        metadata_str = json.dumps(metadata, indent=2)
+        
+        # Enhance prompt with batch instructions and metadata
+        enhanced_prompt = f"""{prompt}
+
+**PROFILE METADATA (Projects, Languages, Interests):**
+{metadata_str}
+
+**MANDATORY BATCH FETCHING:**
+This profile has {total_roles} work experience roles. You MUST call get_roles_batch with these exact indices:
+{', '.join([str(idx) for idx in batch_indices])}
+
+Example: For {total_roles} roles, call get_roles_batch({batch_indices[0]}), get_roles_batch({batch_indices[1] if len(batch_indices) > 1 else 'N/A'}), etc.
+After fetching ALL batches, generate the complete CV with all {total_roles} roles."""
+
         messages = [
-            {"role": "system", "content": prompt},
+            {"role": "system", "content": enhanced_prompt},
             {"role": "user", "content": user_message}
         ]
         
@@ -192,10 +187,10 @@ class FunctionBasedProfileManager:
         total_tokens = 0
         
         # Allow LLM to make multiple function calls iteratively
-        max_iterations = 10  # Prevent infinite loops (17 roles = 4 batches + metadata + count = ~6 calls)
+        max_iterations = 10  # Prevent infinite loops
         for iteration in range(max_iterations):
-            # Force function call on first iteration to ensure LLM fetches profile
-            function_call_param = {"name": "get_role_count"} if iteration == 0 else "auto"
+            # Force function call on first iteration to ensure LLM fetches roles
+            function_call_param = {"name": "get_roles_batch"} if iteration == 0 else "auto"
             
             response = self.client.chat.completions.create(
                 model=model,
