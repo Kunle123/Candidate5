@@ -167,13 +167,15 @@ class FunctionBasedProfileManager:
         batch_calls = ', '.join([f"get_roles_batch({idx})" for idx in batch_indices])
         logger.info(f"[BATCHED] Session {session_id}: Profile has {total_roles} roles, will fetch in {len(batch_indices)} batches: {batch_indices}")
         
-        # Create minimal prompt for function calls (saves ~2,500 tokens per call)
-        minimal_prompt = f"""You are generating a CV. Fetch all work experience data by calling get_roles_batch with these indices: {batch_calls}
+        # Create minimal prompt for function calls (saves ~2,000 tokens per call)
+        minimal_prompt = f"""You are a CV generation assistant. Your ONLY task right now is to fetch work experience data.
 
-Profile metadata (projects, languages, interests):
+**MANDATORY ACTION:** Call get_roles_batch function {len(batch_indices)} times with these exact indices: {batch_calls}
+
+Profile metadata:
 {metadata_str}
 
-Call get_roles_batch for each index, then I'll give you the full instructions."""
+After you fetch all batches, I will provide full CV generation instructions. Start by calling get_roles_batch({batch_indices[0]})."""
 
         # Full prompt for final generation
         full_prompt = f"""{prompt}
