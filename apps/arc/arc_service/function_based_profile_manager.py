@@ -62,14 +62,19 @@ class FunctionBasedProfileManager:
         # Debug logging to verify profile completeness
         work_exp_count = len(profile.get('work_experience', []))
         skills_count = len(profile.get('skills', []))
-        logger.info(f"[PROFILE DEBUG] Session {session_id}: Profile contains {work_exp_count} work experiences, {skills_count} skills")
+        education_count = len(profile.get('education', []))
+        certifications_count = len(profile.get('certifications', []))
+        
+        logger.info(f"[PROFILE DEBUG] Session {session_id}: Profile contains {work_exp_count} work experiences, {skills_count} skills, {education_count} education, {certifications_count} certifications")
         if work_exp_count > 0:
             companies = [exp.get('company', 'Unknown') for exp in profile.get('work_experience', [])]
             logger.info(f"[PROFILE DEBUG] Companies: {companies}")
         
-        # Filter out skills array to reduce payload size by ~45%
-        filtered_profile = {k: v for k, v in profile.items() if k != 'skills'}
-        logger.info(f"[PROFILE DEBUG] Filtered out skills array ({skills_count} skills) to reduce payload size")
+        # Filter out static data that AI doesn't meaningfully transform
+        # These will be merged back post-generation
+        filtered_profile = {k: v for k, v in profile.items() 
+                          if k not in ['skills', 'education', 'certifications']}
+        logger.info(f"[PROFILE DEBUG] Filtered out: skills ({skills_count}), education ({education_count}), certifications ({certifications_count}) - ~55% payload reduction")
         
         return json.dumps(filtered_profile, indent=2)
     

@@ -86,6 +86,10 @@ async def cv_preview_function_based(session_id: str, job_description: str) -> Di
 async def cv_generate_function_based(session_id: str, job_description: str) -> Dict[str, Any]:
     try:
         manager = get_profile_manager()
+        
+        # Get the original profile to extract static data
+        original_profile = manager.get_profile(session_id)
+        
         prompt = load_prompt("cv_generate.txt")
         response_text = manager.generate_with_profile_function(
             session_id=session_id,
@@ -94,6 +98,19 @@ async def cv_generate_function_based(session_id: str, job_description: str) -> D
             model="gpt-4o"
         )
         cv_data = parse_json_response(response_text)
+        
+        # Merge back static data (education, certifications) that was filtered out
+        if "cv" in cv_data:
+            # Add education from original profile if not present in AI response
+            if "education" not in cv_data["cv"] or not cv_data["cv"]["education"]:
+                cv_data["cv"]["education"] = original_profile.get("education", [])
+                logger.info(f"[CV GENERATE] Merged {len(original_profile.get('education', []))} education entries from original profile")
+            
+            # Add certifications from original profile if not present in AI response
+            if "certifications" not in cv_data["cv"] or not cv_data["cv"]["certifications"]:
+                cv_data["cv"]["certifications"] = original_profile.get("certifications", [])
+                logger.info(f"[CV GENERATE] Merged {len(original_profile.get('certifications', []))} certifications from original profile")
+        
         cv_data.update({
             "session_id": session_id,
             "generation_method": "function_based",

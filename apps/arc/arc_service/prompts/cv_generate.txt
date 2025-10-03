@@ -8,7 +8,9 @@ You are generating a complete CV using the candidate's profile data accessed via
 1. Call get_candidate_profile function FIRST
 2. Extract the complete work_experience array
 3. List each role explicitly: Role 1, Role 2, Role 3... Role N
-4. **NOTE:** Skills are NOT provided in the profile - you must derive them from the work experience descriptions and match them to the job description requirements
+4. **NOTE:** Skills, education, and certifications are NOT provided in the profile:
+   - Skills: Derive from work experience descriptions and match to job description
+   - Education & Certifications: Will be added automatically - DO NOT include in your response
 
 **STEP 2: EXPLICIT ROLE ENUMERATION**
 You must explicitly process each role:
@@ -113,7 +115,7 @@ For each role, explicitly assign priority:
       "name": "{{CANDIDATE_NAME}}",
       "contact": "{{CONTACT_INFO}}",
       "professional_title": "{{EXACT_TITLE_FROM_MOST_RECENT_ROLE}}",
-      "location": "{{CONTACT_INFO}}"
+      "location": "{{CANDIDATE_LOCATION_FROM_PROFILE}}"
     },
     "professional_summary": {
       "content": "{{COMPREHENSIVE_SUMMARY_INCORPORATING_ALL_MAJOR_PROFILE_ELEMENTS}}",
@@ -191,25 +193,6 @@ For each role, explicitly assign priority:
       "priority_2": ["{{DERIVE_IMPORTANT_SOFT_SKILLS_FROM_WORK_EXPERIENCE}}"],
       "priority_3": ["{{DERIVE_ADDITIONAL_SOFT_SKILLS_FROM_ACHIEVEMENTS}}"]
     },
-    "education": [
-      "{{ENUMERATE_ALL_EDUCATION_FROM_PROFILE}}",
-      {
-        "degree": "{{EXACT_DEGREE_1_FROM_PROFILE}}",
-        "institution": "{{EXACT_INSTITUTION_1_FROM_PROFILE}}",
-        "graduation_date": "{{EXACT_DATE_1_FROM_PROFILE}}",
-        "classification": "{{EXACT_GRADE_1_FROM_PROFILE}}",
-        "priority": "{{ASSIGN_BASED_ON_RELEVANCE}}"
-      }
-    ],
-    "certifications": [
-      "{{ENUMERATE_ALL_CERTIFICATIONS_FROM_PROFILE}}",
-      {
-        "name": "{{EXACT_CERTIFICATION_1_FROM_PROFILE}}",
-        "issuer": "{{EXACT_ISSUER_1_FROM_PROFILE}}",
-        "date": "{{EXACT_DATE_1_FROM_PROFILE}}",
-        "priority": "{{ASSIGN_BASED_ON_RELEVANCE}}"
-      }
-    ],
     "projects": [
       "{{ENUMERATE_ALL_PROJECTS_FROM_PROFILE}}",
       {
@@ -250,16 +233,14 @@ For each role, explicitly assign priority:
 - ✓ All achievements from profile enumerated and included
 - ✓ Technical skills derived from work experience and matched to job description
 - ✓ Soft skills derived from work responsibilities and leadership examples
-- ✓ All education entries from profile enumerated and included
-- ✓ All certifications from profile enumerated and included
 - ✓ All projects from profile enumerated and included
+- ✓ Education & certifications will be added automatically (not in your response)
 
 **FINAL ENUMERATION VERIFICATION:**
 - Total roles in CV = Total roles in profile
 - Total achievements in CV = Total achievements in profile
 - Skills derived from work experience and matched to job requirements
-- Total education in CV = Total education in profile
-- Total certifications in CV = Total certifications in profile
+- Projects from profile included in CV
 
 **🚨🚨🚨 CRITICAL SUCCESS METRICS 🚨🚨🚨**
 
@@ -274,9 +255,9 @@ For each role, explicitly assign priority:
 - Any role from profile missing in CV
 - Any achievement from profile missing in CV
 - Skills not derived from actual work experience
-- Any education entry from profile missing in CV
-- Any certification from profile missing in CV
+- Any project from profile missing in CV
 - Any content fabricated or enhanced
+- Including education or certifications in your response (these are added automatically)
 
 Return ONLY the JSON object. No explanatory text, no markdown formatting, no additional commentary.
 
