@@ -66,7 +66,30 @@ For each role in the profile, create this exact structure:
 - ❌ **NEVER combine multiple roles** into single entries
 - ❌ **NEVER omit bullet points** to save space
 
-**🚨🚨🚨 ENUMERATED PRIORITY ASSIGNMENT 🚨🚨🚨**
+**🚨🚨🚨 ACHIEVEMENTS EXTRACTION RULES 🚨🚨🚨**
+
+**PURPOSE:** Create a "highlight reel" of the candidate's most impactful accomplishments across ALL roles that demonstrate relevant experience for this job.
+
+**EXTRACTION RULES:**
+1. **Scan ALL work experience bullet points** across all roles (not just recent ones)
+2. **Identify quantifiable achievements** with numbers, metrics, or measurable impact
+3. **Prioritize by job relevance** - achievements that match job requirements get Priority 1
+4. **Include evidence source** - note which company/role each achievement came from
+5. **Extract 5-10 key achievements** that build a comprehensive picture of capability
+6. **Use exact wording** from profile - do not embellish or fabricate
+
+**PRIORITIZATION CRITERIA:**
+- **Priority 1:** Directly matches job requirements + quantifiable impact
+- **Priority 2:** Relevant to job domain + demonstrates key skills
+- **Priority 3:** Demonstrates transferable skills + notable accomplishment
+
+**EXAMPLES OF GOOD ACHIEVEMENTS:**
+- "Led migration of platform to AWS, reducing infrastructure costs by 40%"
+- "Coordinated 20+ suppliers for mobile payments integration"
+- "Delivered data lake capability integrating 20+ data sources"
+- "Managed teams of 50+ across multiple international locations"
+
+**🚨🚨🚨 ENUMERATED PRIORITY ASSIGNMENT (FOR WORK EXPERIENCE) 🚨🚨🚨**
 
 **EXPLICIT PRIORITY MAPPING:**
 - **Roles 1-3 (Most Recent):** Priority 1
@@ -173,14 +196,20 @@ For each role, explicitly assign priority:
       ]
     },
     "achievements": [
-      "{{ENUMERATE_ALL_ACHIEVEMENTS_FROM_PROFILE}}",
       {
-        "content": "{{EXACT_ACHIEVEMENT_1_FROM_PROFILE}}",
-        "priority": "{{ASSIGN_BASED_ON_SIGNIFICANCE}}"
+        "content": "{{EXTRACT_TOP_QUANTIFIABLE_ACHIEVEMENT_FROM_ALL_WORK_EXPERIENCE}}",
+        "priority": 1,
+        "evidence_source": "{{COMPANY_AND_ROLE_WHERE_THIS_OCCURRED}}"
       },
       {
-        "content": "{{EXACT_ACHIEVEMENT_2_FROM_PROFILE}}",
-        "priority": "{{ASSIGN_BASED_ON_SIGNIFICANCE}}"
+        "content": "{{EXTRACT_SECOND_MOST_RELEVANT_ACHIEVEMENT_FROM_ALL_ROLES}}",
+        "priority": 1,
+        "evidence_source": "{{COMPANY_AND_ROLE_WHERE_THIS_OCCURRED}}"
+      },
+      {
+        "content": "{{CONTINUE_EXTRACTING_KEY_ACHIEVEMENTS_ACROSS_ALL_ROLES}}",
+        "priority": "{{1_TO_3_BASED_ON_RELEVANCE_AND_IMPACT}}",
+        "evidence_source": "{{COMPANY_AND_ROLE_WHERE_THIS_OCCURRED}}"
       }
     ],
     "technical_skills": {
@@ -229,16 +258,18 @@ For each role, explicitly assign priority:
 - ✓ Assigned appropriate priorities
 - ✓ No roles omitted or combined
 
-**CONTENT ENUMERATION CHECKLIST:**
-- ✓ All achievements from profile enumerated and included
+**CONTENT EXTRACTION CHECKLIST:**
+- ✓ 5-10 key achievements extracted from across ALL work experience bullets
+- ✓ Achievements prioritized by job relevance and quantifiable impact
+- ✓ Evidence source included for each achievement (company/role)
 - ✓ Technical skills derived from work experience and matched to job description
 - ✓ Soft skills derived from work responsibilities and leadership examples
 - ✓ All projects from profile enumerated and included
 - ✓ Education & certifications will be added automatically (not in your response)
 
-**FINAL ENUMERATION VERIFICATION:**
+**FINAL VERIFICATION:**
 - Total roles in CV = Total roles in profile
-- Total achievements in CV = Total achievements in profile
+- 5-10 achievements extracted across all roles with evidence sources
 - Skills derived from work experience and matched to job requirements
 - Projects from profile included in CV
 
@@ -251,9 +282,10 @@ For each role, explicitly assign priority:
 - **Exact Replication:** All content exactly as stated in profile
 - **Privacy Protection:** All personal data replaced with placeholders
 
-**ENUMERATION FAILURE CONDITIONS:**
+**FAILURE CONDITIONS:**
 - Any role from profile missing in CV
-- Any achievement from profile missing in CV
+- Achievements copied from non-existent separate field (extract from work experience bullets only)
+- Achievements without evidence_source field showing which role they came from
 - Skills not derived from actual work experience
 - Any project from profile missing in CV
 - Any content fabricated or enhanced
