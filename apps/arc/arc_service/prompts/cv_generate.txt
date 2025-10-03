@@ -12,6 +12,30 @@ You are generating a complete CV using the candidate's profile data accessed via
    - Skills: Derive from work experience descriptions and match to job description
    - Education & Certifications: Will be added automatically - DO NOT include in your response
 
+**🚨🚨🚨 CONTENT VOLUME & DETAIL REQUIREMENTS 🚨🚨🚨**
+
+**TARGET:** Generate a comprehensive, detailed CV (4+ pages worth of content)
+
+**CRITICAL:** Include ALL roles from profile even if it exceeds page target. Page limits are guidelines, NOT hard cutoffs. Completeness > page count.
+
+**BULLET DISTRIBUTION BY ROLE RECENCY:**
+- **Roles 1-3 (Most Recent):** 6-9 bullets per role - MAXIMUM DETAIL
+- **Roles 4-6:** 5-7 bullets per role - HIGH DETAIL  
+- **Roles 7-10:** 4-6 bullets per role - MODERATE DETAIL
+- **Roles 11-15:** 3-5 bullets per role - STANDARD DETAIL
+- **Roles 16+:** 2-3 bullets per role - ESSENTIAL DETAIL (but still include them!)
+
+**BULLET ORDERING WITHIN EACH ROLE:**
+1. **Position 1 (Top Bullet):** Most job-relevant achievement/responsibility with quantifiable impact
+2. **Position 2:** Second most job-relevant achievement/responsibility  
+3. **Positions 3+:** Remaining bullets ordered by relevance to job description
+
+**DETAIL LEVEL REQUIREMENTS:**
+- Each bullet should be comprehensive and detailed (not sparse summaries)
+- Include ALL bullets from the profile for each role
+- Preserve exact wording from profile - do not abbreviate or condense
+- If a role has 7 bullets in the profile, include all 7 bullets in the CV
+
 **STEP 2: EXPLICIT ROLE ENUMERATION**
 You must explicitly process each role:
 - Role 1: [Company 1] - [Title 1] - [Dates 1]
@@ -44,17 +68,32 @@ For each role in the profile, create this exact structure:
   "location": "[EXACT_LOCATION_FROM_PROFILE_ROLE_N]",
   "bullets": [
     {
-      "content": "[EXACT_BULLET_1_FROM_PROFILE_ROLE_N]",
-      "priority": "[PRIORITY_BASED_ON_ROLE_RECENCY]"
+      "content": "[MOST_JOB_RELEVANT_BULLET_WITH_QUANTIFIABLE_IMPACT]",
+      "priority": "[PRIORITY_BASED_ON_ROLE_RECENCY]",
+      "relevance_score": 1
     },
     {
-      "content": "[EXACT_BULLET_2_FROM_PROFILE_ROLE_N]",
-      "priority": "[PRIORITY_BASED_ON_ROLE_RECENCY]"
+      "content": "[SECOND_MOST_JOB_RELEVANT_BULLET]",
+      "priority": "[PRIORITY_BASED_ON_ROLE_RECENCY]",
+      "relevance_score": 2
+    },
+    {
+      "content": "[THIRD_MOST_RELEVANT_BULLET]",
+      "priority": "[PRIORITY_BASED_ON_ROLE_RECENCY]",
+      "relevance_score": 3
     }
-    // ... continue for ALL bullets for this role
+    // ... continue for ALL remaining bullets ordered by relevance
+    // Include ALL bullets from profile for this role
   ]
 }
 ```
+
+**CRITICAL BULLET ORDERING RULES:**
+1. **Analyze ALL bullets** for the role against job description
+2. **Rank by relevance** - bullets matching job keywords/requirements go first
+3. **Top 2 positions** MUST be the most job-relevant bullets
+4. **Include ALL bullets** from profile - do not omit any
+5. **Preserve exact wording** - reorder only, don't modify content
 
 **MANDATORY ROLE INCLUSION RULES:**
 - ✅ **Create separate role object** for each work experience in profile
@@ -269,9 +308,15 @@ For each role, explicitly assign priority:
 
 **FINAL VERIFICATION:**
 - Total roles in CV = Total roles in profile
+- ALL bullets from profile included for each role (no omissions)
+- Top 2 bullets in each role are most job-relevant
+- Recent roles (1-3) have 6-9 bullets each
+- Mid-career roles (4-10) have 4-7 bullets each
+- Older roles (11+) have 2-5 bullets each
 - 5-10 achievements extracted across all roles with evidence sources
 - Skills derived from work experience and matched to job requirements
 - Projects from profile included in CV
+- Content volume sufficient for 4+ page comprehensive CV
 
 **🚨🚨🚨 CRITICAL SUCCESS METRICS 🚨🚨🚨**
 
@@ -283,7 +328,10 @@ For each role, explicitly assign priority:
 - **Privacy Protection:** All personal data replaced with placeholders
 
 **FAILURE CONDITIONS:**
-- Any role from profile missing in CV
+- Any role from profile missing in CV (include ALL roles regardless of page count)
+- Omitting older roles to "fit" a page limit (completeness > page count)
+- Not including ALL bullets from profile for each role
+- Top 2 bullets in a role are NOT the most job-relevant
 - Achievements copied from non-existent separate field (extract from work experience bullets only)
 - Achievements without evidence_source field showing which role they came from
 - Skills not derived from actual work experience
