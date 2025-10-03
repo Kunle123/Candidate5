@@ -31,18 +31,31 @@ You are generating a complete CV using batched access to the candidate's profile
 2. **ZERO OMISSIONS:** Every role from every batch must appear in final CV
 3. **AUTHENTIC BULLETS:** Use ONLY bullets from profile - no fabrication
 4. **DE-DUPLICATION:** Remove near-duplicate bullets within same role
-5. **SMART ORDERING:** Top 2 bullets per role = most job-relevant
-6. **PRIVACY:** Use "{{CANDIDATE_NAME}}", "{{CONTACT_INFO}}", "{{CANDIDATE_LOCATION_FROM_PROFILE}}"
+5. **SMART BULLET ORDERING:** Within each role, order bullets by:
+   - Position 1-2: Most job-relevant bullets with quantifiable impact
+   - Position 3+: Other relevant bullets, most impactful first
+6. **DETAIL LEVEL:** Recent roles (1-3) should have maximum detail, older roles (16+) should be more concise
+7. **PRIVACY:** Use "{{CANDIDATE_NAME}}", "{{CONTACT_INFO}}", "{{CANDIDATE_LOCATION_FROM_PROFILE}}"
 
 **CONTENT VOLUME:**
 - Target: 4+ pages
 - Include ALL roles even if exceeds page target
 - Completeness > page count
 
-**BULLET DISTRIBUTION (USE ONLY AVAILABLE BULLETS):**
-- Roles 1-3: All bullets, ordered by job relevance
-- Roles 4-10: All bullets, ordered by job relevance
-- Roles 11+: All bullets, ordered by job relevance
+**BULLET DISTRIBUTION BY ROLE RECENCY (USE ONLY AVAILABLE BULLETS):**
+
+**Recent roles get more detail than older roles.** Use ALL available bullets from profile for each role, but the profile naturally has more bullets for recent roles:
+
+- **Roles 1-3 (Most Recent):** All bullets from profile, ordered by job relevance (typically 6-9 bullets if available)
+- **Roles 4-6:** All bullets from profile, ordered by job relevance (typically 5-7 bullets if available)  
+- **Roles 7-10:** All bullets from profile, ordered by job relevance (typically 4-6 bullets if available)
+- **Roles 11-15:** All bullets from profile, ordered by job relevance (typically 3-5 bullets if available)
+- **Roles 16+:** All bullets from profile, ordered by job relevance (typically 2-3 bullets if available)
+
+**CRITICAL:** These are typical distributions based on what's ACTUALLY in the profile, NOT minimums to fabricate.
+- If profile has 4 bullets for a role → output exactly 4
+- If profile has 10 bullets for a role → output all 10
+- **More detail in recent roles, but NEVER omit older roles**
 
 **ACHIEVEMENTS:** Extract 5-10 quantifiable achievements from across ALL work experience bullets with evidence_source (company/role).
 
