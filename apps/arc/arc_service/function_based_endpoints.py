@@ -63,6 +63,8 @@ async def cv_preview_function_based(session_id: str, job_description: str) -> Di
     try:
         manager = get_profile_manager()
         prompt = load_prompt("cv_preview.txt")
+        
+        # Preview only needs high-level analysis, not full role enumeration
         response_text = manager.generate_with_profile_function(
             session_id=session_id,
             prompt=prompt,

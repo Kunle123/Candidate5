@@ -167,29 +167,38 @@ class FunctionBasedProfileManager:
         batch_calls = ', '.join([f"get_roles_batch({idx})" for idx in batch_indices])
         logger.info(f"[BATCHED] Session {session_id}: Profile has {total_roles} roles, will fetch in {len(batch_indices)} batches: {batch_indices}")
         
-        # Enhance prompt with batch instructions and metadata
-        enhanced_prompt = f"""{prompt}
+        # Create minimal prompt for function calls (saves ~2,500 tokens per call)
+        minimal_prompt = f"""You are generating a CV. Fetch all work experience data by calling get_roles_batch with these indices: {batch_calls}
+
+Profile metadata (projects, languages, interests):
+{metadata_str}
+
+Call get_roles_batch for each index, then I'll give you the full instructions."""
+
+        # Full prompt for final generation
+        full_prompt = f"""{prompt}
 
 **PROFILE METADATA (Projects, Languages, Interests):**
 {metadata_str}
 
-**MANDATORY BATCH FETCHING:**
-This profile has {total_roles} work experience roles. You MUST call get_roles_batch exactly {len(batch_indices)} times with these indices:
-{batch_calls}
+**Work Experience:** You have fetched {total_roles} roles across {len(batch_indices)} batches. Use ALL of them.
 
-After fetching ALL {len(batch_indices)} batches, generate the complete CV with all {total_roles} roles."""
+Generate the complete CV with all {total_roles} roles."""
 
+        # Start with minimal prompt
         messages = [
-            {"role": "system", "content": enhanced_prompt},
+            {"role": "system", "content": minimal_prompt},
             {"role": "user", "content": user_message}
         ]
         
         logger.info(f"[BATCHED] Session {session_id}: Starting generation with optimized approach ({len(batch_indices)} batches expected)")
         
-        # Track cumulative token usage
+        # Track cumulative token usage and batches fetched
         total_prompt_tokens = 0
         total_completion_tokens = 0
         total_tokens = 0
+        batches_fetched = 0
+        total_batches_needed = len(batch_indices)
         
         # Allow LLM to make multiple function calls iteratively
         max_iterations = 10  # Prevent infinite loops
@@ -226,6 +235,11 @@ After fetching ALL {len(batch_indices)} batches, generate the complete CV with a
             logger.info(f"[BATCHED] Session {session_id}: LLM calling {func_name} with args {func_args}")
             func_result = self.handle_profile_function_call(session_id, func_name, func_args)
             
+            # Track batch fetching
+            if func_name == "get_roles_batch":
+                batches_fetched += 1
+                logger.info(f"[BATCHED] Session {session_id}: Fetched batch {batches_fetched}/{total_batches_needed}")
+            
             # Add function call and result to conversation
             messages.append({
                 "role": "assistant",
@@ -237,6 +251,11 @@ After fetching ALL {len(batch_indices)} batches, generate the complete CV with a
                 "name": func_name,
                 "content": func_result
             })
+            
+            # Switch to full prompt after all batches are fetched
+            if batches_fetched == total_batches_needed and messages[0]["role"] == "system":
+                logger.info(f"[BATCHED] Session {session_id}: All batches fetched, switching to full prompt for generation")
+                messages[0] = {"role": "system", "content": full_prompt}
         
         logger.warning(f"[BATCHED] Session {session_id}: Hit max iterations ({max_iterations})")
         return "Error: Max iterations reached"
