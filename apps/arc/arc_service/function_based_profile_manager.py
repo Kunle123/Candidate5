@@ -189,10 +189,14 @@ class FunctionBasedProfileManager:
         # Allow LLM to make multiple function calls iteratively
         max_iterations = 10  # Prevent infinite loops (17 roles = 4 batches + metadata + count = ~6 calls)
         for iteration in range(max_iterations):
+            # Force function call on first iteration to ensure LLM fetches profile
+            function_call_param = {"name": "get_role_count"} if iteration == 0 else "auto"
+            
             response = self.client.chat.completions.create(
                 model=model,
                 messages=messages,
-                functions=profile_functions
+                functions=profile_functions,
+                function_call=function_call_param
             )
             
             message = response.choices[0].message
