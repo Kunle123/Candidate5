@@ -31,8 +31,12 @@ Generate a preview with these sections:
    - Highlight strengths and gaps based on actual profile data
    - Provide a match score (0-100) based on evidence from the profile
 
-3. **Keyword Coverage**
-   - List which job keywords are present in the profile and which are missing
+3. **Keyword Coverage with RAG Status**
+   - Analyze each keyword from the job description against the candidate's profile
+   - Assign RAG (Red/Amber/Green) status based on evidence strength:
+     * **Green**: Strong evidence (keyword or close synonym explicitly mentioned in profile)
+     * **Amber**: Partial evidence (related experience/skills but not exact keyword match)
+     * **Red**: No evidence (keyword not found and no related experience)
    - Reference the specific profile sections where keywords are found
 
 **CONTENT REQUIREMENTS:**
@@ -61,12 +65,26 @@ Respond ONLY with a valid JSON object. No explanatory text, no markdown formatti
     "evidence_source": "Profile sections used for analysis"
   },
   "keyword_coverage": {
-    "present_in_profile": ["keyword1", "keyword2"],
-    "missing_from_profile": ["keyword3"],
-    "profile_references": {
-      "keyword1": "work_experience",
-      "keyword2": "skills"
-    }
+    "keywords": [
+      {
+        "keyword": "keyword1",
+        "status": "green",
+        "evidence": "Strong evidence found in work_experience at Company X",
+        "profile_section": "work_experience"
+      },
+      {
+        "keyword": "keyword2",
+        "status": "amber",
+        "evidence": "Partial match - related experience with similar technology/concept",
+        "profile_section": "work_experience"
+      },
+      {
+        "keyword": "keyword3",
+        "status": "red",
+        "evidence": "No evidence found in profile",
+        "profile_section": null
+      }
+    ]
   }
 }
 ```
