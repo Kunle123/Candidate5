@@ -43,7 +43,45 @@ class FunctionBasedProfileManager:
             return True
         return False
     
+    def create_profile_functions(self, session_id: str) -> list:
+        """Create functions for batched role access (groups of 5)"""
+        return [
+            {
+                "name": "get_role_count",
+                "description": "Get the total number of work experience roles in the candidate's profile. Call this FIRST to determine how many batches to request.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            },
+            {
+                "name": "get_roles_batch",
+                "description": "Get a batch of 5 work experience roles starting from a specific index. Call this multiple times to get all roles (batch 0-4, then 5-9, then 10-14, etc).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "start_index": {
+                            "type": "integer",
+                            "description": "The starting index for this batch (0, 5, 10, 15, etc). Each batch returns up to 5 roles."
+                        }
+                    },
+                    "required": ["start_index"]
+                }
+            },
+            {
+                "name": "get_candidate_metadata",
+                "description": "Get candidate's basic information, projects, languages, and interests (but NOT work experience - use get_roles_batch for that).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            }
+        ]
+    
     def create_profile_function(self, session_id: str) -> Dict[str, Any]:
+        """Legacy single function - returns full profile"""
         return {
             "name": "get_candidate_profile",
             "description": "Get the complete candidate profile data including work experience, education, skills, and personal information. This function MUST be called before generating any CV content.",
@@ -54,29 +92,59 @@ class FunctionBasedProfileManager:
             }
         }
     
-    def handle_profile_function_call(self, session_id: str, function_name: str) -> str:
-        if function_name != "get_candidate_profile":
-            raise ValueError(f"Unknown function: {function_name}")
+    def handle_profile_function_call(self, session_id: str, function_name: str, arguments: Dict[str, Any] = None) -> str:
+        """Handle batched and legacy profile function calls"""
         profile = self.get_profile(session_id)
         
-        # Debug logging to verify profile completeness
-        work_exp_count = len(profile.get('work_experience', []))
-        skills_count = len(profile.get('skills', []))
-        education_count = len(profile.get('education', []))
-        certifications_count = len(profile.get('certifications', []))
+        if function_name == "get_role_count":
+            count = len(profile.get('work_experience', []))
+            logger.info(f"[BATCHED] Session {session_id}: Returning role count = {count}")
+            return json.dumps({"role_count": count, "batch_size": 5})
         
-        logger.info(f"[PROFILE DEBUG] Session {session_id}: Profile contains {work_exp_count} work experiences, {skills_count} skills, {education_count} education, {certifications_count} certifications")
-        if work_exp_count > 0:
-            companies = [exp.get('company', 'Unknown') for exp in profile.get('work_experience', [])]
-            logger.info(f"[PROFILE DEBUG] Companies: {companies}")
+        elif function_name == "get_roles_batch":
+            if not arguments or 'start_index' not in arguments:
+                raise ValueError("get_roles_batch requires 'start_index' parameter")
+            start_idx = arguments['start_index']
+            work_exp = profile.get('work_experience', [])
+            
+            # Get batch of 5 roles starting from start_idx
+            batch = work_exp[start_idx:start_idx + 5]
+            batch_info = {
+                "start_index": start_idx,
+                "batch_size": len(batch),
+                "total_roles": len(work_exp),
+                "roles": batch
+            }
+            logger.info(f"[BATCHED] Session {session_id}: Returning roles {start_idx}-{start_idx+len(batch)-1} of {len(work_exp)} total")
+            return json.dumps(batch_info, indent=2)
         
-        # Filter out static data that AI doesn't meaningfully transform
-        # These will be merged back post-generation
-        filtered_profile = {k: v for k, v in profile.items() 
-                          if k not in ['skills', 'education', 'certifications']}
-        logger.info(f"[PROFILE DEBUG] Filtered out: skills ({skills_count}), education ({education_count}), certifications ({certifications_count}) - ~55% payload reduction")
+        elif function_name == "get_candidate_metadata":
+            # Return everything EXCEPT work_experience
+            metadata = {k: v for k, v in profile.items() if k not in ['work_experience', 'skills', 'education', 'certifications']}
+            logger.info(f"[BATCHED] Session {session_id}: Returning metadata (excluding work_experience, skills, education, certs)")
+            return json.dumps(metadata, indent=2)
         
-        return json.dumps(filtered_profile, indent=2)
+        elif function_name == "get_candidate_profile":
+            # Legacy full profile return
+            work_exp_count = len(profile.get('work_experience', []))
+            skills_count = len(profile.get('skills', []))
+            education_count = len(profile.get('education', []))
+            certifications_count = len(profile.get('certifications', []))
+            
+            logger.info(f"[LEGACY] Session {session_id}: Profile contains {work_exp_count} work experiences, {skills_count} skills, {education_count} education, {certifications_count} certifications")
+            if work_exp_count > 0:
+                companies = [exp.get('company', 'Unknown') for exp in profile.get('work_experience', [])]
+                logger.info(f"[LEGACY] Companies: {companies}")
+            
+            # Filter out static data that AI doesn't meaningfully transform
+            filtered_profile = {k: v for k, v in profile.items() 
+                              if k not in ['skills', 'education', 'certifications']}
+            logger.info(f"[LEGACY] Filtered out: skills ({skills_count}), education ({education_count}), certifications ({certifications_count}) - ~55% payload reduction")
+            
+            return json.dumps(filtered_profile, indent=2)
+        
+        else:
+            raise ValueError(f"Unknown function: {function_name}")
     
     def generate_with_profile_function(self, session_id: str, prompt: str, user_message: str, model: str = "gpt-4o") -> str:
         profile_function = self.create_profile_function(session_id)
@@ -108,6 +176,53 @@ class FunctionBasedProfileManager:
             ]
         )
         return final_response.choices[0].message.content
+    
+    def generate_with_batched_roles(self, session_id: str, prompt: str, user_message: str, model: str = "gpt-4o") -> str:
+        """Generate CV using batched role access (5 roles at a time)"""
+        profile_functions = self.create_profile_functions(session_id)
+        
+        messages = [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": user_message}
+        ]
+        
+        # Allow LLM to make multiple function calls iteratively
+        max_iterations = 10  # Prevent infinite loops (17 roles = 4 batches + metadata + count = ~6 calls)
+        for iteration in range(max_iterations):
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                functions=profile_functions
+            )
+            
+            message = response.choices[0].message
+            
+            # If no function call, LLM is done
+            if not message.function_call:
+                logger.info(f"[BATCHED] Session {session_id}: Generation complete after {iteration} iterations")
+                return message.content
+            
+            # Handle function call
+            func_name = message.function_call.name
+            func_args = json.loads(message.function_call.arguments) if message.function_call.arguments else {}
+            
+            logger.info(f"[BATCHED] Session {session_id}: LLM calling {func_name} with args {func_args}")
+            func_result = self.handle_profile_function_call(session_id, func_name, func_args)
+            
+            # Add function call and result to conversation
+            messages.append({
+                "role": "assistant",
+                "content": None,
+                "function_call": {"name": func_name, "arguments": json.dumps(func_args)}
+            })
+            messages.append({
+                "role": "function",
+                "name": func_name,
+                "content": func_result
+            })
+        
+        logger.warning(f"[BATCHED] Session {session_id}: Hit max iterations ({max_iterations})")
+        return "Error: Max iterations reached"
     
     def cleanup_expired_sessions(self):
         current_time = time.time()

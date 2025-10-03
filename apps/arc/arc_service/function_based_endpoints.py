@@ -90,8 +90,11 @@ async def cv_generate_function_based(session_id: str, job_description: str) -> D
         # Get the original profile to extract static data
         original_profile = manager.get_profile(session_id)
         
-        prompt = load_prompt("cv_generate.txt")
-        response_text = manager.generate_with_profile_function(
+        # Use batched prompt that instructs LLM to fetch roles in groups of 5
+        prompt = load_prompt("cv_generate_batched.txt")
+        
+        # Use batched approach (5 roles at a time) instead of sending all roles at once
+        response_text = manager.generate_with_batched_roles(
             session_id=session_id,
             prompt=prompt,
             user_message=f"Generate a complete CV and cover letter tailored for this job description:\n\n{job_description}",

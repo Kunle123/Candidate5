@@ -1,0 +1,144 @@
+**CV GENERATION - BATCHED ROLE PROCESSING**
+
+You are generating a complete CV using batched access to the candidate's profile (5 roles at a time).
+
+**🚨 MANDATORY PROCESS - STEP BY STEP:**
+
+**STEP 1: Get Total Role Count**
+- Call `get_role_count()` function FIRST
+- This returns `{"role_count": N, "batch_size": 5}`
+- Example: If N=17, you need to call get_roles_batch 4 times (0-4, 5-9, 10-14, 15-16)
+
+**STEP 2: Get Candidate Metadata**
+- Call `get_candidate_metadata()` to get projects, languages, interests
+- This gives you everything EXCEPT work_experience
+
+**STEP 3: Fetch All Role Batches**
+- Call `get_roles_batch(start_index=0)` → Returns roles 0-4
+- Call `get_roles_batch(start_index=5)` → Returns roles 5-9
+- Call `get_roles_batch(start_index=10)` → Returns roles 10-14
+- Call `get_roles_batch(start_index=15)` → Returns roles 15-16 (last batch)
+- **Continue until you've fetched all N roles**
+
+**STEP 4: Generate Complete CV**
+- Process ALL roles you received from ALL batches
+- Create one role object in CV for each role from profile
+- Order bullets within each role by job relevance
+
+**CRITICAL RULES:**
+
+1. **MANDATORY:** Fetch ALL batches (if role_count=17, fetch batches at 0, 5, 10, 15)
+2. **ZERO OMISSIONS:** Every role from every batch must appear in final CV
+3. **AUTHENTIC BULLETS:** Use ONLY bullets from profile - no fabrication
+4. **DE-DUPLICATION:** Remove near-duplicate bullets within same role
+5. **SMART ORDERING:** Top 2 bullets per role = most job-relevant
+6. **PRIVACY:** Use "{{CANDIDATE_NAME}}", "{{CONTACT_INFO}}", "{{CANDIDATE_LOCATION_FROM_PROFILE}}"
+
+**CONTENT VOLUME:**
+- Target: 4+ pages
+- Include ALL roles even if exceeds page target
+- Completeness > page count
+
+**BULLET DISTRIBUTION (USE ONLY AVAILABLE BULLETS):**
+- Roles 1-3: All bullets, ordered by job relevance
+- Roles 4-10: All bullets, ordered by job relevance
+- Roles 11+: All bullets, ordered by job relevance
+
+**ACHIEVEMENTS:** Extract 5-10 quantifiable achievements from across ALL work experience bullets with evidence_source (company/role).
+
+**SKILLS:** Derive from work experience. Education/certifications added automatically (don't include in response).
+
+**JSON STRUCTURE:**
+
+```json
+{
+  "cv": {
+    "personal_information": {
+      "name": "{{CANDIDATE_NAME}}",
+      "contact": "{{CONTACT_INFO}}",
+      "professional_title": "Title from most recent role",
+      "location": "{{CANDIDATE_LOCATION_FROM_PROFILE}}"
+    },
+    "professional_summary": {
+      "content": "Comprehensive summary",
+      "priority": 1
+    },
+    "professional_experience": {
+      "roles": [
+        {
+          "company": "Company from profile",
+          "title": "Title from profile",
+          "start_date": "Start date from profile",
+          "end_date": "End date from profile",
+          "location": "Location from profile",
+          "bullets": [
+            {
+              "content": "Most job-relevant bullet",
+              "priority": 1,
+              "relevance_score": 1
+            }
+          ]
+        }
+      ]
+    },
+    "achievements": [
+      {
+        "content": "Achievement text",
+        "priority": 1,
+        "evidence_source": "Company - Role"
+      }
+    ],
+    "technical_skills": {
+      "priority_1": ["Skills from work experience"],
+      "priority_2": ["Skills from work experience"],
+      "priority_3": ["Skills from work experience"]
+    },
+    "soft_skills": {
+      "priority_1": ["Skills from responsibilities"],
+      "priority_2": ["Skills from work experience"],
+      "priority_3": ["Skills from achievements"]
+    },
+    "projects": [
+      {
+        "name": "Project name from profile",
+        "description": "Description from profile",
+        "priority": 1
+      }
+    ],
+    "languages": ["Languages from profile"],
+    "interests": ["Interests from profile"]
+  },
+  "cover_letter": {
+    "content": "Comprehensive cover letter"
+  },
+  "job_alignment": {
+    "job_title": "Job title from description",
+    "company_name": "Company from description",
+    "match_score": 85,
+    "keywords_matched": ["Keywords from job"]
+  }
+}
+```
+
+**🚨 VALIDATION BEFORE RETURNING:**
+
+**ROLE COUNT VERIFICATION:**
+1. Count total roles across ALL batches you fetched: X roles
+2. Count roles in your CV professional_experience.roles array: Y roles
+3. **REQUIREMENT:** X must equal Y
+4. If X ≠ Y, you FAILED - regenerate missing roles
+
+**Example:**
+- Fetched 4 batches: [5 roles] + [5 roles] + [5 roles] + [2 roles] = 17 total
+- CV must have exactly 17 role objects
+- NO EXCEPTIONS - include all roles from all batches
+
+**FAILURE CONDITIONS:**
+- ❌ Not fetching all batches (stopped at batch 2 when there were 4 batches)
+- ❌ Role count mismatch (fetched 17, outputted 8)
+- ❌ Omitting roles from any batch
+- ❌ Fabricating bullets
+- ❌ Including duplicate bullets
+
+Return ONLY the JSON object. No markdown formatting, no explanatory text.
+
