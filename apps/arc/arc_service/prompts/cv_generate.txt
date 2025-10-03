@@ -1,257 +1,61 @@
-**ENUMERATED COMPREHENSIVE CV GENERATION - EXPLICIT ROLE LISTING**
+**CV GENERATION - COMPLETE PROFILE ENUMERATION**
 
-You are generating a complete CV using the candidate's profile data accessed via the get_candidate_profile function.
+You are generating a complete CV using the candidate's profile accessed via get_candidate_profile function.
 
-**🚨🚨🚨 EXPLICIT ENUMERATION APPROACH 🚨🚨🚨**
+**CRITICAL RULES:**
 
-**STEP 1: PROFILE DATA EXTRACTION**
-1. Call get_candidate_profile function FIRST
-2. Extract the complete work_experience array
-3. List each role explicitly: Role 1, Role 2, Role 3... Role N
-4. **NOTE:** Skills, education, and certifications are NOT provided in the profile:
-   - Skills: Derive from work experience descriptions and match to job description
-   - Education & Certifications: Will be added automatically - DO NOT include in your response
+1. **PROFILE ACCESS:** Call get_candidate_profile function FIRST, extract complete work_experience array
+2. **COMPLETE ENUMERATION:** Include ALL roles from profile (even if 15-20+ roles spanning 25+ years)
+3. **NO OMISSIONS:** Every role gets a separate entry - no combining, no filtering by relevance
+4. **AUTHENTIC BULLETS:** Use ONLY bullets from profile - no fabrication, no paraphrasing to create "variety"
+5. **DE-DUPLICATION:** Remove exact/near-duplicate bullets within same role (keep most complete version)
+6. **ACTUAL COUNTS:** If profile has 3 bullets for a role, output 3 (not 6-9). If it has 10, output all 10
+7. **SMART ORDERING:** Top 2 bullets per role = most job-relevant with quantifiable impact
+8. **PRIVACY:** Use "{{CANDIDATE_NAME}}" for name, "{{CONTACT_INFO}}" for contact, "{{CANDIDATE_LOCATION_FROM_PROFILE}}" for location
 
-**🚨🚨🚨 CONTENT VOLUME & DETAIL REQUIREMENTS 🚨🚨🚨**
+**CONTENT TARGETS (NOT MINIMUMS TO FABRICATE):**
+- Roles 1-3: All bullets, ordered by job relevance
+- Roles 4-10: All bullets, ordered by job relevance
+- Roles 11+: All bullets, ordered by job relevance
+- Completeness > page count (include all roles even if exceeds 4 pages)
 
-**TARGET:** Generate a comprehensive, detailed CV (4+ pages worth of content)
+**ACHIEVEMENTS:** Scan ALL work experience bullets across ALL roles. Extract 5-10 quantifiable achievements most relevant to job. Include evidence_source (company/role where it occurred).
 
-**CRITICAL:** Include ALL roles from profile even if it exceeds page target. Page limits are guidelines, NOT hard cutoffs. Completeness > page count.
+**SKILLS:** Derive from work experience and match to job requirements. Skills, education, and certifications are NOT in profile - skills derived from work descriptions, education/certs added automatically (don't include in your response).
 
-**BULLET DISTRIBUTION BY ROLE RECENCY (USE ONLY AVAILABLE BULLETS FROM PROFILE):**
-- **Roles 1-3 (Most Recent):** Target 6-9 bullets per role - MAXIMUM DETAIL
-- **Roles 4-6:** Target 5-7 bullets per role - HIGH DETAIL  
-- **Roles 7-10:** Target 4-6 bullets per role - MODERATE DETAIL
-- **Roles 11-15:** Target 3-5 bullets per role - STANDARD DETAIL
-- **Roles 16+:** Target 2-3 bullets per role - ESSENTIAL DETAIL (but still include them!)
-
-**CRITICAL ANTI-DUPLICATION RULES:**
-- These are TARGET bullet counts, NOT minimums to fabricate
-- ONLY use bullets that exist in the profile for that role
-- If a role has 4 bullets in profile, include exactly 4 bullets (don't fabricate more)
-- If a role has 10 bullets in profile, include all 10 (even if it exceeds target)
-- Remove near-identical or duplicate bullets within same role
-- Do NOT paraphrase or rewrite bullets to create "different" versions
-- Quality and authenticity > hitting target counts
-
-**BULLET ORDERING WITHIN EACH ROLE:**
-1. **Position 1 (Top Bullet):** Most job-relevant achievement/responsibility with quantifiable impact
-2. **Position 2:** Second most job-relevant achievement/responsibility  
-3. **Positions 3+:** Remaining bullets ordered by relevance to job description
-
-**DETAIL LEVEL REQUIREMENTS:**
-- Each bullet should be comprehensive and detailed (not sparse summaries)
-- Include ALL unique bullets from the profile for each role
-- Preserve exact wording from profile - do not abbreviate or condense
-- If a role has 7 bullets in the profile, include all 7 bullets in the CV
-- **DE-DUPLICATION:** If profile contains near-identical bullets for a role, include only one version
-- **NO FABRICATION:** Never add bullets that don't exist in the profile to meet target counts
-- **ACTUAL COUNT:** If profile has 3 bullets for a role, output exactly 3 bullets (not 6-9)
-
-**STEP 2: EXPLICIT ROLE ENUMERATION**
-You must explicitly process each role:
-- Role 1: [Company 1] - [Title 1] - [Dates 1]
-- Role 2: [Company 2] - [Title 2] - [Dates 2]
-- Role 3: [Company 3] - [Title 3] - [Dates 3]
-- ...continue for ALL roles in profile...
-- Role N: [Company N] - [Title N] - [Dates N]
-
-**STEP 3: MANDATORY INCLUSION VERIFICATION**
-Before proceeding, confirm:
-- "I have identified [X] roles in the profile"
-- "I will include all [X] roles in the CV"
-- "No roles will be omitted or combined"
-
-**🚨🚨🚨 MANDATORY PRIVACY PROTECTION 🚨🚨🚨**
-- **Name Field:** MUST use placeholder "{{CANDIDATE_NAME}}" - NEVER use actual names
-- **Contact Info:** MUST use placeholder "{{CONTACT_INFO}}" - NEVER use actual contact details
-
-**🚨🚨🚨 EXPLICIT WORK EXPERIENCE PROCESSING 🚨🚨🚨**
-
-**ROLE PROCESSING TEMPLATE:**
-For each role in the profile, create this exact structure:
+**JSON STRUCTURE:**
 
 ```json
 {
-  "company": "[EXACT_COMPANY_FROM_PROFILE_ROLE_N]",
-  "title": "[EXACT_TITLE_FROM_PROFILE_ROLE_N]",
-  "start_date": "[EXACT_START_DATE_FROM_PROFILE_ROLE_N]",
-  "end_date": "[EXACT_END_DATE_FROM_PROFILE_ROLE_N]",
-  "location": "[EXACT_LOCATION_FROM_PROFILE_ROLE_N]",
-  "bullets": [
-    {
-      "content": "[MOST_JOB_RELEVANT_BULLET_WITH_QUANTIFIABLE_IMPACT]",
-      "priority": "[PRIORITY_BASED_ON_ROLE_RECENCY]",
-      "relevance_score": 1
-    },
-    {
-      "content": "[SECOND_MOST_JOB_RELEVANT_BULLET]",
-      "priority": "[PRIORITY_BASED_ON_ROLE_RECENCY]",
-      "relevance_score": 2
-    },
-    {
-      "content": "[THIRD_MOST_RELEVANT_BULLET]",
-      "priority": "[PRIORITY_BASED_ON_ROLE_RECENCY]",
-      "relevance_score": 3
-    }
-    // ... continue for ALL remaining bullets ordered by relevance
-    // Include ALL bullets from profile for this role
-  ]
-}
-```
-
-**CRITICAL BULLET ORDERING RULES:**
-1. **Analyze ALL bullets** for the role against job description
-2. **Rank by relevance** - bullets matching job keywords/requirements go first
-3. **Top 2 positions** MUST be the most job-relevant bullets
-4. **Include ALL bullets** from profile - do not omit any
-5. **Preserve exact wording** - reorder only, don't modify content
-
-**MANDATORY ROLE INCLUSION RULES:**
-- ✅ **Create separate role object** for each work experience in profile
-- ✅ **Include ALL bullet points** for each role exactly as stated
-- ✅ **Use exact company names** from profile
-- ✅ **Use exact job titles** from profile
-- ✅ **Use exact dates** from profile
-- ❌ **NEVER skip any roles** from the profile
-- ❌ **NEVER combine multiple roles** into single entries
-- ❌ **NEVER omit bullet points** to save space
-
-**🚨🚨🚨 ACHIEVEMENTS EXTRACTION RULES 🚨🚨🚨**
-
-**PURPOSE:** Create a "highlight reel" of the candidate's most impactful accomplishments across ALL roles that demonstrate relevant experience for this job.
-
-**EXTRACTION RULES:**
-1. **Scan ALL work experience bullet points** across all roles (not just recent ones)
-2. **Identify quantifiable achievements** with numbers, metrics, or measurable impact
-3. **Prioritize by job relevance** - achievements that match job requirements get Priority 1
-4. **Include evidence source** - note which company/role each achievement came from
-5. **Extract 5-10 key achievements** that build a comprehensive picture of capability
-6. **Use exact wording** from profile - do not embellish or fabricate
-
-**PRIORITIZATION CRITERIA:**
-- **Priority 1:** Directly matches job requirements + quantifiable impact
-- **Priority 2:** Relevant to job domain + demonstrates key skills
-- **Priority 3:** Demonstrates transferable skills + notable accomplishment
-
-**EXAMPLES OF GOOD ACHIEVEMENTS:**
-- "Led migration of platform to AWS, reducing infrastructure costs by 40%"
-- "Coordinated 20+ suppliers for mobile payments integration"
-- "Delivered data lake capability integrating 20+ data sources"
-- "Managed teams of 50+ across multiple international locations"
-
-**🚨🚨🚨 ENUMERATED PRIORITY ASSIGNMENT (FOR WORK EXPERIENCE) 🚨🚨🚨**
-
-**EXPLICIT PRIORITY MAPPING:**
-- **Roles 1-3 (Most Recent):** Priority 1
-- **Roles 4-7:** Priority 2
-- **Roles 8-12:** Priority 3
-- **Roles 13-17:** Priority 4
-- **Roles 18+ (All Remaining):** Priority 5
-
-**PRIORITY ASSIGNMENT VERIFICATION:**
-For each role, explicitly assign priority:
-- Role 1: Priority 1 (most recent)
-- Role 2: Priority 1 (recent)
-- Role 3: Priority 1 (recent)
-- Role 4: Priority 2
-- Role 5: Priority 2
-- ...continue explicit assignment...
-- Role 18: Priority 5 (if applicable)
-
-**🚨🚨🚨 ANTI-FABRICATION & ANTI-DUPLICATION RULES 🚨🚨🚨**
-
-**ZERO FABRICATION RULES:**
-- **Copy exact text** from profile for each enumerated role
-- **Use exact bullet points** without modification
-- **Maintain exact company names** and job titles
-- **Preserve exact dates** and locations
-- **Do NOT add any content** not in the profile
-- **Do NOT enhance descriptions** beyond profile content
-- **NEVER fabricate bullets** to reach target counts (3 real bullets > 6 fake ones)
-
-**ZERO DUPLICATION RULES:**
-- **Remove duplicate bullets** within same role (exact matches)
-- **Remove near-duplicates** that convey same information with minor wording differences
-- **Do NOT paraphrase** bullets to create "variety" - keep one version only
-- **Example of near-duplicates to remove:**
-  - "Managed offshore development teams" 
-  - "Managed onshore and offshore development teams"
-  - ✅ Keep: "Managed onshore and offshore development teams" (most complete version)
-  - ❌ Remove: "Managed offshore development teams" (subset/duplicate)
-
-**🚨🚨🚨 EXPLICIT JSON OUTPUT STRUCTURE 🚨🚨🚨**
-
-```json
-{
-  "enumeration_verification": {
-    "total_roles_in_profile": "[COUNT_ALL_WORK_EXPERIENCES_IN_PROFILE]",
-    "total_roles_in_cv": "[MUST_MATCH_PROFILE_COUNT]",
-    "role_enumeration_complete": "[true_IF_ALL_ROLES_PROCESSED]",
-    "explicit_role_listing": [
-      "Role 1: [Company] - [Title] - [Dates]",
-      "Role 2: [Company] - [Title] - [Dates]",
-      "Role 3: [Company] - [Title] - [Dates]",
-      "... continue for ALL roles ..."
-    ]
-  },
   "cv": {
     "personal_information": {
       "name": "{{CANDIDATE_NAME}}",
       "contact": "{{CONTACT_INFO}}",
-      "professional_title": "{{EXACT_TITLE_FROM_MOST_RECENT_ROLE}}",
+      "professional_title": "Title from most recent role",
       "location": "{{CANDIDATE_LOCATION_FROM_PROFILE}}"
     },
     "professional_summary": {
-      "content": "{{COMPREHENSIVE_SUMMARY_INCORPORATING_ALL_MAJOR_PROFILE_ELEMENTS}}",
+      "content": "Comprehensive summary incorporating all major profile elements",
       "priority": 1
     },
     "professional_experience": {
       "roles": [
-        "{{EXPLICIT_ROLE_1_FROM_ENUMERATION}}",
         {
-          "company": "{{EXACT_COMPANY_FROM_PROFILE_ROLE_1}}",
-          "title": "{{EXACT_TITLE_FROM_PROFILE_ROLE_1}}",
-          "start_date": "{{EXACT_START_DATE_FROM_PROFILE_ROLE_1}}",
-          "end_date": "{{EXACT_END_DATE_FROM_PROFILE_ROLE_1}}",
-          "location": "{{EXACT_LOCATION_FROM_PROFILE_ROLE_1}}",
-        "bullets": [
-          {
-              "content": "{{EXACT_BULLET_1_FROM_PROFILE_ROLE_1}}",
-              "priority": 1
+          "company": "Exact company from profile",
+          "title": "Exact title from profile",
+          "start_date": "Exact start_date from profile",
+          "end_date": "Exact end_date from profile",
+          "location": "Exact location from profile (if available)",
+          "bullets": [
+            {
+              "content": "Most job-relevant bullet from profile",
+              "priority": 1,
+              "relevance_score": 1
             },
             {
-              "content": "{{EXACT_BULLET_2_FROM_PROFILE_ROLE_1}}",
-              "priority": 1
-            }
-          ]
-        },
-        "{{EXPLICIT_ROLE_2_FROM_ENUMERATION}}",
-        {
-          "company": "{{EXACT_COMPANY_FROM_PROFILE_ROLE_2}}",
-          "title": "{{EXACT_TITLE_FROM_PROFILE_ROLE_2}}",
-          "start_date": "{{EXACT_START_DATE_FROM_PROFILE_ROLE_2}}",
-          "end_date": "{{EXACT_END_DATE_FROM_PROFILE_ROLE_2}}",
-          "location": "{{EXACT_LOCATION_FROM_PROFILE_ROLE_2}}",
-          "bullets": [
-            {
-              "content": "{{EXACT_BULLET_1_FROM_PROFILE_ROLE_2}}",
-              "priority": 1
-            }
-          ]
-        },
-        "{{CONTINUE_FOR_ALL_ROLES_IN_PROFILE}}",
-        "{{ROLE_18_IF_PROFILE_HAS_18_ROLES}}",
-        {
-          "company": "{{EXACT_COMPANY_FROM_PROFILE_ROLE_18}}",
-          "title": "{{EXACT_TITLE_FROM_PROFILE_ROLE_18}}",
-          "start_date": "{{EXACT_START_DATE_FROM_PROFILE_ROLE_18}}",
-          "end_date": "{{EXACT_END_DATE_FROM_PROFILE_ROLE_18}}",
-          "location": "{{EXACT_LOCATION_FROM_PROFILE_ROLE_18}}",
-          "bullets": [
-            {
-              "content": "{{EXACT_BULLET_1_FROM_PROFILE_ROLE_18}}",
-              "priority": 5
+              "content": "Second most job-relevant bullet from profile",
+              "priority": 1,
+              "relevance_score": 2
             }
           ]
         }
@@ -259,112 +63,59 @@ For each role, explicitly assign priority:
     },
     "achievements": [
       {
-        "content": "{{EXTRACT_TOP_QUANTIFIABLE_ACHIEVEMENT_FROM_ALL_WORK_EXPERIENCE}}",
+        "content": "Quantifiable achievement extracted from work experience bullets",
         "priority": 1,
-        "evidence_source": "{{COMPANY_AND_ROLE_WHERE_THIS_OCCURRED}}"
-      },
-      {
-        "content": "{{EXTRACT_SECOND_MOST_RELEVANT_ACHIEVEMENT_FROM_ALL_ROLES}}",
-        "priority": 1,
-        "evidence_source": "{{COMPANY_AND_ROLE_WHERE_THIS_OCCURRED}}"
-      },
-      {
-        "content": "{{CONTINUE_EXTRACTING_KEY_ACHIEVEMENTS_ACROSS_ALL_ROLES}}",
-        "priority": "{{1_TO_3_BASED_ON_RELEVANCE_AND_IMPACT}}",
-        "evidence_source": "{{COMPANY_AND_ROLE_WHERE_THIS_OCCURRED}}"
+        "evidence_source": "Company - Role where this occurred"
       }
     ],
     "technical_skills": {
-      "priority_1": ["{{DERIVE_TOP_TECHNICAL_SKILLS_FROM_WORK_EXPERIENCE_AND_JOB_DESCRIPTION}}"],
-      "priority_2": ["{{DERIVE_IMPORTANT_TECHNICAL_SKILLS_FROM_WORK_EXPERIENCE}}"],
-      "priority_3": ["{{DERIVE_ADDITIONAL_TECHNICAL_SKILLS_FROM_WORK_EXPERIENCE}}"]
+      "priority_1": ["Top technical skills derived from work experience and matched to job"],
+      "priority_2": ["Important technical skills from work experience"],
+      "priority_3": ["Additional technical skills from work experience"]
     },
     "soft_skills": {
-      "priority_1": ["{{DERIVE_TOP_SOFT_SKILLS_FROM_WORK_EXPERIENCE_AND_RESPONSIBILITIES}}"],
-      "priority_2": ["{{DERIVE_IMPORTANT_SOFT_SKILLS_FROM_WORK_EXPERIENCE}}"],
-      "priority_3": ["{{DERIVE_ADDITIONAL_SOFT_SKILLS_FROM_ACHIEVEMENTS}}"]
+      "priority_1": ["Top soft skills derived from work responsibilities"],
+      "priority_2": ["Important soft skills from work experience"],
+      "priority_3": ["Additional soft skills from achievements"]
     },
     "projects": [
-      "{{ENUMERATE_ALL_PROJECTS_FROM_PROFILE}}",
       {
-        "name": "{{EXACT_PROJECT_1_FROM_PROFILE}}",
-        "description": "{{EXACT_DESCRIPTION_1_FROM_PROFILE}}",
-        "priority": "{{ASSIGN_BASED_ON_RELEVANCE}}"
+        "name": "Exact project name from profile",
+        "description": "Exact description from profile",
+        "priority": 1
       }
     ],
-    "languages": ["{{ENUMERATE_ALL_LANGUAGES_FROM_PROFILE}}"],
-    "interests": ["{{ENUMERATE_ALL_INTERESTS_FROM_PROFILE}}"]
+    "languages": ["All languages from profile if available"],
+    "interests": ["All interests from profile if available"]
   },
   "cover_letter": {
-    "content": "{{COMPREHENSIVE_COVER_LETTER_HIGHLIGHTING_ALL_MAJOR_PROFILE_STRENGTHS}}"
+    "content": "Comprehensive cover letter highlighting all major profile strengths"
   },
   "job_alignment": {
-    "job_title": "{{EXACT_JOB_TITLE_FROM_DESCRIPTION}}",
-    "company_name": "{{EXACT_COMPANY_FROM_DESCRIPTION}}",
-    "match_score": "{{CALCULATED_PERCENTAGE_BASED_ON_COMPREHENSIVE_PROFILE_ANALYSIS}}",
-    "keywords_matched": ["{{ALL_KEYWORDS_FROM_JOB_THAT_MATCH_ANY_PROFILE_CONTENT}}"]
+    "job_title": "Exact job title from description",
+    "company_name": "Company from description (or 'Not specified')",
+    "match_score": 85,
+    "keywords_matched": ["All keywords from job matching profile content"]
   }
 }
 ```
 
-**🚨🚨🚨 MANDATORY ENUMERATION VALIDATION 🚨🚨🚨**
-
-**BEFORE RETURNING JSON, VERIFY ENUMERATION:**
-
-**ROLE ENUMERATION CHECKLIST:**
-- ✓ Listed all roles from profile explicitly
-- ✓ Created separate CV role object for each profile role
-- ✓ Included all bullet points for each role
-- ✓ Used exact company names and titles
-- ✓ Used exact dates and locations
-- ✓ Assigned appropriate priorities
-- ✓ No roles omitted or combined
-
-**CONTENT EXTRACTION CHECKLIST:**
-- ✓ 5-10 key achievements extracted from across ALL work experience bullets
-- ✓ Achievements prioritized by job relevance and quantifiable impact
-- ✓ Evidence source included for each achievement (company/role)
-- ✓ Technical skills derived from work experience and matched to job description
-- ✓ Soft skills derived from work responsibilities and leadership examples
-- ✓ All projects from profile enumerated and included
-- ✓ Education & certifications will be added automatically (not in your response)
-
-**FINAL VERIFICATION:**
+**VALIDATION BEFORE RETURNING:**
 - Total roles in CV = Total roles in profile
-- ALL bullets from profile included for each role (no omissions)
-- Top 2 bullets in each role are most job-relevant
-- Recent roles (1-3) have 6-9 bullets each
-- Mid-career roles (4-10) have 4-7 bullets each
-- Older roles (11+) have 2-5 bullets each
-- 5-10 achievements extracted across all roles with evidence sources
-- Skills derived from work experience and matched to job requirements
-- Projects from profile included in CV
-- Content volume sufficient for 4+ page comprehensive CV
-
-**🚨🚨🚨 CRITICAL SUCCESS METRICS 🚨🚨🚨**
-
-**ENUMERATION SUCCESS CRITERIA:**
-- **Role Count Match:** cv.professional_experience.roles.length == profile.work_experience.length
-- **Complete Enumeration:** Every profile element explicitly listed and included
-- **Zero Omissions:** No profile content skipped or combined
-- **Exact Replication:** All content exactly as stated in profile
-- **Privacy Protection:** All personal data replaced with placeholders
+- ALL unique bullets from profile included for each role (no omissions, no duplicates)
+- Top 2 bullets per role are most job-relevant
+- 5-10 achievements extracted from work experience bullets with evidence_source
+- Skills derived from work experience
+- Projects from profile included
+- Education/certifications NOT in response (added automatically)
 
 **FAILURE CONDITIONS:**
-- Any role from profile missing in CV (include ALL roles regardless of page count)
-- Omitting older roles to "fit" a page limit (completeness > page count)
-- Not including ALL unique bullets from profile for each role
-- Including duplicate or near-duplicate bullets within same role
-- Fabricating bullets to reach target counts (if profile has 3 bullets, output 3, not 6)
-- Paraphrasing existing bullets to create "variety" (one version only)
-- Top 2 bullets in a role are NOT the most job-relevant
-- Achievements copied from non-existent separate field (extract from work experience bullets only)
-- Achievements without evidence_source field showing which role they came from
-- Skills not derived from actual work experience
-- Any project from profile missing in CV
-- Any content fabricated or enhanced beyond what exists in profile
-- Including education or certifications in your response (these are added automatically)
+- Any role from profile missing in CV
+- Omitting older roles to "fit" page limit
+- Fabricating bullets to reach target counts
+- Including duplicate/near-duplicate bullets in same role
+- Paraphrasing bullets for "variety"
+- Achievements without evidence_source
+- Including education/certifications in response
 
-Return ONLY the JSON object. No explanatory text, no markdown formatting, no additional commentary.
-
-**FINAL ENUMERATION MANDATE: Explicitly enumerate and include every single work experience from the profile. If profile has 18 roles, enumerate Role 1 through Role 18 and include all 18 in the CV.**
+Return ONLY the JSON object. No markdown formatting, no explanatory text.
