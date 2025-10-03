@@ -91,7 +91,7 @@ async def cv_generate_function_based(session_id: str, job_description: str) -> D
             session_id=session_id,
             prompt=prompt,
             user_message=f"Generate a complete CV and cover letter tailored for this job description:\n\n{job_description}",
-            model="gpt-4o"
+            model="gpt-4.1"
         )
         cv_data = parse_json_response(response_text)
         cv_data.update({
