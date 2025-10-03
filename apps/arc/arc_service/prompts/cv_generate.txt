@@ -2,11 +2,18 @@
 
 You are generating a complete CV using the candidate's profile accessed via get_candidate_profile function.
 
+**🚨 MANDATORY FIRST STEP - COUNT ALL ROLES:**
+Before generating the CV, you MUST:
+1. Call get_candidate_profile function
+2. Count the TOTAL number of roles in work_experience array
+3. Example: If profile has 17 roles, you MUST output exactly 17 role objects in the CV
+4. **FAILURE CONDITION:** If CV has fewer roles than profile, the generation has FAILED
+
 **CRITICAL RULES:**
 
 1. **PROFILE ACCESS:** Call get_candidate_profile function FIRST, extract complete work_experience array
-2. **COMPLETE ENUMERATION:** Include ALL roles from profile (even if 15-20+ roles spanning 25+ years)
-3. **NO OMISSIONS:** Every role gets a separate entry - no combining, no filtering by relevance
+2. **MANDATORY ENUMERATION:** Output EXACTLY the same number of roles as in profile (if profile has 17, CV must have 17)
+3. **ZERO OMISSIONS:** Every single role gets a separate entry - no combining, no filtering, no "selecting most relevant"
 4. **AUTHENTIC BULLETS:** Use ONLY bullets from profile - no fabrication, no paraphrasing to create "variety"
 5. **DE-DUPLICATION:** Remove exact/near-duplicate bullets within same role (keep most complete version)
 6. **ACTUAL COUNTS:** If profile has 3 bullets for a role, output 3 (not 6-9). If it has 10, output all 10
@@ -58,15 +65,15 @@ You are generating a complete CV using the candidate's profile accessed via get_
           "start_date": "Exact start_date from profile",
           "end_date": "Exact end_date from profile",
           "location": "Exact location from profile (if available)",
-          "bullets": [
-            {
+        "bullets": [
+          {
               "content": "Most job-relevant bullet from profile",
               "priority": 1,
               "relevance_score": 1
             },
             {
               "content": "Second most job-relevant bullet from profile",
-              "priority": 1,
+            "priority": 1,
               "relevance_score": 2
             }
           ]
@@ -112,22 +119,33 @@ You are generating a complete CV using the candidate's profile accessed via get_
 }
 ```
 
-**VALIDATION BEFORE RETURNING:**
-- Total roles in CV = Total roles in profile
-- ALL unique bullets from profile included for each role (no omissions, no duplicates)
-- Top 2 bullets per role are most job-relevant
-- 5-10 achievements extracted from work experience bullets with evidence_source
-- Skills derived from work experience
-- Projects from profile included
-- Education/certifications NOT in response (added automatically)
+**🚨 MANDATORY VALIDATION BEFORE RETURNING:**
 
-**FAILURE CONDITIONS:**
-- Any role from profile missing in CV
-- Omitting older roles to "fit" page limit
-- Fabricating bullets to reach target counts
-- Including duplicate/near-duplicate bullets in same role
-- Paraphrasing bullets for "variety"
-- Achievements without evidence_source
-- Including education/certifications in response
+**ROLE COUNT VERIFICATION (MOST CRITICAL):**
+1. Count roles in profile work_experience array: X roles
+2. Count roles in your CV professional_experience.roles array: Y roles
+3. **REQUIREMENT:** X must equal Y
+4. **If X ≠ Y, you have FAILED the task. DO NOT return the response. Generate all missing roles.**
+
+**Example:**
+- Profile has 17 work experiences → CV MUST have exactly 17 role objects
+- Profile has 5 work experiences → CV MUST have exactly 5 role objects
+- **NO EXCEPTIONS** - older roles, less relevant roles, short-tenure roles ALL must be included
+
+**OTHER VALIDATIONS:**
+- ✓ ALL unique bullets from profile included for each role (no omissions, no duplicates)
+- ✓ Top 2 bullets per role are most job-relevant
+- ✓ 5-10 achievements extracted from work experience bullets with evidence_source
+- ✓ Skills derived from work experience
+- ✓ Projects from profile included
+- ✓ Education/certifications NOT in response (added automatically)
+
+**CRITICAL FAILURE CONDITIONS (DO NOT SUBMIT IF ANY OCCUR):**
+- ❌ Role count mismatch (profile has 17, CV has only 5) ← **YOUR CURRENT ERROR**
+- ❌ Omitting older roles because they seem "less relevant"
+- ❌ Omitting roles to "fit" a page limit
+- ❌ Combining multiple roles into one entry
+- ❌ Fabricating bullets to reach target counts
+- ❌ Including duplicate/near-duplicate bullets in same role
 
 Return ONLY the JSON object. No markdown formatting, no explanatory text.
