@@ -186,6 +186,11 @@ class FunctionBasedProfileManager:
             {"role": "user", "content": user_message}
         ]
         
+        # Track cumulative token usage
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
+        total_tokens = 0
+        
         # Allow LLM to make multiple function calls iteratively
         max_iterations = 10  # Prevent infinite loops (17 roles = 4 batches + metadata + count = ~6 calls)
         for iteration in range(max_iterations):
@@ -199,11 +204,19 @@ class FunctionBasedProfileManager:
                 function_call=function_call_param
             )
             
+            # Log token usage for this iteration
+            if hasattr(response, 'usage') and response.usage:
+                total_prompt_tokens += response.usage.prompt_tokens
+                total_completion_tokens += response.usage.completion_tokens
+                total_tokens += response.usage.total_tokens
+                logger.info(f"[BATCHED] Iteration {iteration}: prompt_tokens={response.usage.prompt_tokens}, completion_tokens={response.usage.completion_tokens}, total_tokens={response.usage.total_tokens}")
+            
             message = response.choices[0].message
             
             # If no function call, LLM is done
             if not message.function_call:
                 logger.info(f"[BATCHED] Session {session_id}: Generation complete after {iteration} iterations")
+                logger.info(f"[BATCHED] Session {session_id}: TOTAL TOKEN USAGE - prompt={total_prompt_tokens}, completion={total_completion_tokens}, total={total_tokens}")
                 return message.content
             
             # Handle function call
