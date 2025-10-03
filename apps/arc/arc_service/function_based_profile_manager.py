@@ -163,6 +163,10 @@ class FunctionBasedProfileManager:
         metadata = {k: v for k, v in profile.items() if k not in ['work_experience', 'skills', 'education', 'certifications']}
         metadata_str = json.dumps(metadata, indent=2)
         
+        # Build batch instructions
+        batch_calls = ', '.join([f"get_roles_batch({idx})" for idx in batch_indices])
+        logger.info(f"[BATCHED] Session {session_id}: Profile has {total_roles} roles, will fetch in {len(batch_indices)} batches: {batch_indices}")
+        
         # Enhance prompt with batch instructions and metadata
         enhanced_prompt = f"""{prompt}
 
@@ -170,16 +174,17 @@ class FunctionBasedProfileManager:
 {metadata_str}
 
 **MANDATORY BATCH FETCHING:**
-This profile has {total_roles} work experience roles. You MUST call get_roles_batch with these exact indices:
-{', '.join([str(idx) for idx in batch_indices])}
+This profile has {total_roles} work experience roles. You MUST call get_roles_batch exactly {len(batch_indices)} times with these indices:
+{batch_calls}
 
-Example: For {total_roles} roles, call get_roles_batch({batch_indices[0]}), get_roles_batch({batch_indices[1] if len(batch_indices) > 1 else 'N/A'}), etc.
-After fetching ALL batches, generate the complete CV with all {total_roles} roles."""
+After fetching ALL {len(batch_indices)} batches, generate the complete CV with all {total_roles} roles."""
 
         messages = [
             {"role": "system", "content": enhanced_prompt},
             {"role": "user", "content": user_message}
         ]
+        
+        logger.info(f"[BATCHED] Session {session_id}: Starting generation with optimized approach ({len(batch_indices)} batches expected)")
         
         # Track cumulative token usage
         total_prompt_tokens = 0
