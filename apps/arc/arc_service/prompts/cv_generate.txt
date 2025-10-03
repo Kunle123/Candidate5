@@ -18,12 +18,21 @@ You are generating a complete CV using the candidate's profile data accessed via
 
 **CRITICAL:** Include ALL roles from profile even if it exceeds page target. Page limits are guidelines, NOT hard cutoffs. Completeness > page count.
 
-**BULLET DISTRIBUTION BY ROLE RECENCY:**
-- **Roles 1-3 (Most Recent):** 6-9 bullets per role - MAXIMUM DETAIL
-- **Roles 4-6:** 5-7 bullets per role - HIGH DETAIL  
-- **Roles 7-10:** 4-6 bullets per role - MODERATE DETAIL
-- **Roles 11-15:** 3-5 bullets per role - STANDARD DETAIL
-- **Roles 16+:** 2-3 bullets per role - ESSENTIAL DETAIL (but still include them!)
+**BULLET DISTRIBUTION BY ROLE RECENCY (USE ONLY AVAILABLE BULLETS FROM PROFILE):**
+- **Roles 1-3 (Most Recent):** Target 6-9 bullets per role - MAXIMUM DETAIL
+- **Roles 4-6:** Target 5-7 bullets per role - HIGH DETAIL  
+- **Roles 7-10:** Target 4-6 bullets per role - MODERATE DETAIL
+- **Roles 11-15:** Target 3-5 bullets per role - STANDARD DETAIL
+- **Roles 16+:** Target 2-3 bullets per role - ESSENTIAL DETAIL (but still include them!)
+
+**CRITICAL ANTI-DUPLICATION RULES:**
+- These are TARGET bullet counts, NOT minimums to fabricate
+- ONLY use bullets that exist in the profile for that role
+- If a role has 4 bullets in profile, include exactly 4 bullets (don't fabricate more)
+- If a role has 10 bullets in profile, include all 10 (even if it exceeds target)
+- Remove near-identical or duplicate bullets within same role
+- Do NOT paraphrase or rewrite bullets to create "different" versions
+- Quality and authenticity > hitting target counts
 
 **BULLET ORDERING WITHIN EACH ROLE:**
 1. **Position 1 (Top Bullet):** Most job-relevant achievement/responsibility with quantifiable impact
@@ -32,9 +41,12 @@ You are generating a complete CV using the candidate's profile data accessed via
 
 **DETAIL LEVEL REQUIREMENTS:**
 - Each bullet should be comprehensive and detailed (not sparse summaries)
-- Include ALL bullets from the profile for each role
+- Include ALL unique bullets from the profile for each role
 - Preserve exact wording from profile - do not abbreviate or condense
 - If a role has 7 bullets in the profile, include all 7 bullets in the CV
+- **DE-DUPLICATION:** If profile contains near-identical bullets for a role, include only one version
+- **NO FABRICATION:** Never add bullets that don't exist in the profile to meet target counts
+- **ACTUAL COUNT:** If profile has 3 bullets for a role, output exactly 3 bullets (not 6-9)
 
 **STEP 2: EXPLICIT ROLE ENUMERATION**
 You must explicitly process each role:
@@ -147,7 +159,7 @@ For each role, explicitly assign priority:
 - ...continue explicit assignment...
 - Role 18: Priority 5 (if applicable)
 
-**🚨🚨🚨 ANTI-FABRICATION WITH ENUMERATION 🚨🚨🚨**
+**🚨🚨🚨 ANTI-FABRICATION & ANTI-DUPLICATION RULES 🚨🚨🚨**
 
 **ZERO FABRICATION RULES:**
 - **Copy exact text** from profile for each enumerated role
@@ -156,6 +168,17 @@ For each role, explicitly assign priority:
 - **Preserve exact dates** and locations
 - **Do NOT add any content** not in the profile
 - **Do NOT enhance descriptions** beyond profile content
+- **NEVER fabricate bullets** to reach target counts (3 real bullets > 6 fake ones)
+
+**ZERO DUPLICATION RULES:**
+- **Remove duplicate bullets** within same role (exact matches)
+- **Remove near-duplicates** that convey same information with minor wording differences
+- **Do NOT paraphrase** bullets to create "variety" - keep one version only
+- **Example of near-duplicates to remove:**
+  - "Managed offshore development teams" 
+  - "Managed onshore and offshore development teams"
+  - ✅ Keep: "Managed onshore and offshore development teams" (most complete version)
+  - ❌ Remove: "Managed offshore development teams" (subset/duplicate)
 
 **🚨🚨🚨 EXPLICIT JSON OUTPUT STRUCTURE 🚨🚨🚨**
 
@@ -330,13 +353,16 @@ For each role, explicitly assign priority:
 **FAILURE CONDITIONS:**
 - Any role from profile missing in CV (include ALL roles regardless of page count)
 - Omitting older roles to "fit" a page limit (completeness > page count)
-- Not including ALL bullets from profile for each role
+- Not including ALL unique bullets from profile for each role
+- Including duplicate or near-duplicate bullets within same role
+- Fabricating bullets to reach target counts (if profile has 3 bullets, output 3, not 6)
+- Paraphrasing existing bullets to create "variety" (one version only)
 - Top 2 bullets in a role are NOT the most job-relevant
 - Achievements copied from non-existent separate field (extract from work experience bullets only)
 - Achievements without evidence_source field showing which role they came from
 - Skills not derived from actual work experience
 - Any project from profile missing in CV
-- Any content fabricated or enhanced
+- Any content fabricated or enhanced beyond what exists in profile
 - Including education or certifications in your response (these are added automatically)
 
 Return ONLY the JSON object. No explanatory text, no markdown formatting, no additional commentary.
