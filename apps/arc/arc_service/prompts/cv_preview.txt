@@ -22,6 +22,7 @@ You are an expert CV analyst with access to the candidate's complete profile thr
 Generate a preview with these sections:
 
 1. **Job Analysis**
+   - Extract job title, company name, experience level, and industry from the job description
    - Summarize the key requirements and responsibilities from the job description
    - List the most important keywords and skills
 
@@ -46,6 +47,10 @@ Respond ONLY with a valid JSON object. No explanatory text, no markdown formatti
 ```json
 {
   "job_analysis": {
+    "job_title": "Exact job title from description",
+    "company": "Company name from description (or 'Not specified')",
+    "experience_level": "Experience level from description (e.g., 'Senior (5+ years)', 'Mid-level (3-5 years)', 'Junior (0-3 years)', or 'Not specified')",
+    "industry": "Industry from description (e.g., 'Technology', 'Finance', 'Healthcare', 'Utilities', or 'Not specified')",
     "summary": "Summary of job requirements and responsibilities.",
     "keywords": ["keyword1", "keyword2", ...]
   },
