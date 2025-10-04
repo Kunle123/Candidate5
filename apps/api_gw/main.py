@@ -376,6 +376,12 @@ async def proxy_arc_v1(request: StarletteRequest, full_path: str):
 async def proxy_cv_generate(request: StarletteRequest):
     return await proxy(request, arc_service_url, "/api/v1/cv/generate")
 
+# Application history routes (must be before catch-all)
+@app.api_route("/api/applications{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_applications(request: StarletteRequest, full_path: str):
+    path = f"/api/applications{full_path}"
+    return await proxy(request, cv_service_url, path)
+
 # This must be the last route!
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def catch_all(request: StarletteRequest, full_path: str):
@@ -406,8 +412,3 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Update all CORS headers to use the correct allowed origin
 ALLOWED_ORIGIN = "https://c5-frontend-pied.vercel.app"
-
-@app.api_route("/api/applications{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
-async def proxy_applications(request: StarletteRequest, full_path: str):
-    path = f"/api/applications{full_path}"
-    return await proxy(request, cv_service_url, path)
