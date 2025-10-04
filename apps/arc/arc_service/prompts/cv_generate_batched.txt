@@ -39,8 +39,10 @@ You are generating a complete CV using batched access to the candidate's profile
 
 1. **MANDATORY:** Fetch ALL batches (if role_count=17, fetch batches at 0, 5, 10, 15)
 2. **ZERO OMISSIONS:** Every role from every batch must appear in final CV
-3. **AUTHENTIC BULLETS:** Use ONLY bullets from profile - no fabrication
-4. **DE-DUPLICATION:** Remove near-duplicate bullets within same role
+   - **DUPLICATE COMPANY NAMES:** If the same company appears multiple times with different dates, include BOTH/ALL as separate role objects
+   - **EMPTY DESCRIPTIONS:** If a role has an empty description array, still include it with a generic bullet based on the job title
+3. **AUTHENTIC BULLETS:** Use ONLY bullets from profile - no fabrication (except for roles with empty descriptions)
+4. **DE-DUPLICATION:** Remove near-duplicate bullets within same role ONLY (not across different roles)
 5. **SMART BULLET ORDERING:** Within each role, order bullets by:
    - Position 1-2: Most job-relevant bullets with quantifiable impact
    - Position 3+: Other relevant bullets, most impactful first
@@ -150,11 +152,13 @@ You are generating a complete CV using batched access to the candidate's profile
 **🚨 VALIDATION BEFORE RETURNING:**
 
 **ROLE COUNT VERIFICATION (MANDATORY - YOU WILL FAIL IF THIS IS WRONG):**
-1. List EVERY company name from EVERY batch you fetched
+1. List EVERY company name AND date range from EVERY batch you fetched (including duplicates)
 2. Count total roles across ALL batches you fetched: X roles
-3. Count roles in your CV professional_experience.roles array: Y roles
-4. **ABSOLUTE REQUIREMENT:** X must equal Y
-5. If X ≠ Y, you FAILED - DO NOT return the CV, regenerate with ALL missing roles
+3. **CRITICAL:** If the same company appears twice with different dates (e.g., "Npower Digital May 2019-Dec 2019" AND "Npower Digital Jul 2017-Mar 2019"), count them as 2 SEPARATE roles
+4. **CRITICAL:** If a role has an empty description array, still count it and include it in your CV
+5. Count roles in your CV professional_experience.roles array: Y roles
+6. **ABSOLUTE REQUIREMENT:** X must equal Y
+7. If X ≠ Y, you FAILED - DO NOT return the CV, regenerate with ALL missing roles
 
 **Example Verification:**
 - Batch 0: Allpay, TfL, Npower (May), Npower (Jul), B60 = 5 roles
