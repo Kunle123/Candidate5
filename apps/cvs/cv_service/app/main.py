@@ -479,49 +479,78 @@ async def global_exception_handler(request: Request, exc: Exception):
 import httpx
 USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8000/api/user/profile")
 
+def replace_placeholders_recursive(obj, replacements):
+    """
+    Recursively replace placeholder strings in a nested dict/list structure.
+    Replacements: dict mapping placeholder strings to their actual values.
+    If a placeholder has no value (empty string), it's removed from lists or set to empty string.
+    """
+    if isinstance(obj, dict):
+        return {k: replace_placeholders_recursive(v, replacements) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        replaced = [replace_placeholders_recursive(item, replacements) for item in obj]
+        # Filter out empty strings from lists (removed placeholders)
+        return [item for item in replaced if item != ""]
+    elif isinstance(obj, str):
+        # Check if this string is a placeholder
+        for placeholder, value in replacements.items():
+            if obj.strip() == placeholder:
+                return value if value else ""  # Return empty string if no value
+        return obj
+    else:
+        return obj
+
 async def inject_pii_placeholders(payload, auth_header):
     """
-    Replace {{CANDIDATE_NAME}} and {{CONTACT_INFO}} placeholders in payload with actual PII from user profile.
-    Accepts contact_info as either a string placeholder or an array containing the placeholder.
+    Replace ALL placeholders in payload with actual PII from user profile.
+    Handles: {{CANDIDATE_NAME}}, {{CONTACT_INFO}}, {{CANDIDATE_LOCATION_FROM_PROFILE}}, etc.
+    Recursively searches through entire payload structure.
     """
-    contact_info = payload.get("contact_info")
-    is_contact_info_placeholder = (
-        contact_info == "{{CONTACT_INFO}}" or
-        (isinstance(contact_info, list) and len(contact_info) == 1 and contact_info[0] == "{{CONTACT_INFO}}")
-    )
-    if not (payload.get("name") == "{{CANDIDATE_NAME}}" or is_contact_info_placeholder):
-        return payload  # No placeholders to replace
-    async with httpx.AsyncClient() as client:
+    # Fetch user profile
+    async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get(
             USER_SERVICE_URL,
-            headers={"Authorization": auth_header}
+            headers={"Authorization": auth_header},
+            timeout=10.0
         )
         if resp.status_code != 200:
-            raise HTTPException(status_code=500, detail="Failed to fetch user profile for PII injection.")
-        user_profile = resp.json()
-    # Replace name
-    if payload.get("name") == "{{CANDIDATE_NAME}}":
-        actual_name = user_profile.get("name")
-        if not actual_name:
-            raise HTTPException(status_code=400, detail="User profile missing name for PII injection.")
-        payload["name"] = actual_name
-        logger.info(f"[PII] Replaced CANDIDATE_NAME placeholder with: {payload['name']}")
-    # Replace contact_info
-    if is_contact_info_placeholder:
-        address = user_profile.get("address_line1") or ""
-        city = user_profile.get("city_state_postal") or ""
-        email = user_profile.get("email") or ""
-        phone = user_profile.get("phone_number") or ""
-        linkedin = user_profile.get("linkedin") or ""
-        if not (address or city or email or phone or linkedin):
-            raise HTTPException(status_code=400, detail="User profile missing contact info for PII injection.")
-        payload["contact_info"] = [
-            address,
-            city,
-            email,
-            phone,
-            linkedin
-        ]
+            logger.warning(f"[PII] Failed to fetch user profile: {resp.status_code}")
+            # Continue with empty values rather than failing
+            user_profile = {}
+        else:
+            user_profile = resp.json()
+    
+    # Build replacement map
+    actual_name = user_profile.get("name", "")
+    address = user_profile.get("address_line1", "")
+    city = user_profile.get("city_state_postal", "")
+    email = user_profile.get("email", "")
+    phone = user_profile.get("phone_number", "")
+    linkedin = user_profile.get("linkedin", "")
+    
+    # Contact info as a formatted list (filter out empty values)
+    contact_info_list = [x for x in [address, city, email, phone, linkedin] if x]
+    
+    replacements = {
+        "{{CANDIDATE_NAME}}": actual_name,
+        "{{CONTACT_INFO}}": contact_info_list[0] if contact_info_list else "",  # First non-empty contact
+        "{{CANDIDATE_LOCATION_FROM_PROFILE}}": city or address or "",
+        "{{CANDIDATE_EMAIL}}": email,
+        "{{CANDIDATE_PHONE}}": phone,
+        "{{CANDIDATE_ADDRESS}}": address,
+        "{{CANDIDATE_CITY}}": city,
+        "{{CANDIDATE_LINKEDIN}}": linkedin,
+    }
+    
+    logger.info(f"[PII] Replacing placeholders with: name={actual_name}, location={city or address}, contact_info_items={len(contact_info_list)}")
+    
+    # Apply replacements recursively
+    payload = replace_placeholders_recursive(payload, replacements)
+    
+    # Special handling for contact_info if it's still a placeholder list
+    if payload.get("contact_info") == ["{{CONTACT_INFO}}"]:
+        payload["contact_info"] = contact_info_list
+    
     return payload
 
 def is_placeholder(val, placeholder):
