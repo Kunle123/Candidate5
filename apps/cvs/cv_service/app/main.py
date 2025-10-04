@@ -601,6 +601,12 @@ async def persist_cv(
                 payload["experience"].append(transformed_role)
             
             logger.info(f"[CV PERSIST] Transformed {len(roles)} roles from ARC format")
+            # Log first role details for debugging
+            if payload["experience"]:
+                first_role = payload["experience"][0]
+                logger.info(f"[CV PERSIST] First role after transform: job_title={first_role.get('job_title')}, bullets_count={len(first_role.get('bullets', []))}")
+                if first_role.get('bullets'):
+                    logger.info(f"[CV PERSIST] First bullet: {first_role['bullets'][0][:100] if first_role['bullets'][0] else 'EMPTY'}")
         
         # Extract other fields from cv_data
         if "personal_information" in cv_data:
