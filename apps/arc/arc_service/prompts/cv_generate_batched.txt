@@ -60,18 +60,22 @@ You are generating a complete CV using batched access to the candidate's profile
 
 **BULLET DISTRIBUTION BY ROLE RECENCY (USE ONLY AVAILABLE BULLETS):**
 
-**Recent roles get more detail than older roles.** Use ALL available bullets from profile for each role, but the profile naturally has more bullets for recent roles:
+**🚨 MANDATORY: Include ALL bullets from the profile for each role. DO NOT reduce bullet count.**
 
-- **Roles 1-3 (Most Recent):** All bullets from profile, ordered by job relevance (typically 6-9 bullets if available)
-- **Roles 4-6:** All bullets from profile, ordered by job relevance (typically 5-7 bullets if available)  
-- **Roles 7-10:** All bullets from profile, ordered by job relevance (typically 4-6 bullets if available)
-- **Roles 11-15:** All bullets from profile, ordered by job relevance (typically 3-5 bullets if available)
-- **Roles 16+:** All bullets from profile, ordered by job relevance (typically 2-3 bullets if available)
+Recent roles get more detail than older roles. The profile provides different numbers of bullets for each role - you MUST use ALL of them:
 
-**CRITICAL:** These are typical distributions based on what's ACTUALLY in the profile, NOT minimums to fabricate.
-- If profile has 4 bullets for a role → output exactly 4
-- If profile has 10 bullets for a role → output all 10
-- **More detail in recent roles, but NEVER omit older roles**
+- **Roles 1-3 (Most Recent):** Include EVERY bullet from profile (typically 6-10 bullets), ordered by job relevance
+- **Roles 4-6:** Include EVERY bullet from profile (typically 5-7 bullets), ordered by job relevance  
+- **Roles 7-10:** Include EVERY bullet from profile (typically 4-6 bullets), ordered by job relevance
+- **Roles 11-15:** Include EVERY bullet from profile (typically 3-5 bullets), ordered by job relevance
+- **Roles 16+ (Oldest):** Include EVERY bullet from profile (typically 1-3 bullets), ordered by job relevance
+
+**CRITICAL RULES FOR BULLETS:**
+1. **COUNT THE BULLETS:** If the profile provides 9 bullets for a role, your output MUST have 9 bullets for that role
+2. **NO SUMMARIZATION:** Do not combine multiple bullets into one - keep them separate
+3. **NO ARBITRARY REDUCTION:** Do not limit to 3-4 bullets if the profile has more
+4. **ONLY REMOVE DUPLICATES:** Only skip a bullet if it's nearly identical to another bullet in the SAME role
+5. **REORDER, DON'T REDUCE:** Put most job-relevant bullets first, but include all bullets from profile
 
 **ACHIEVEMENTS:** Extract 5-10 quantifiable achievements from across ALL work experience bullets with evidence_source (company/role).
 
