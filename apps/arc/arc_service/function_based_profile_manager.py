@@ -201,7 +201,8 @@ After fetching ALL {len(batch_indices)} batches, generate the complete CV with a
                 model=model,
                 messages=messages,
                 functions=profile_functions,
-                function_call=function_call_param
+                function_call=function_call_param,
+                max_tokens=4096  # Allow up to 4K tokens for CV generation (prevents truncation)
             )
             
             # Log token usage for this iteration
