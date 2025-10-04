@@ -175,8 +175,27 @@ Current CV:
 async def handle_session_start(request_data: Dict[str, Any], request: Request = None) -> Dict[str, Any]:
     profile = request_data.get("profile")
     user_id = request_data.get("user_id")
-    # If profile is missing or empty, but user_id is present, auto-fetch profile
-    if (not profile or profile == {}) and user_id and request is not None:
+    
+    # If no profile provided and request available, try to auto-fetch
+    if (not profile or profile == {}) and request is not None:
+        # Extract user_id from JWT token if not provided
+        if not user_id:
+            auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                token = auth_header.replace("Bearer ", "")
+                try:
+                    import jwt
+                    import os
+                    JWT_SECRET = os.getenv("JWT_SECRET", "development_secret_key")
+                    JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+                    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+                    user_id = payload.get("user_id") or payload.get("id")
+                    logger.info(f"Extracted user_id {user_id} from JWT token")
+                except Exception as e:
+                    logger.warning(f"Failed to decode JWT token: {e}")
+        
+        # Now try to fetch profile with user_id
+        if user_id:
         auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
         if not auth_header:
             raise HTTPException(status_code=400, detail="Authorization header required to auto-fetch profile")
