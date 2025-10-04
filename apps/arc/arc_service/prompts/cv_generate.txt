@@ -18,7 +18,11 @@ Before generating the CV, you MUST:
 5. **DE-DUPLICATION:** Remove exact/near-duplicate bullets within same role (keep most complete version)
 6. **ACTUAL COUNTS:** If profile has 3 bullets for a role, output 3 (not 6-9). If it has 10, output all 10
 7. **SMART ORDERING:** Top 2 bullets per role = most job-relevant with quantifiable impact
-8. **PRIVACY:** Use "{{CANDIDATE_NAME}}" for name, "{{CONTACT_INFO}}" for contact, "{{CANDIDATE_LOCATION_FROM_PROFILE}}" for location
+8. **PRIVACY:** 
+   - Use "{{CANDIDATE_NAME}}" for personal_information.name
+   - Use "{{CONTACT_INFO}}" for personal_information.contact
+   - Use "{{CANDIDATE_LOCATION_FROM_PROFILE}}" for personal_information.location ONLY
+   - For work experience locations: Use the ACTUAL location from each role's profile data (e.g., "London, UK", "Remote", etc.)
 
 **CONTENT VOLUME & BULLET DISTRIBUTION:**
 
