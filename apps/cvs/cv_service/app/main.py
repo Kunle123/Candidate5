@@ -1243,7 +1243,7 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
                     user_profile = resp.json()
                 else:
                     logger.warning(f"[DOWNLOAD] Failed to fetch user profile from user service: {resp.status_code} {resp.text}")
-        except Exception as e:
+    except Exception as e:
             logger.warning(f"[DOWNLOAD] Exception fetching user profile: {e}")
     user_name = user_profile.get("name") if user_profile and user_profile.get("name") else "CV"
     contact_info = []
@@ -1507,8 +1507,22 @@ async def create_application(
             phone_pattern = r"(?:tel|phone|contact)[:\s]*([+0-9\s\(\)-]{10,})"
             match = re.search(phone_pattern, job_description, re.IGNORECASE)
             if match:
-                contact_number = match.group(1).strip()
-                logger.info(f"[APPLICATION] Extracted contact number: {contact_number}")
+                extracted_number = match.group(1).strip()
+                # Filter out obviously fake/example numbers
+                fake_patterns = [
+                    r"0?20[\s-]?1234[\s-]?5678",  # 020 1234 5678
+                    r"0?11[\s-]?1234[\s-]?5678",  # 011 1234 5678
+                    r"555[\s-]?1234",              # 555-1234 (US example)
+                    r"123[\s-]?456[\s-]?7890",     # 123-456-7890
+                    r"000[\s-]?000[\s-]?0000",     # All zeros
+                    r"111[\s-]?111[\s-]?1111",     # All ones
+                ]
+                is_fake = any(re.search(pattern, extracted_number, re.IGNORECASE) for pattern in fake_patterns)
+                if not is_fake:
+                    contact_number = extracted_number
+                    logger.info(f"[APPLICATION] Extracted contact number: {contact_number}")
+        else:
+                    logger.info(f"[APPLICATION] Skipped fake/example contact number: {extracted_number}")
     
     # Validate required fields
     if not job_title:
