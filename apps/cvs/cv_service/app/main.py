@@ -1141,8 +1141,8 @@ async def download_persisted_docx(cv_id: str, auth: dict = Depends(verify_token)
     user_profile = None
     if auth_header:
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(USER_SERVICE_URL, headers={"Authorization": auth_header})
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(USER_SERVICE_URL, headers={"Authorization": auth_header}, timeout=10.0)
                 if resp.status_code == 200:
                     user_profile = resp.json()
                 else:
