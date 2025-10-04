@@ -1354,21 +1354,122 @@ async def create_application(
     request: Request = None
 ):
     """
-    Create a single ApplicationHistory record for a job application.
+    Create an ApplicationHistory record for a job application.
+    Extracts fields from pasted job description if provided.
     """
     from .models import ApplicationHistory
+    import re
+    from datetime import datetime
+    
     user_id = auth["user_id"]
+    job_description = payload.get("job_description", "")
+    
+    # Extract fields with priority: explicit payload > extracted from job_description > defaults
     job_title = payload.get("role_title") or payload.get("job_title")
     company_name = payload.get("company_name") or payload.get("company") or payload.get("organisation")
     contact_name = payload.get("contact_name")
     contact_number = payload.get("contact_number")
     salary = payload.get("salary")
     applied_at = payload.get("applied_at")
-    job_description = payload.get("job_description")
-    entry = models.ApplicationHistory(user_id=user_id, **payload.dict())
+    
+    # If job_description provided but key fields missing, try to extract them
+    if job_description and not (job_title and company_name):
+        logger.info("[APPLICATION] Attempting to extract metadata from job description")
+        
+        # Extract company name (common patterns)
+        if not company_name:
+            # Look for "Company: XYZ", "at XYZ", "XYZ is seeking", etc.
+            company_patterns = [
+                r"Company[:\s]+([A-Z][A-Za-z0-9\s&.-]+?)(?:\n|$|,)",
+                r"Organisation[:\s]+([A-Z][A-Za-z0-9\s&.-]+?)(?:\n|$|,)",
+                r"(?:at|for)\s+([A-Z][A-Za-z0-9\s&.-]+?)\s+(?:is|seeks|looking)",
+                r"([A-Z][A-Za-z0-9\s&.-]{3,}?)\s+is\s+(?:seeking|looking for|hiring)"
+            ]
+            for pattern in company_patterns:
+                match = re.search(pattern, job_description, re.IGNORECASE)
+                if match:
+                    company_name = match.group(1).strip()
+                    logger.info(f"[APPLICATION] Extracted company: {company_name}")
+                    break
+        
+        # Extract job title (first significant heading or title line)
+        if not job_title:
+            title_patterns = [
+                r"^([A-Z][A-Za-z\s/&-]+(?:Manager|Director|Engineer|Developer|Analyst|Lead|Specialist|Consultant|Coordinator))",
+                r"Job Title[:\s]+(.+?)(?:\n|$)",
+                r"Position[:\s]+(.+?)(?:\n|$)",
+                r"Role[:\s]+(.+?)(?:\n|$)"
+            ]
+            for pattern in title_patterns:
+                match = re.search(pattern, job_description, re.MULTILINE | re.IGNORECASE)
+                if match:
+                    job_title = match.group(1).strip()
+                    logger.info(f"[APPLICATION] Extracted job title: {job_title}")
+                    break
+        
+        # Extract salary if not provided
+        if not salary:
+            salary_patterns = [
+                r"(?:salary|rate|compensation)[:\s]*(?:up to|£|$|€)?[\s]*([0-9,]+(?:\.[0-9]{2})?[\s]*(?:per|/)?[\s]*(?:day|hour|year|annum)?)",
+                r"(£[\s]*[0-9,]+(?:\.[0-9]{2})?[\s]*(?:per|/)[\s]*(?:day|hour|year))",
+                r"([0-9,]+[\s]*(?:per|/)[\s]*(?:day|hour))"
+            ]
+            for pattern in salary_patterns:
+                match = re.search(pattern, job_description, re.IGNORECASE)
+                if match:
+                    salary = match.group(1).strip()
+                    logger.info(f"[APPLICATION] Extracted salary: {salary}")
+                    break
+        
+        # Extract contact name
+        if not contact_name:
+            contact_patterns = [
+                r"Contact[:\s]+([A-Z][a-z]+\s+[A-Z][a-z]+)",
+                r"Recruiter[:\s]+([A-Z][a-z]+\s+[A-Z][a-z]+)",
+                r"Please contact\s+([A-Z][a-z]+\s+[A-Z][a-z]+)"
+            ]
+            for pattern in contact_patterns:
+                match = re.search(pattern, job_description, re.IGNORECASE)
+                if match:
+                    contact_name = match.group(1).strip()
+                    logger.info(f"[APPLICATION] Extracted contact name: {contact_name}")
+                    break
+        
+        # Extract contact number
+        if not contact_number:
+            phone_pattern = r"(?:tel|phone|contact)[:\s]*([+0-9\s\(\)-]{10,})"
+            match = re.search(phone_pattern, job_description, re.IGNORECASE)
+            if match:
+                contact_number = match.group(1).strip()
+                logger.info(f"[APPLICATION] Extracted contact number: {contact_number}")
+    
+    # Validate required fields
+    if not job_title:
+        logger.warning("[APPLICATION] Missing job_title after extraction attempt")
+        raise HTTPException(status_code=400, detail="job_title is required (could not extract from job_description)")
+    
+    # Set applied_at to now if not provided
+    if not applied_at:
+        applied_at = datetime.utcnow()
+    
+    # Create application history entry
+    entry = ApplicationHistory(
+        user_id=user_id,
+        job_title=job_title,
+        company_name=company_name,
+        job_description=job_description,
+        applied_at=applied_at,
+        salary=salary,
+        contact_name=contact_name,
+        contact_number=contact_number,
+        organisation=company_name  # Duplicate for backwards compatibility
+    )
+    
     db.add(entry)
     db.commit()
     db.refresh(entry)
+    
+    logger.info(f"[APPLICATION] Created application history: job={job_title}, company={company_name}, user={user_id}")
     return serialize_application_history(entry)
 
 @app.get("/api/applications")
