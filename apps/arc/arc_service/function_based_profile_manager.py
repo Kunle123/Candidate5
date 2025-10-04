@@ -144,7 +144,8 @@ class FunctionBasedProfileManager:
                 {"role": "assistant", "content": None, "function_call": function_call},
                 {"role": "function", "name": "get_candidate_profile", "content": profile_data},
                 {"role": "user", "content": "Now generate the requested content using the profile data you just received."}
-            ]
+            ],
+            max_tokens=4096  # Allow up to 4K tokens for response (prevents truncation)
         )
         return final_response.choices[0].message.content
     
