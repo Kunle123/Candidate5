@@ -196,22 +196,22 @@ async def handle_session_start(request_data: Dict[str, Any], request: Request = 
         
         # Now try to fetch profile with user_id
         if user_id:
-        auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
-        if not auth_header:
-            raise HTTPException(status_code=400, detail="Authorization header required to auto-fetch profile")
-        try:
-            async with httpx.AsyncClient() as client:
-                url = USER_SERVICE_URL_TEMPLATE.format(user_id=user_id)
-                resp = await client.get(url, headers={"Authorization": auth_header})
-                if resp.status_code == 200:
-                    profile = resp.json()
-                    logger.info(f"Fetched profile for user {user_id} from user service.")
-                else:
-                    logger.warning(f"Failed to fetch profile for user {user_id}: {resp.status_code} {resp.text}")
-                    raise HTTPException(status_code=404, detail=f"Could not fetch profile for user {user_id}")
-        except Exception as e:
-            logger.error(f"Error fetching profile for user {user_id}: {e}")
-            raise HTTPException(status_code=500, detail=f"Error fetching profile for user {user_id}: {e}")
+            auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+            if not auth_header:
+                raise HTTPException(status_code=400, detail="Authorization header required to auto-fetch profile")
+            try:
+                async with httpx.AsyncClient() as client:
+                    url = USER_SERVICE_URL_TEMPLATE.format(user_id=user_id)
+                    resp = await client.get(url, headers={"Authorization": auth_header})
+                    if resp.status_code == 200:
+                        profile = resp.json()
+                        logger.info(f"Fetched profile for user {user_id} from user service.")
+                    else:
+                        logger.warning(f"Failed to fetch profile for user {user_id}: {resp.status_code} {resp.text}")
+                        raise HTTPException(status_code=404, detail=f"Could not fetch profile for user {user_id}")
+            except Exception as e:
+                logger.error(f"Error fetching profile for user {user_id}: {e}")
+                raise HTTPException(status_code=500, detail=f"Error fetching profile for user {user_id}: {e}")
     if not profile:
         raise HTTPException(status_code=400, detail="Profile data is required")
     return await session_start(profile, user_id)
