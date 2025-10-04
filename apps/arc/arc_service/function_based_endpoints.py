@@ -104,6 +104,45 @@ async def cv_generate_function_based(session_id: str, job_description: str) -> D
         )
         cv_data = parse_json_response(response_text)
         
+        # Sort roles in reverse chronological order (most recent first)
+        if "cv" in cv_data and "professional_experience" in cv_data["cv"] and "roles" in cv_data["cv"]["professional_experience"]:
+            roles = cv_data["cv"]["professional_experience"]["roles"]
+            
+            def parse_date(date_str):
+                """Parse date string to comparable format. Returns tuple (year, month) for sorting."""
+                if not date_str or date_str.lower() == "present":
+                    return (9999, 12)  # Present dates sort first
+                
+                # Try to extract year and month
+                import re
+                # Match formats like "Feb 2025", "2025-01", "Jan 2015", etc.
+                month_map = {
+                    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+                    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12
+                }
+                
+                # Try "Mon YYYY" format
+                match = re.search(r'(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{4})', date_str.lower())
+                if match:
+                    return (int(match.group(2)), month_map[match.group(1)])
+                
+                # Try "YYYY-MM" format
+                match = re.search(r'(\d{4})-(\d{2})', date_str)
+                if match:
+                    return (int(match.group(1)), int(match.group(2)))
+                
+                # Try just year "YYYY"
+                match = re.search(r'(\d{4})', date_str)
+                if match:
+                    return (int(match.group(1)), 1)  # Default to January
+                
+                # Fallback
+                return (0, 0)
+            
+            # Sort by start_date in descending order (most recent first)
+            roles.sort(key=lambda role: parse_date(role.get("start_date", "")), reverse=True)
+            logger.info(f"[CV GENERATE] Sorted {len(roles)} roles in reverse chronological order")
+        
         # Merge back static data (education, certifications) that was filtered out
         if "cv" in cv_data:
             # Add education from original profile if not present in AI response
