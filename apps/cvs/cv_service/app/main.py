@@ -565,8 +565,11 @@ async def persist_cv(
     db: Session = Depends(get_db_session)
 ):
     # --- Logging ---
-    logger.info(f"[CV PERSIST] Received payload: {json.dumps(payload)[:1000]}" if payload else "[CV PERSIST] Received empty payload!")
     logger.info(f"[CV PERSIST] User: {auth}")
+    logger.info(f"[CV PERSIST] Payload keys: {list(payload.keys()) if payload else 'EMPTY'}")
+    if payload and "cv" in payload:
+        logger.info(f"[CV PERSIST] Found 'cv' key with subkeys: {list(payload['cv'].keys()) if isinstance(payload['cv'], dict) else 'NOT A DICT'}")
+    logger.info(f"[CV PERSIST] Full payload (first 2000 chars): {json.dumps(payload)[:2000]}" if payload else "[CV PERSIST] Received empty payload!")
     # --- Transform ARC service response if needed ---
     # ARC service returns: {"cv": {"professional_experience": {"roles": [...]}}}
     # But persist endpoint expects: {"experience": [...]}
