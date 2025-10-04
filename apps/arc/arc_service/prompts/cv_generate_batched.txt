@@ -20,10 +20,20 @@ You are generating a complete CV using batched access to the candidate's profile
 - Call `get_roles_batch(start_index=15)` → Returns roles 15-16 (last batch)
 - **Continue until you've fetched all N roles**
 
-**STEP 4: Generate Complete CV**
+**STEP 4: Verify All Roles Received**
+- Before generating CV, mentally list ALL companies from ALL batches:
+  * Batch 0: [Company 1, Company 2, Company 3, Company 4, Company 5]
+  * Batch 1: [Company 6, Company 7, Company 8, Company 9, Company 10]
+  * Batch 2: [Company 11, Company 12, Company 13, Company 14, Company 15]
+  * Batch 3: [Company 16, Company 17, ...]
+- Count total companies = X
+- Your CV MUST include exactly X role objects
+
+**STEP 5: Generate Complete CV**
 - Process ALL roles you received from ALL batches
 - Create one role object in CV for each role from profile
 - Order bullets within each role by job relevance
+- FINAL CHECK: Count roles in your output JSON = must equal X from Step 4
 
 **CRITICAL RULES:**
 
@@ -139,16 +149,23 @@ You are generating a complete CV using batched access to the candidate's profile
 
 **🚨 VALIDATION BEFORE RETURNING:**
 
-**ROLE COUNT VERIFICATION:**
-1. Count total roles across ALL batches you fetched: X roles
-2. Count roles in your CV professional_experience.roles array: Y roles
-3. **REQUIREMENT:** X must equal Y
-4. If X ≠ Y, you FAILED - regenerate missing roles
+**ROLE COUNT VERIFICATION (MANDATORY - YOU WILL FAIL IF THIS IS WRONG):**
+1. List EVERY company name from EVERY batch you fetched
+2. Count total roles across ALL batches you fetched: X roles
+3. Count roles in your CV professional_experience.roles array: Y roles
+4. **ABSOLUTE REQUIREMENT:** X must equal Y
+5. If X ≠ Y, you FAILED - DO NOT return the CV, regenerate with ALL missing roles
 
-**Example:**
-- Fetched 4 batches: [5 roles] + [5 roles] + [5 roles] + [2 roles] = 17 total
-- CV must have exactly 17 role objects
-- NO EXCEPTIONS - include all roles from all batches
+**Example Verification:**
+- Batch 0: Allpay, TfL, Npower (May), Npower (Jul), B60 = 5 roles
+- Batch 1: C3UK, National Grid, RBS, First Group, Storywall = 5 roles
+- Batch 2: Vodafone, Acision, France Telecom, Orange PCS (PM), Orange PCS (R&D) = 5 roles
+- Batch 3: Test Supply Chain, Transport for Wales = 2 roles
+- **TOTAL: 5+5+5+2 = 17 roles**
+- Your CV output MUST contain exactly 17 role objects in professional_experience.roles
+- NO EXCEPTIONS - NO SUMMARIZATION - NO "MOST RELEVANT" SELECTION - ALL 17 ROLES
+
+**If you return fewer than X roles, you have FAILED this task completely.**
 
 **FAILURE CONDITIONS:**
 - ❌ Not fetching all batches (stopped at batch 2 when there were 4 batches)
