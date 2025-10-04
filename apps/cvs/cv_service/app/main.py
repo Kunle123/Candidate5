@@ -567,6 +567,73 @@ async def persist_cv(
     # --- Logging ---
     logger.info(f"[CV PERSIST] Received payload: {json.dumps(payload)[:1000]}" if payload else "[CV PERSIST] Received empty payload!")
     logger.info(f"[CV PERSIST] User: {auth}")
+    # --- Transform ARC service response if needed ---
+    # ARC service returns: {"cv": {"professional_experience": {"roles": [...]}}}
+    # But persist endpoint expects: {"experience": [...]}
+    if "cv" in payload and isinstance(payload["cv"], dict):
+        logger.info("[CV PERSIST] Detected ARC service format, transforming...")
+        cv_data = payload["cv"]
+        
+        # Extract professional_experience.roles
+        if "professional_experience" in cv_data and "roles" in cv_data["professional_experience"]:
+            roles = cv_data["professional_experience"]["roles"]
+            # Transform each role to persist format
+            payload["experience"] = []
+            for role in roles:
+                # Extract bullets as flat array of strings
+                bullets = []
+                if "bullets" in role and isinstance(role["bullets"], list):
+                    for bullet in role["bullets"]:
+                        if isinstance(bullet, dict) and "content" in bullet:
+                            bullets.append(bullet["content"])
+                        elif isinstance(bullet, str):
+                            bullets.append(bullet)
+                
+                transformed_role = {
+                    "job_title": role.get("title", ""),
+                    "company": role.get("company", ""),
+                    "start_date": role.get("start_date", ""),
+                    "end_date": role.get("end_date", ""),
+                    "location": role.get("location", ""),
+                    "bullets": bullets,
+                    "responsibilities": bullets  # Alias for backwards compatibility
+                }
+                payload["experience"].append(transformed_role)
+            
+            logger.info(f"[CV PERSIST] Transformed {len(roles)} roles from ARC format")
+        
+        # Extract other fields from cv_data
+        if "personal_information" in cv_data:
+            personal_info = cv_data["personal_information"]
+            if not payload.get("name"):
+                payload["name"] = personal_info.get("name", "{{CANDIDATE_NAME}}")
+            if not payload.get("contact_info"):
+                payload["contact_info"] = [personal_info.get("contact", "{{CONTACT_INFO}}")]
+            if not payload.get("job_title"):
+                payload["job_title"] = personal_info.get("professional_title", "")
+        
+        if "professional_summary" in cv_data:
+            payload["summary"] = cv_data["professional_summary"].get("content", "")
+        
+        if "technical_skills" in cv_data or "soft_skills" in cv_data:
+            # Flatten skills from priority groups
+            all_skills = []
+            for skill_type in ["technical_skills", "soft_skills"]:
+                if skill_type in cv_data and isinstance(cv_data[skill_type], dict):
+                    for priority_key, skills in cv_data[skill_type].items():
+                        if isinstance(skills, list):
+                            all_skills.extend(skills)
+            if all_skills:
+                payload["core_competencies"] = all_skills
+        
+        # Extract education if present
+        if "education" in cv_data:
+            payload["education"] = cv_data["education"]
+        
+        # Extract certifications if present
+        if "certifications" in cv_data:
+            payload["certifications"] = cv_data["certifications"]
+    
     # --- Validation: allow placeholders ---
     required_fields = ["name", "experience"]
     missing = [
