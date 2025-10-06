@@ -6,6 +6,25 @@ Build a React-based admin panel to manage users, adjust credits, view profiles, 
 
 ---
 
+## ✅ Quick Setup Checklist
+
+Before you start building, ensure you have:
+
+1. **API Gateway URL:** `https://api-gw-production.up.railway.app`
+2. **Admin Service URL (via Gateway):** `/api/admin/*`
+3. **Direct Admin Service URL:** `https://adminservice-production-551a.up.railway.app` (for testing only)
+4. **Initial Super Admin Credentials:** (Ask backend team to create the first admin account)
+5. **Test the health endpoint:** `curl https://adminservice-production-551a.up.railway.app/health`
+
+### Backend Status:
+- ✅ Admin Service deployed and running
+- ✅ Database tables created (admins, credit_transactions, admin_audit_logs)
+- ✅ API Gateway configured with `/api/admin/*` routes
+- ⏳ **NEXT:** Create initial super admin account
+- ⏳ **THEN:** Build frontend UI
+
+---
+
 ## 🎯 What to Build
 
 ### Phase 1 (MVP) - Pages & Features
@@ -77,6 +96,7 @@ interface LoginResponse {
 import axios from 'axios';
 
 const API_BASE_URL = 'https://api-gw-production.up.railway.app';
+// Admin service is accessible through the API Gateway at /api/admin/*
 
 export const adminLogin = async (email: string, password: string) => {
   const response = await axios.post(`${API_BASE_URL}/api/admin/auth/login`, {
