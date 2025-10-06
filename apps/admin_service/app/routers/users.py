@@ -27,6 +27,8 @@ async def list_users(
     db: Session = Depends(get_db)
 ):
     """List all users with pagination and search"""
+    from ..models import UserProfile
+    
     # Log admin action
     audit_log = AdminAuditLog(
         admin_id=admin.id,
@@ -37,22 +39,32 @@ async def list_users(
     db.add(audit_log)
     db.commit()
     
-    # Fetch users from user service
-    async with httpx.AsyncClient() as client:
-        params = {"skip": skip, "limit": limit}
-        if search:
-            params["search"] = search
-        
-        response = await client.get(
-            f"{USER_SERVICE_URL}/api/admin/users",
-            params=params,
-            timeout=30.0
+    # Query users directly from database
+    query = db.query(UserProfile)
+    
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            or_(
+                UserProfile.email.ilike(search_pattern),
+                UserProfile.name.ilike(search_pattern)
+            )
         )
-        
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail="Failed to fetch users")
-        
-        return response.json()
+    
+    users = query.offset(skip).limit(limit).all()
+    
+    return [
+        UserListItem(
+            id=user.id,
+            email=user.email,
+            name=user.name or "",
+            monthly_credits_remaining=user.monthly_credits_remaining,
+            daily_credits_remaining=user.daily_credits_remaining,
+            created_at=user.created_at,
+            updated_at=user.updated_at
+        )
+        for user in users
+    ]
 
 @router.get("/{user_id}", response_model=UserDetail)
 async def get_user_detail(
@@ -61,6 +73,8 @@ async def get_user_detail(
     db: Session = Depends(get_db)
 ):
     """Get detailed information about a specific user"""
+    from ..models import UserProfile, TopupCredits
+    
     # Log admin action
     audit_log = AdminAuditLog(
         admin_id=admin.id,
@@ -72,19 +86,28 @@ async def get_user_detail(
     db.add(audit_log)
     db.commit()
     
-    # Fetch user from user service
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{USER_SERVICE_URL}/api/admin/users/{user_id}",
-            timeout=30.0
-        )
-        
-        if response.status_code == 404:
-            raise HTTPException(status_code=404, detail="User not found")
-        elif response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail="Failed to fetch user")
-        
-        return response.json()
+    # Query user from database
+    user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get topup credits if available
+    topup = db.query(TopupCredits).filter(TopupCredits.user_id == user_id).first()
+    topup_credits = topup.topup_credits_remaining if topup else 0
+    topup_expiry = topup.topup_credits_expiry if topup else None
+    
+    return UserDetail(
+        id=user.id,
+        email=user.email,
+        name=user.name or "",
+        monthly_credits_remaining=user.monthly_credits_remaining,
+        daily_credits_remaining=user.daily_credits_remaining,
+        topup_credits=topup_credits,
+        topup_credits_expiry=topup_expiry,
+        created_at=user.created_at,
+        updated_at=user.updated_at
+    )
 
 @router.get("/{user_id}/profile")
 async def get_user_career_arc(
@@ -127,36 +150,42 @@ async def adjust_user_credits(
     db: Session = Depends(get_db)
 ):
     """Adjust user credits (add or deduct)"""
-    # Fetch current user data to get balance before
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{USER_SERVICE_URL}/api/admin/users/{user_id}",
-            timeout=30.0
-        )
-        
-        if response.status_code == 404:
-            raise HTTPException(status_code=404, detail="User not found")
-        elif response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail="Failed to fetch user")
-        
-        user_data = response.json()
-        balance_before = user_data.get("monthly_credits_remaining", 0) + user_data.get("topup_credits", 0)
+    from ..models import UserProfile, TopupCredits
     
-    # Apply credit adjustment via user service
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"{USER_SERVICE_URL}/api/admin/users/{user_id}/credits",
-            json={"amount": adjustment.amount},
-            timeout=30.0
-        )
-        
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail="Failed to adjust credits")
-        
-        updated_user = response.json()
-        balance_after = updated_user.get("monthly_credits_remaining", 0) + updated_user.get("topup_credits", 0)
+    # Query user from database
+    user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
     
-    # Record transaction in admin database
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get topup credits
+    topup = db.query(TopupCredits).filter(TopupCredits.user_id == user_id).first()
+    if not topup:
+        topup = TopupCredits(user_id=user_id, topup_credits_remaining=0)
+        db.add(topup)
+        db.flush()
+    
+    # Calculate balance before
+    balance_before = user.monthly_credits_remaining + topup.topup_credits_remaining
+    
+    # Apply credit adjustment to topup credits
+    topup.topup_credits_remaining += adjustment.amount
+    
+    # Don't allow negative credits
+    if topup.topup_credits_remaining < 0:
+        topup.topup_credits_remaining = 0
+    
+    # Set expiry for topup credits (90 days from now) if adding credits
+    if adjustment.amount > 0:
+        topup.topup_credits_expiry = datetime.now() + timedelta(days=90)
+    
+    # Calculate balance after
+    balance_after = user.monthly_credits_remaining + topup.topup_credits_remaining
+    
+    # Update user timestamp
+    user.updated_at = datetime.now()
+    
+    # Record transaction
     transaction = CreditTransaction(
         user_id=user_id,
         admin_id=admin.id,
@@ -178,13 +207,26 @@ async def adjust_user_credits(
         ip_address=request.client.host if request.client else None
     )
     db.add(audit_log)
+    
     db.commit()
     db.refresh(transaction)
+    db.refresh(user)
+    db.refresh(topup)
     
     return {
         "success": True,
         "transaction": CreditTransactionOut.from_orm(transaction),
-        "user": updated_user
+        "user": UserDetail(
+            id=user.id,
+            email=user.email,
+            name=user.name or "",
+            monthly_credits_remaining=user.monthly_credits_remaining,
+            daily_credits_remaining=user.daily_credits_remaining,
+            topup_credits=topup.topup_credits_remaining,
+            topup_credits_expiry=topup.topup_credits_expiry,
+            created_at=user.created_at,
+            updated_at=user.updated_at
+        )
     }
 
 @router.get("/{user_id}/credits/history", response_model=List[CreditTransactionOut])

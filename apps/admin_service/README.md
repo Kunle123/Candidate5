@@ -47,8 +47,8 @@ Admin panel for managing users, credits, and viewing analytics for the Candidate
 ### 1. Environment Variables
 
 ```bash
-# Database
-DATABASE_URL=postgresql://user:password@host:port/database
+# Database - Use the SAME database as User Service (shared database for simplicity)
+DATABASE_URL=postgresql://user:password@host:port/candidatev_db
 
 # Admin JWT Secret
 ADMIN_JWT_SECRET=your-secret-key-here
@@ -147,11 +147,18 @@ The admin service integrates with:
 
 ## Database Schema
 
-### Tables
+**⚠️ Important:** Admin service uses the **SAME database** as User Service for simplified management.
+
+### New Tables Created by Admin Service
 
 1. **admins**: Admin user accounts
 2. **credit_transactions**: Credit adjustment history
 3. **admin_audit_logs**: Audit trail for all admin actions
+
+### Existing Tables Accessed (from User Service)
+
+1. **users**: User accounts (read/write)
+2. **topup_credits**: User topup credits (read/write)
 
 ## API Documentation
 

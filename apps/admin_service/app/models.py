@@ -1,10 +1,33 @@
-from sqlalchemy import Column, String, DateTime, Integer, Boolean, Text
+from sqlalchemy import Column, String, DateTime, Integer, Boolean, Text, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 import datetime
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
+# Use the same Base as User Service to ensure tables are in the same database
 Base = declarative_base()
+
+# Import existing User Service models (for reference/relationships)
+# Note: In production, these would be imported from user_service.models
+class UserProfile(Base):
+    """Reference to User Service's users table"""
+    __tablename__ = 'users'
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, unique=True, nullable=False)
+    name = Column(String)
+    monthly_credits_remaining = Column(Integer, nullable=False, default=3)
+    daily_credits_remaining = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class TopupCredits(Base):
+    """Reference to User Service's topup_credits table"""
+    __tablename__ = 'topup_credits'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    topup_credits_remaining = Column(Integer, nullable=False, default=0)
+    topup_credits_expiry = Column(DateTime, nullable=True)
 
 class Admin(Base):
     """Admin user model"""
