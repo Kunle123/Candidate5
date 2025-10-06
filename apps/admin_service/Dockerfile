@@ -20,6 +20,9 @@ COPY . .
 # Expose port
 EXPOSE 8080
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Make start script executable
+RUN chmod +x start.sh
+
+# Run the application (binds to both IPv4 and IPv6 for Railway health checks)
+CMD ["./start.sh"]
 

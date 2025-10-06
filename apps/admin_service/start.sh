@@ -1,3 +1,4 @@
 #!/bin/bash
-exec uvicorn app.main:app --host 0.0.0.0 --port 8080
+# Bind to both IPv4 and IPv6 for Railway health checks
+exec uvicorn app.main:app --host :: --port 8080
 
