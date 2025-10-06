@@ -54,10 +54,12 @@ ai_service_url = os.environ.get("AI_SERVICE_URL")
 payment_service_url = os.environ.get("PAYMENT_SERVICE_URL")
 arc_service_url = os.environ.get("ARC_SERVICE_URL")
 job_agent_service_url = os.environ.get("JOB_AGENT_SERVICE_URL")
+admin_service_url = os.environ.get("ADMIN_SERVICE_URL")
 
 # Register the user service for proxying /api/user/* endpoints
 USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL")
 print(f"[DEBUG] USER_SERVICE_URL at startup: {USER_SERVICE_URL}")
+print(f"[DEBUG] ADMIN_SERVICE_URL at startup: {admin_service_url}")
 
 # Generic proxy function
 async def proxy(request: StarletteRequest, base_url: str, path: str):
@@ -381,6 +383,12 @@ async def proxy_cv_generate(request: StarletteRequest):
 async def proxy_applications(request: StarletteRequest, full_path: str):
     path = f"/api/applications{full_path}"
     return await proxy(request, cv_service_url, path)
+
+# Admin service routes (must be before catch-all)
+@app.api_route("/api/admin{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_admin(request: StarletteRequest, full_path: str):
+    path = f"/admin{full_path}"
+    return await proxy(request, admin_service_url, path)
 
 # This must be the last route!
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
