@@ -186,8 +186,8 @@ async def proxy_subscriptions(request: StarletteRequest, full_path: str):
 
 @app.api_route("/api/arc{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_arc(request: StarletteRequest, full_path: str):
-    # Keep the /api/arc prefix when forwarding
-    path = f"/api/arc{full_path}"
+    # Strip /api/arc and forward to /api/v1 (where ARC service endpoints are registered)
+    path = f"/api/v1{full_path}"
     return await proxy(request, arc_service_url, path)
 
 # @app.api_route("/api/career-ark{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
