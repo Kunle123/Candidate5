@@ -41,7 +41,7 @@ def create_kunle_admin():
     db = SessionLocal()
     
     try:
-        email = "kunle2000@gmail.com"
+        email = "kunle.ibidun@candidate5.co.uk"
         name = "Kunle Odekunle"
         password = "Admin2025!Secure"  # Change this after first login!
         
@@ -106,7 +106,7 @@ def create_kunle_admin():
 
 if __name__ == "__main__":
     print("=" * 70)
-    print("CREATING SUPER ADMIN FOR kunle2000@gmail.com")
+    print("CREATING SUPER ADMIN FOR kunle.ibidun@candidate5.co.uk")
     print("=" * 70)
     create_kunle_admin()
 
