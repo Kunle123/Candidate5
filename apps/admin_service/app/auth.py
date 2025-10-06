@@ -11,9 +11,10 @@ from .models import Admin
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# JWT configuration
-SECRET_KEY = os.getenv("ADMIN_JWT_SECRET", "your-admin-secret-key-change-in-production")
-ALGORITHM = "HS256"
+# JWT configuration - Use same secret as other services for consistency
+# Falls back to ADMIN_JWT_SECRET for backward compatibility
+SECRET_KEY = os.getenv("JWT_SECRET", os.getenv("ADMIN_JWT_SECRET", "development_secret_key"))
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_HOURS = 8  # Admin sessions expire after 8 hours
 
 security = HTTPBearer()

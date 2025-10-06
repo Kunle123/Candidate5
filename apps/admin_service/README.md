@@ -50,8 +50,9 @@ Admin panel for managing users, credits, and viewing analytics for the Candidate
 # Database - Use the SAME database as User Service (shared database for simplicity)
 DATABASE_URL=postgresql://user:password@host:port/candidatev_db
 
-# Admin JWT Secret
-ADMIN_JWT_SECRET=your-secret-key-here
+# JWT Secret - Use the SAME secret as other services for consistency
+JWT_SECRET=your-jwt-secret-key-here
+JWT_ALGORITHM=HS256
 
 # External Services
 USER_SERVICE_URL=http://user-service:8080
