@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 logger.info("=== Admin Service Configuration ===")
 logger.info(f"DATABASE_URL: {'SET' if os.getenv('DATABASE_URL') or os.getenv('USER_DATABASE_URL') else 'NOT SET'}")
 logger.info(f"JWT_SECRET: {'SET' if os.getenv('JWT_SECRET') else 'NOT SET'}")
+logger.info(f"PORT: {os.getenv('PORT', 'NOT SET (will default to 8080)')}")
+logger.info(f"RAILWAY_PUBLIC_DOMAIN: {os.getenv('RAILWAY_PUBLIC_DOMAIN', 'NOT SET')}")
+logger.info(f"RAILWAY_ENVIRONMENT: {os.getenv('RAILWAY_ENVIRONMENT', 'NOT SET')}")
 logger.info(f"USER_SERVICE_URL: {os.getenv('USER_SERVICE_URL', 'NOT SET')}")
 logger.info(f"ARC_SERVICE_URL: {os.getenv('ARC_SERVICE_URL', 'NOT SET')}")
 logger.info(f"CV_SERVICE_URL: {os.getenv('CV_SERVICE_URL', 'NOT SET')}")
@@ -62,6 +65,7 @@ app.include_router(analytics.router)
 
 @app.get("/")
 def read_root():
+    logger.info("Root endpoint accessed")
     return {
         "message": "Admin Dashboard API",
         "version": "1.0.0",
@@ -70,5 +74,14 @@ def read_root():
 
 @app.get("/health")
 def health_check():
+    logger.info("Health check endpoint accessed")
     return {"status": "ok", "service": "admin"}
+
+# Add middleware to log all requests
+@app.middleware("http")
+async def log_requests(request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url.path}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
 
