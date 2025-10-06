@@ -596,4 +596,9 @@ def add_topup_credits(req: TopupCreditsRequest, db: Session = Depends(get_db)):
 def health():
     return {"status": "ok"}
 
-app.include_router(router, prefix="/api") 
+# Include main router
+app.include_router(router, prefix="/api")
+
+# Include admin router
+from .admin_endpoints import router as admin_router
+app.include_router(admin_router) 
