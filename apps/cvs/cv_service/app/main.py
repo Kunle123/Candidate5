@@ -789,6 +789,29 @@ async def persist_cv(
         cover_letter_id = None
         if payload.get("cover_letter"):
             cover_letter_text = extract_content(payload.get("cover_letter", ""))
+            
+            # 🔧 FIX: Replace PII placeholders in cover letter BEFORE generating DOCX
+            # Fetch user profile for name replacement
+            user_name = ""
+            if auth_header:
+                try:
+                    async with httpx.AsyncClient(timeout=10.0) as client:
+                        resp = await client.get(USER_SERVICE_URL, headers={"Authorization": auth_header}, timeout=10.0)
+                        if resp.status_code == 200:
+                            user_profile = resp.json()
+                            user_name = user_profile.get("name", "")
+                        else:
+                            logger.warning(f"[COVER LETTER] Failed to fetch user profile: {resp.status_code}")
+                except Exception as e:
+                    logger.warning(f"[COVER LETTER] Exception fetching user profile: {e}")
+            
+            # Replace {{CANDIDATE_NAME}} in cover letter text
+            if user_name:
+                cover_letter_text = cover_letter_text.replace("{{CANDIDATE_NAME}}", user_name)
+                logger.info(f"[COVER LETTER] Replaced {{{{CANDIDATE_NAME}}}} with actual name in cover letter")
+            else:
+                logger.warning("[COVER LETTER] Could not fetch user name, placeholder may remain in cover letter")
+            
             cover_doc = Document()
             cover_doc.add_heading("Cover Letter", 0)
             for line in cover_letter_text.splitlines():
