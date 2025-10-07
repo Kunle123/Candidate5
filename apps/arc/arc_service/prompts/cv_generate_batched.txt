@@ -60,6 +60,7 @@ You are generating a complete CV using batched access to the candidate's profile
    - Use "{{CANDIDATE_NAME}}" for personal_information.name
    - Use "{{CONTACT_INFO}}" for personal_information.contact
    - Use "{{CANDIDATE_LOCATION_FROM_PROFILE}}" for personal_information.location ONLY
+   - **COVER LETTER SIGNATURE:** End the cover letter with "Sincerely,\n\n{{CANDIDATE_NAME}}" (use placeholder, NOT actual name)
    - **CRITICAL - Work Experience Locations:**
      * Use ONLY the exact location from the profile if it exists
      * If location field is empty/null/missing in profile → OMIT the location field entirely from that role
