@@ -642,6 +642,19 @@ async def persist_cv(
         # Extract certifications if present
         if "certifications" in cv_data:
             payload["certifications"] = cv_data["certifications"]
+        
+        # Extract achievements → relevant_achievements
+        if "achievements" in cv_data and isinstance(cv_data["achievements"], list):
+            # Transform achievements to flat string array
+            achievements_list = []
+            for ach in cv_data["achievements"]:
+                if isinstance(ach, dict) and "content" in ach:
+                    achievements_list.append(ach["content"])
+                elif isinstance(ach, str):
+                    achievements_list.append(ach)
+            if achievements_list:
+                payload["relevant_achievements"] = achievements_list
+                logger.info(f"[CV PERSIST] Extracted {len(achievements_list)} achievements as relevant_achievements")
     
     # --- Validation: allow placeholders ---
     required_fields = ["name", "experience"]
