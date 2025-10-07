@@ -110,6 +110,22 @@ async def cv_generate_function_based(session_id: str, job_description: str) -> D
         )
         cv_data = parse_json_response(response_text)
         
+        # 🔍 DEBUG: Log bullets from LLM response
+        if "cv" in cv_data and "professional_experience" in cv_data["cv"] and "roles" in cv_data["cv"]["professional_experience"]:
+            roles = cv_data["cv"]["professional_experience"]["roles"]
+            logger.info(f"[CV GENERATE] LLM returned {len(roles)} roles")
+            roles_with_no_bullets = []
+            for idx, role in enumerate(roles):
+                bullets = role.get("bullets", [])
+                bullet_count = len(bullets)
+                company = role.get("company", "UNKNOWN")
+                if bullet_count == 0:
+                    roles_with_no_bullets.append(f"{company} ({role.get('title', 'UNKNOWN')})")
+                logger.info(f"[CV GENERATE] LLM Role {idx+1}: {company} - {bullet_count} bullets")
+            
+            if roles_with_no_bullets:
+                logger.error(f"[CV GENERATE] ❌ LLM returned {len(roles_with_no_bullets)} roles with NO BULLETS: {roles_with_no_bullets}")
+        
         # 🔍 QUALITY VALIDATION & AUTO-CORRECTION
         validator = CVQualityValidator()
         quality_report = validator.validate_cv(cv_data, original_profile, job_description)

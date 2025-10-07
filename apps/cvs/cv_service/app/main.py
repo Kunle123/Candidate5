@@ -612,6 +612,21 @@ async def persist_cv(
                 logger.info(f"[CV PERSIST] First role after transform: job_title={first_role.get('job_title')}, bullets_count={len(first_role.get('bullets', []))}")
                 if first_role.get('bullets'):
                     logger.info(f"[CV PERSIST] First bullet: {first_role['bullets'][0][:100] if first_role['bullets'][0] else 'EMPTY'}")
+                else:
+                    logger.warning(f"[CV PERSIST] ⚠️ First role has NO BULLETS! Role data: {json.dumps(first_role, indent=2)}")
+            
+            # 🔍 DETAILED LOGGING: Check all roles for missing bullets
+            roles_without_bullets = []
+            for idx, role in enumerate(payload["experience"]):
+                bullet_count = len(role.get("bullets", []))
+                if bullet_count == 0:
+                    roles_without_bullets.append(f"{role.get('company', 'UNKNOWN')} - {role.get('job_title', 'UNKNOWN')}")
+                logger.info(f"[CV PERSIST] Role {idx+1}/{len(payload['experience'])}: {role.get('company', 'UNKNOWN')} - {bullet_count} bullets")
+            
+            if roles_without_bullets:
+                logger.error(f"[CV PERSIST] ❌ {len(roles_without_bullets)} roles have NO BULLETS: {roles_without_bullets}")
+            else:
+                logger.info(f"[CV PERSIST] ✅ All {len(payload['experience'])} roles have bullets")
         
         # Extract other fields from cv_data
         if "personal_information" in cv_data:
