@@ -303,7 +303,13 @@ async def handle_cv_generate(request_data: Dict[str, Any]) -> Dict[str, Any]:
     if auth_header:
         import httpx
         import os
-        USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8000/api")
+        # Try multiple URL formats for Railway
+        USER_SERVICE_URL = os.getenv("USER_SERVICE_URL")
+        if not USER_SERVICE_URL:
+            logger.warning("[CV GENERATE] USER_SERVICE_URL not set, trying default Railway internal URL")
+            USER_SERVICE_URL = "http://user-service.railway.internal:8000/api"
+        
+        logger.info(f"[CV GENERATE] Attempting credit deduction via: {USER_SERVICE_URL}")
         
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -322,12 +328,17 @@ async def handle_cv_generate(request_data: Dict[str, Any]) -> Dict[str, Any]:
                 logger.info(f"[CV GENERATE] ✅ Deducted 1 credit. Remaining: {credit_response.json()}")
         except httpx.TimeoutException:
             logger.error("[CV GENERATE] Timeout calling user service for credit deduction")
-            raise HTTPException(status_code=504, detail="Credit service timeout")
+            raise HTTPException(status_code=504, detail="Credit service timeout - please try again")
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"[CV GENERATE] Error deducting credits: {e}")
-            raise HTTPException(status_code=500, detail=f"Credit deduction error: {str(e)}")
+            logger.error(f"[CV GENERATE] USER_SERVICE_URL was: {USER_SERVICE_URL}")
+            # More helpful error message
+            raise HTTPException(
+                status_code=503, 
+                detail="Unable to verify credits - user service unavailable. Please contact support if this persists."
+            )
     else:
         logger.warning("[CV GENERATE] No authorization header provided - skipping credit deduction")
     
