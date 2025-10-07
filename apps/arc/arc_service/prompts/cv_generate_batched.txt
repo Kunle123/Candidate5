@@ -56,11 +56,15 @@ You are generating a complete CV using batched access to the candidate's profile
    - Position 1-2: Most job-relevant bullets with quantifiable impact
    - Position 3+: Other relevant bullets, most impactful first
 6. **DETAIL LEVEL:** Recent roles (1-3) should have maximum detail, older roles (16+) should be more concise
-7. **PRIVACY:** 
+7. **PRIVACY & LOCATION HANDLING:** 
    - Use "{{CANDIDATE_NAME}}" for personal_information.name
    - Use "{{CONTACT_INFO}}" for personal_information.contact
    - Use "{{CANDIDATE_LOCATION_FROM_PROFILE}}" for personal_information.location ONLY
-   - For work experience locations: Use the ACTUAL location from each role's profile data (e.g., "London, UK", "Remote", etc.)
+   - **CRITICAL - Work Experience Locations:**
+     * Use ONLY the exact location from the profile if it exists
+     * If location field is empty/null/missing in profile → OMIT the location field entirely from that role
+     * **DO NOT infer, guess, or fabricate locations**
+     * **DO NOT use city names, country names, or "Remote" unless explicitly in profile**
 
 **CONTENT VOLUME:**
 - Target: 4+ pages
@@ -117,7 +121,7 @@ The profile provides different numbers of bullets for each role. Your job is to:
           "title": "Title from profile",
           "start_date": "Start date from profile",
           "end_date": "End date from profile",
-          "location": "Location from profile",
+          "location": "ONLY include if present in profile - omit field entirely if not provided",
           "bullets": [
             {
               "content": "Most job-relevant bullet",
