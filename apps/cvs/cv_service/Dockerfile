@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    CACHE_BUST=20251007_v2
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
