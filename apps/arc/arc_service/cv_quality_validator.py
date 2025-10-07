@@ -368,7 +368,7 @@ class CVQualityValidator:
         
         # Create profile lookup by company
         profile_lookup = {
-            self._normalize_company(r.get("company_name", "")): r
+            self._normalize_company(r.get("company", "")): r
             for r in profile_roles
         }
         
