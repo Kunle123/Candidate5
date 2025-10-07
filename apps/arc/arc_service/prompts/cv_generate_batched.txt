@@ -128,6 +128,18 @@ This section showcases skills and experiences that are **particularly relevant t
 
 **JSON STRUCTURE:**
 
+**PRIORITY SYSTEM EXPLAINED:**
+- `priority: 1` = Highly relevant to job (directly matches key requirements)
+- `priority: 2` = Moderately relevant (supports job requirements)
+- `priority: 3` = General/foundational (good to have but not central to job)
+
+**PRIORITY ASSIGNMENT RULES:**
+1. **Bullets**: Top 2-3 bullets per role get priority 1 (most job-relevant), rest get 2-3 based on relevance
+2. **Achievements**: Top 5 most relevant get priority 1, rest get priority 2
+3. **Projects**: Job-related projects get priority 1, others get priority 2-3
+4. **Summary**: Always priority 1
+5. **Skills**: Already grouped by priority_1/priority_2/priority_3 keys
+
 ```json
 {
   "cv": {
@@ -151,9 +163,24 @@ This section showcases skills and experiences that are **particularly relevant t
           "location": "ONLY include if present in profile - omit field entirely if not provided",
           "bullets": [
             {
-              "content": "Most job-relevant bullet",
+              "content": "Most job-relevant bullet with quantifiable impact",
               "priority": 1,
               "relevance_score": 1
+            },
+            {
+              "content": "Second most job-relevant bullet",
+              "priority": 1,
+              "relevance_score": 2
+            },
+            {
+              "content": "Supporting bullet",
+              "priority": 2,
+              "relevance_score": 3
+            },
+            {
+              "content": "General responsibility",
+              "priority": 3,
+              "relevance_score": 4
             }
           ]
         }
@@ -161,26 +188,36 @@ This section showcases skills and experiences that are **particularly relevant t
     },
     "achievements": [
       {
-        "content": "Achievement text",
+        "content": "Top achievement - directly matches key job requirement",
         "priority": 1,
+        "evidence_source": "Company - Role"
+      },
+      {
+        "content": "Strong achievement - supports job requirement",
+        "priority": 2,
         "evidence_source": "Company - Role"
       }
     ],
     "technical_skills": {
-      "priority_1": ["Skills from work experience"],
-      "priority_2": ["Skills from work experience"],
-      "priority_3": ["Skills from work experience"]
+      "priority_1": ["Core skills from job description"],
+      "priority_2": ["Supporting technical skills"],
+      "priority_3": ["Additional/foundational skills"]
     },
     "soft_skills": {
-      "priority_1": ["Skills from responsibilities"],
-      "priority_2": ["Skills from work experience"],
-      "priority_3": ["Skills from achievements"]
+      "priority_1": ["Leadership, stakeholder management if in job"],
+      "priority_2": ["Communication, teamwork"],
+      "priority_3": ["General professional skills"]
     },
     "projects": [
       {
         "name": "Project name from profile",
         "description": "Description from profile",
         "priority": 1
+      },
+      {
+        "name": "Less relevant project",
+        "description": "Description",
+        "priority": 2
       }
     ],
     "languages": ["Languages from profile"],
