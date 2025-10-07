@@ -96,7 +96,24 @@ The profile provides different numbers of bullets for each role. Your job is to:
 4. **NO FABRICATION:** Only use bullets from the profile
 5. **QUALITY OVER QUANTITY:** But don't sacrifice important achievements for brevity
 
-**ACHIEVEMENTS:** Extract 5-10 quantifiable achievements from across ALL work experience bullets with evidence_source (company/role).
+**ACHIEVEMENTS (RELEVANT ACHIEVEMENTS SECTION):**
+
+This section showcases skills and experiences that are **particularly relevant to this specific job**.
+
+**CRITICAL INSTRUCTIONS:**
+1. **Extract 6-12 achievements** from across ALL work experience bullets that demonstrate skills/experience mentioned in the job description
+2. **Prioritize by relevance:** Most job-relevant achievements first (priority 1), then supporting achievements (priority 2-3)
+3. **Focus on quantifiable results:** Include metrics, numbers, or measurable outcomes wherever available in profile
+4. **Cover key job requirements:** Ensure achievements collectively demonstrate the main skills/experiences the job requires
+5. **Include evidence_source:** Note which company/role the achievement came from for traceability
+6. **NO FABRICATION:** Only use achievements explicitly stated in the candidate's profile bullets
+
+**Example Selection Logic for "Oracle Fusion Project Manager" role:**
+- ✅ INCLUDE: "Delivered complex integrations between Oracle Fusion and multiple systems" (directly relevant)
+- ✅ INCLUDE: "Coordinated 20+ suppliers for digital wallet implementation" (shows vendor management)
+- ✅ INCLUDE: "Led 50+ multidisciplinary teams for COVID logistics" (shows team leadership scale)
+- ❌ SKIP: Generic responsibilities without outcomes (e.g., "Attended daily stand-ups")
+- ❌ SKIP: Achievements totally unrelated to job requirements
 
 **SKILLS:** Derive from work experience. Education/certifications added automatically (don't include in response).
 
