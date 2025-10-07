@@ -74,27 +74,36 @@ You are generating a complete CV using batched access to the candidate's profile
 
 **BULLET DISTRIBUTION BY ROLE RECENCY:**
 
-**SMART BULLET INCLUSION - BALANCE DETAIL WITH CLARITY**
+**🚨 MANDATORY BULLET REQUIREMENTS - NON-NEGOTIABLE 🚨**
 
-The profile provides different numbers of bullets for each role. Your job is to:
-1. **START** with all bullets from the profile
-2. **REMOVE** only genuinely repetitive/redundant bullets within the same role
-3. **REORDER** remaining bullets by job relevance (most relevant first)
-4. **AIM** to include most bullets, especially for recent roles
+**DEFAULT RULE: INCLUDE ALL BULLETS FROM PROFILE**
 
-**Typical Output After Smart De-duplication:**
-- **Roles 1-3 (Most Recent):** 6-10 bullets (include nearly all if meaningful)
-- **Roles 4-6:** 5-8 bullets (remove only clear duplicates)
-- **Roles 7-10:** 4-6 bullets (consolidate if needed)
-- **Roles 11-15:** 3-5 bullets (keep most impactful)
-- **Roles 16+ (Oldest):** 2-4 bullets (essential highlights only)
+For each role, follow this STRICT process:
+1. **EXTRACT** all bullets from the profile for that role
+2. **COUNT** how many bullets the profile has: let's call this N
+3. **REMOVE ONLY** exact duplicates or near-duplicates within that same role
+4. **OUTPUT** remaining bullets (typically N or N-1 for recent roles, N-2 for older roles)
 
-**CRITICAL RULES FOR BULLETS:**
-1. **SMART DE-DUPLICATION:** Remove bullets that say essentially the same thing within a role
-2. **NO ARBITRARY LIMITS:** Don't reduce to "max 3-4 bullets" just because you think CVs should be short
-3. **PRESERVE DETAIL:** Recent roles should have substantial detail (6-10 bullets is normal)
+**MINIMUM BULLET REQUIREMENTS BY ROLE POSITION:**
+- **Roles 1-3 (Most Recent):** MINIMUM 5 bullets (or ALL profile bullets if fewer than 5)
+- **Roles 4-6:** MINIMUM 4 bullets (or ALL profile bullets if fewer than 4)
+- **Roles 7-10:** MINIMUM 3 bullets (or ALL profile bullets if fewer than 3)
+- **Roles 11-15:** MINIMUM 3 bullets (or ALL profile bullets if fewer than 3)
+- **Roles 16+ (Oldest):** MINIMUM 2 bullets (or ALL profile bullets if fewer than 2)
+
+**🚨 CRITICAL RULES FOR BULLETS - VIOLATION = FAILED GENERATION:**
+1. **PRESERVE DETAIL:** If the profile has 8 bullets for a recent role, you should output 7-8 bullets (remove only clear duplicates)
+2. **NO AGGRESSIVE COMPRESSION:** Don't reduce 8 bullets down to 3-4 just to make CV "concise"
+3. **MINIMUM ENFORCED:** Every role MUST meet the minimums above OR include ALL profile bullets (whichever is lower)
 4. **NO FABRICATION:** Only use bullets from the profile
-5. **QUALITY OVER QUANTITY:** But don't sacrifice important achievements for brevity
+5. **SMART DE-DUPLICATION ONLY:** Remove bullets that are essentially identical within a role (e.g., "Managed team" and "Led team of 5" → keep only second)
+6. **REORDER BY RELEVANCE:** Top 2 bullets = most job-relevant with quantifiable results
+
+**EXAMPLE:**
+- Profile has 9 bullets for Role 1 (most recent) → Output 8-9 bullets (remove only if truly duplicate)
+- Profile has 6 bullets for Role 5 → Output 5-6 bullets
+- Profile has 3 bullets for Role 12 → Output 3 bullets (meets minimum)
+- Profile has 2 bullets for Role 17 (oldest) → Output 2 bullets (meets minimum)
 
 **ACHIEVEMENTS (RELEVANT ACHIEVEMENTS SECTION):**
 
