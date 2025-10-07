@@ -202,7 +202,7 @@ After fetching ALL {len(batch_indices)} batches, generate the complete CV with a
                 messages=messages,
                 functions=profile_functions,
                 function_call=function_call_param,
-                max_tokens=32768  # gpt-4o has 128k context - use 32k for comprehensive CV generation with all 17 roles
+                max_tokens=16384  # gpt-4o max completion tokens: 16,384 (128k context total)
             )
             
             # Log token usage for this iteration
