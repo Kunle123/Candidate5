@@ -584,6 +584,12 @@ async def persist_cv(
             roles = cv_data["professional_experience"]["roles"]
             # Transform each role to persist format
             payload["experience"] = []
+            
+            # 🚨 CRITICAL SAFEGUARD: Check if roles array is empty
+            if not roles or len(roles) == 0:
+                logger.error("[CV PERSIST] ❌ CRITICAL: Received ARC response with ZERO roles!")
+                raise HTTPException(status_code=400, detail="CV data has no work experience roles")
+            
             for role in roles:
                 # Extract bullets as flat array of strings
                 bullets = []
@@ -593,6 +599,10 @@ async def persist_cv(
                             bullets.append(bullet["content"])
                         elif isinstance(bullet, str):
                             bullets.append(bullet)
+                
+                # 🚨 SAFEGUARD: Warn if a role has no bullets field at all
+                if "bullets" not in role:
+                    logger.warning(f"[CV PERSIST] ⚠️ Role '{role.get('company', 'UNKNOWN')}' has no 'bullets' field in ARC response!")
                 
                 transformed_role = {
                     "job_title": role.get("title", ""),

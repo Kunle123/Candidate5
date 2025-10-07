@@ -110,21 +110,54 @@ async def cv_generate_function_based(session_id: str, job_description: str) -> D
         )
         cv_data = parse_json_response(response_text)
         
+        # 🚨 CRITICAL SAFEGUARD: Validate CV structure
+        if "cv" not in cv_data:
+            logger.error("[CV GENERATE] ❌ CRITICAL: LLM response missing 'cv' key!")
+            logger.error(f"[CV GENERATE] Response keys: {list(cv_data.keys())}")
+            raise HTTPException(status_code=500, detail="LLM returned malformed response: missing 'cv' key")
+        
+        if "professional_experience" not in cv_data["cv"]:
+            logger.error("[CV GENERATE] ❌ CRITICAL: LLM response missing 'professional_experience' key!")
+            raise HTTPException(status_code=500, detail="LLM returned malformed response: missing 'professional_experience'")
+        
+        if "roles" not in cv_data["cv"]["professional_experience"]:
+            logger.error("[CV GENERATE] ❌ CRITICAL: LLM response missing 'roles' array!")
+            raise HTTPException(status_code=500, detail="LLM returned malformed response: missing 'roles' array")
+        
         # 🔍 DEBUG: Log bullets from LLM response
-        if "cv" in cv_data and "professional_experience" in cv_data["cv"] and "roles" in cv_data["cv"]["professional_experience"]:
-            roles = cv_data["cv"]["professional_experience"]["roles"]
-            logger.info(f"[CV GENERATE] LLM returned {len(roles)} roles")
-            roles_with_no_bullets = []
-            for idx, role in enumerate(roles):
-                bullets = role.get("bullets", [])
-                bullet_count = len(bullets)
-                company = role.get("company", "UNKNOWN")
-                if bullet_count == 0:
-                    roles_with_no_bullets.append(f"{company} ({role.get('title', 'UNKNOWN')})")
-                logger.info(f"[CV GENERATE] LLM Role {idx+1}: {company} - {bullet_count} bullets")
-            
-            if roles_with_no_bullets:
-                logger.error(f"[CV GENERATE] ❌ LLM returned {len(roles_with_no_bullets)} roles with NO BULLETS: {roles_with_no_bullets}")
+        roles = cv_data["cv"]["professional_experience"]["roles"]
+        logger.info(f"[CV GENERATE] LLM returned {len(roles)} roles")
+        
+        if len(roles) == 0:
+            logger.error("[CV GENERATE] ❌ CRITICAL: LLM returned ZERO roles!")
+            raise HTTPException(status_code=500, detail="LLM returned no roles in CV")
+        
+        roles_with_no_bullets = []
+        total_bullets = 0
+        for idx, role in enumerate(roles):
+            bullets = role.get("bullets", [])
+            bullet_count = len(bullets)
+            total_bullets += bullet_count
+            company = role.get("company", "UNKNOWN")
+            if bullet_count == 0:
+                roles_with_no_bullets.append(f"{company} ({role.get('title', 'UNKNOWN')})")
+            logger.info(f"[CV GENERATE] LLM Role {idx+1}: {company} - {bullet_count} bullets")
+        
+        # 🚨 CRITICAL SAFEGUARD: Check if ALL roles have zero bullets
+        if total_bullets == 0:
+            logger.error(f"[CV GENERATE] ❌ CATASTROPHIC: ALL {len(roles)} roles have ZERO bullets!")
+            logger.error(f"[CV GENERATE] Sample role structure: {json.dumps(roles[0], indent=2)[:500]}")
+            logger.error(f"[CV GENERATE] Raw LLM response (first 2000 chars): {response_text[:2000]}")
+            logger.error(f"[CV GENERATE] Parsed CV data keys: {list(cv_data.keys())}")
+            logger.error(f"[CV GENERATE] Professional experience keys: {list(cv_data['cv']['professional_experience'].keys())}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"LLM generation failed: All {len(roles)} roles have zero bullets. This indicates a critical prompt or parsing error. Check server logs for details."
+            )
+        
+        if roles_with_no_bullets:
+            logger.error(f"[CV GENERATE] ❌ LLM returned {len(roles_with_no_bullets)} roles with NO BULLETS: {roles_with_no_bullets}")
+            logger.warning(f"[CV GENERATE] Total bullets across all roles: {total_bullets}")
         
         # 🔍 QUALITY VALIDATION & AUTO-CORRECTION
         validator = CVQualityValidator()
