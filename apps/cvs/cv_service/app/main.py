@@ -492,11 +492,13 @@ def replace_placeholders_recursive(obj, replacements):
         # Filter out empty strings from lists (removed placeholders)
         return [item for item in replaced if item != ""]
     elif isinstance(obj, str):
-        # Check if this string is a placeholder
+        # Replace placeholders in strings (both exact matches and embedded placeholders)
+        result = obj
         for placeholder, value in replacements.items():
-            if obj.strip() == placeholder:
-                return value if value else ""  # Return empty string if no value
-        return obj
+            if placeholder in result:
+                # Replace all occurrences of the placeholder
+                result = result.replace(placeholder, value if value else "")
+        return result
     else:
         return obj
 
