@@ -87,10 +87,16 @@ async def cv_preview_function_based(session_id: str, job_description: str) -> Di
 
 async def cv_generate_function_based(session_id: str, job_description: str) -> Dict[str, Any]:
     try:
+        import time
+        from cv_quality_validator import CVQualityValidator
+        from cv_quality_metrics import get_metrics_tracker
+        
+        start_time = time.time()
         manager = get_profile_manager()
         
         # Get the original profile to extract static data
         original_profile = manager.get_profile(session_id)
+        profile_size = CVQualityValidator()._categorize_profile_size(len(original_profile.get("work_experience", [])))
         
         # Use batched prompt that instructs LLM to fetch roles in groups of 5
         prompt = load_prompt("cv_generate_batched.txt")
@@ -104,24 +110,42 @@ async def cv_generate_function_based(session_id: str, job_description: str) -> D
         )
         cv_data = parse_json_response(response_text)
         
-        # CRITICAL VALIDATION: Check if all roles were included
-        expected_role_count = len(original_profile.get("work_experience", []))
-        if "cv" in cv_data and "professional_experience" in cv_data["cv"] and "roles" in cv_data["cv"]["professional_experience"]:
-            actual_role_count = len(cv_data["cv"]["professional_experience"]["roles"])
-            if actual_role_count < expected_role_count:
-                logger.error(
-                    f"[CV GENERATE] ⚠️ ROLE COUNT MISMATCH: Expected {expected_role_count} roles, "
-                    f"but LLM only returned {actual_role_count}. This is a critical error!"
-                )
-                logger.error(f"[CV GENERATE] Missing {expected_role_count - actual_role_count} roles from CV generation")
-                # Log which companies are in the output for debugging
-                returned_companies = [role.get("company", "UNKNOWN") for role in cv_data["cv"]["professional_experience"]["roles"]]
-                logger.error(f"[CV GENERATE] Returned companies: {returned_companies}")
-                
-                # For now, we'll proceed but log the issue prominently
-                # In future, we could retry or add missing roles from original profile
+        # 🔍 QUALITY VALIDATION & AUTO-CORRECTION
+        validator = CVQualityValidator()
+        quality_report = validator.validate_cv(cv_data, original_profile, job_description)
+        was_auto_corrected = False
+        
+        # If validation failed, attempt auto-correction
+        if not quality_report.passed:
+            logger.warning("[CV GENERATE] Quality validation failed, attempting auto-correction...")
+            cv_data, was_corrected = validator.auto_correct_cv(cv_data, original_profile, quality_report)
+            was_auto_corrected = was_corrected
+            
+            if was_corrected:
+                logger.info("[CV GENERATE] ✅ CV auto-corrected successfully")
+                # Re-validate after correction
+                final_report = validator.validate_cv(cv_data, original_profile, job_description)
+                if final_report.passed:
+                    logger.info("[CV GENERATE] ✅ CV passed validation after auto-correction")
+                else:
+                    logger.warning("[CV GENERATE] ⚠️ CV still has issues after auto-correction")
+                quality_report = final_report  # Use updated report for metrics
             else:
-                logger.info(f"[CV GENERATE] ✅ Role count validated: {actual_role_count}/{expected_role_count} roles included")
+                logger.warning("[CV GENERATE] ⚠️ Auto-correction did not modify CV")
+        else:
+            logger.info("[CV GENERATE] ✅ CV passed quality validation on first attempt")
+        
+        # 📊 LOG METRICS
+        generation_time = time.time() - start_time
+        metrics_tracker = get_metrics_tracker()
+        metrics_tracker.log_generation(
+            session_id=session_id,
+            quality_report=quality_report.to_dict(),
+            generation_time_seconds=generation_time,
+            model="gpt-4o",
+            profile_size=profile_size,
+            was_auto_corrected=was_auto_corrected
+        )
         
         # Sort roles in reverse chronological order (most recent first)
         if "cv" in cv_data and "professional_experience" in cv_data["cv"] and "roles" in cv_data["cv"]["professional_experience"]:

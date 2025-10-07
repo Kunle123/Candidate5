@@ -134,3 +134,39 @@ async def health_check():
                 "timestamp": time.time()
             }
         )
+
+@router.get("/cv/quality-metrics")
+async def get_quality_metrics(limit: int = 100):
+    """
+    Get CV generation quality metrics.
+    
+    Query params:
+        - limit: Number of recent generations to analyze (default: 100)
+    
+    Returns summary statistics including:
+        - Pass rate
+        - Auto-correction rate
+        - Average role completeness
+        - Average bullets per role
+        - Metrics by profile size
+    """
+    try:
+        from cv_quality_metrics import get_metrics_tracker
+        
+        tracker = get_metrics_tracker()
+        summary = tracker.get_summary_stats(limit=limit)
+        
+        return {
+            "status": "success",
+            "summary": summary,
+            "analyzed_limit": limit
+        }
+    except Exception as e:
+        logger.error(f"Failed to get quality metrics: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "error": str(e)
+            }
+        )
