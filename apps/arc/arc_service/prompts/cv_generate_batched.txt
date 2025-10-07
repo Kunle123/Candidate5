@@ -2,6 +2,15 @@
 
 You are generating a complete CV using batched access to the candidate's profile (5 roles at a time).
 
+**🚨🚨🚨 CRITICAL BULLET RULE - READ THIS FIRST:**
+**DO NOT FILTER, SUMMARIZE, OR REDUCE BULLETS UNDER ANY CIRCUMSTANCES**
+- If the profile has 9 bullets for a role → Your output MUST have 9 bullets
+- If the profile has 12 bullets for a role → Your output MUST have 12 bullets  
+- If the profile has 6 bullets for a role → Your output MUST have 6 bullets
+- **The ONLY exception:** Remove a bullet ONLY if it's nearly identical to another bullet in the SAME role
+- **YOU ARE REORDERING BULLETS, NOT REDUCING THEM**
+- **FAILURE TO OUTPUT ALL BULLETS = COMPLETE TASK FAILURE**
+
 **🚨 MANDATORY PROCESS - STEP BY STEP:**
 
 **STEP 1: Get Total Role Count**
@@ -58,17 +67,20 @@ You are generating a complete CV using batched access to the candidate's profile
 - Include ALL roles even if exceeds page target
 - Completeness > page count
 
-**BULLET DISTRIBUTION BY ROLE RECENCY (USE ONLY AVAILABLE BULLETS):**
+**BULLET DISTRIBUTION BY ROLE RECENCY:**
 
-**🚨 MANDATORY: Include ALL bullets from the profile for each role. DO NOT reduce bullet count.**
+**🚨 MANDATORY: OUTPUT EXACT BULLET COUNT FROM PROFILE - NO REDUCTIONS ALLOWED**
 
-Recent roles get more detail than older roles. The profile provides different numbers of bullets for each role - you MUST use ALL of them:
+The profile provides different numbers of bullets for each role - you MUST output THE EXACT SAME NUMBER:
 
-- **Roles 1-3 (Most Recent):** Include EVERY bullet from profile (typically 6-10 bullets), ordered by job relevance
-- **Roles 4-6:** Include EVERY bullet from profile (typically 5-7 bullets), ordered by job relevance  
-- **Roles 7-10:** Include EVERY bullet from profile (typically 4-6 bullets), ordered by job relevance
-- **Roles 11-15:** Include EVERY bullet from profile (typically 3-5 bullets), ordered by job relevance
-- **Roles 16+ (Oldest):** Include EVERY bullet from profile (typically 1-3 bullets), ordered by job relevance
+- **ALL ROLES:** Include EVERY SINGLE bullet from profile, ordered by job relevance
+  - If profile has 12 bullets → Output 12 bullets
+  - If profile has 9 bullets → Output 9 bullets
+  - If profile has 6 bullets → Output 6 bullets
+  - If profile has 3 bullets → Output 3 bullets
+  - If profile has 1 bullet → Output 1 bullet
+
+**YOUR ONLY JOB IS TO REORDER BULLETS BY RELEVANCE, NOT REDUCE THEIR COUNT**
 
 **CRITICAL RULES FOR BULLETS:**
 1. **COUNT THE BULLETS:** If the profile provides 9 bullets for a role, your output MUST have 9 bullets for that role
@@ -175,12 +187,25 @@ Recent roles get more detail than older roles. The profile provides different nu
 
 **If you return fewer than X roles, you have FAILED this task completely.**
 
+**BULLET COUNT VERIFICATION (MANDATORY - CHECK EACH ROLE):**
+1. For EACH role in your output, count the bullets
+2. Compare to the bullet count from the corresponding role in the profile
+3. **ABSOLUTE REQUIREMENT:** Bullet count in output MUST equal bullet count in profile for EACH role
+4. If ANY role has fewer bullets than the profile, you FAILED - regenerate that role with ALL bullets
+
+**Example Bullet Verification:**
+- Profile Role 1 (Allpay): 9 bullets → CV Output Role 1: MUST have 9 bullets
+- Profile Role 2 (TfL): 12 bullets → CV Output Role 2: MUST have 12 bullets
+- Profile Role 3 (Npower): 6 bullets → CV Output Role 3: MUST have 6 bullets
+- **If you output 3 bullets for Allpay when profile has 9, you have COMPLETELY FAILED**
+
 **FAILURE CONDITIONS:**
 - ❌ Not fetching all batches (stopped at batch 2 when there were 4 batches)
 - ❌ Role count mismatch (fetched 17, outputted 8)
 - ❌ Omitting roles from any batch
 - ❌ Fabricating bullets
 - ❌ Including duplicate bullets
+- ❌ **BULLET COUNT MISMATCH (fetched role with 9 bullets, outputted 3)**
 
 Return ONLY the JSON object. No markdown formatting, no explanatory text.
 
