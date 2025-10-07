@@ -327,42 +327,62 @@ async def handle_cv_generate(request_data: Dict[str, Any]) -> Dict[str, Any]:
     if auth_header:
         import httpx
         import os
-        # Try multiple URL formats for Railway
+        
+        # Get USER_SERVICE_URL or try multiple fallbacks
         USER_SERVICE_URL = os.getenv("USER_SERVICE_URL")
-        if not USER_SERVICE_URL:
-            logger.warning("[CV GENERATE] USER_SERVICE_URL not set, trying Railway internal DNS")
-            # Railway internal DNS handles port automatically
-            USER_SERVICE_URL = "http://user-service.railway.internal/api"
         
-        logger.info(f"[CV GENERATE] Attempting credit deduction via: {USER_SERVICE_URL}")
+        # List of URLs to try in order
+        urls_to_try = []
+        if USER_SERVICE_URL:
+            urls_to_try.append(USER_SERVICE_URL)
         
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                credit_response = await client.post(
-                    f"{USER_SERVICE_URL}/user/credits/use",
-                    json={"amount": 1},
-                    headers={"Authorization": auth_header}
-                )
+        # Add fallback URLs (use public URL first since internal DNS may not be configured)
+        urls_to_try.extend([
+            "https://c5userservice-production.up.railway.app/api",
+            "http://user-service.railway.internal/api"  # Backup if internal DNS is configured
+        ])
+        
+        credit_response = None
+        last_error = None
+        
+        for url in urls_to_try:
+            try:
+                logger.info(f"[CV GENERATE] Attempting credit deduction via: {url}")
                 
-                if credit_response.status_code == 402:
-                    raise HTTPException(status_code=402, detail="Insufficient credits to generate CV")
-                elif credit_response.status_code != 200:
-                    logger.warning(f"[CV GENERATE] Credit deduction failed: {credit_response.status_code} {credit_response.text}")
-                    raise HTTPException(status_code=credit_response.status_code, detail="Failed to deduct credits")
-                
-                logger.info(f"[CV GENERATE] ✅ Deducted 1 credit. Remaining: {credit_response.json()}")
-        except httpx.TimeoutException:
-            logger.error("[CV GENERATE] Timeout calling user service for credit deduction")
-            raise HTTPException(status_code=504, detail="Credit service timeout - please try again")
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"[CV GENERATE] Error deducting credits: {e}")
-            logger.error(f"[CV GENERATE] USER_SERVICE_URL was: {USER_SERVICE_URL}")
-            # More helpful error message
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    credit_response = await client.post(
+                        f"{url}/user/credits/use",
+                        json={"amount": 1},
+                        headers={"Authorization": auth_header}
+                    )
+                    
+                    if credit_response.status_code == 402:
+                        raise HTTPException(status_code=402, detail="Insufficient credits to generate CV")
+                    elif credit_response.status_code == 200:
+                        logger.info(f"[CV GENERATE] ✅ Deducted 1 credit via {url}. Remaining: {credit_response.json()}")
+                        break  # Success! Exit the loop
+                    else:
+                        logger.warning(f"[CV GENERATE] Credit deduction failed with {url}: {credit_response.status_code} {credit_response.text}")
+                        last_error = f"Status {credit_response.status_code}: {credit_response.text}"
+                        continue  # Try next URL
+                        
+            except httpx.TimeoutException as e:
+                logger.warning(f"[CV GENERATE] Timeout with {url}: {e}")
+                last_error = f"Timeout with {url}"
+                continue  # Try next URL
+            except HTTPException:
+                raise  # Re-raise HTTPExceptions (like 402)
+            except Exception as e:
+                logger.warning(f"[CV GENERATE] Error with {url}: {e}")
+                last_error = str(e)
+                continue  # Try next URL
+        
+        # If we got here and credit_response is None or not 200, all URLs failed
+        if credit_response is None or credit_response.status_code != 200:
+            logger.error(f"[CV GENERATE] All credit deduction URLs failed. Last error: {last_error}")
             raise HTTPException(
-                status_code=503, 
-                detail="Unable to verify credits - user service unavailable. Please contact support if this persists."
+                status_code=503,
+                detail=f"Unable to verify credits - user service unavailable. Last error: {last_error}"
             )
     else:
         logger.warning("[CV GENERATE] No authorization header provided - skipping credit deduction")
