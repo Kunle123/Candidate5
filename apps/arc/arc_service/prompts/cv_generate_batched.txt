@@ -96,8 +96,17 @@ For each role, follow this STRICT process:
 2. **NO AGGRESSIVE COMPRESSION:** Don't reduce 8 bullets down to 3-4 just to make CV "concise"
 3. **MINIMUM ENFORCED:** Every role MUST meet the minimums above OR include ALL profile bullets (whichever is lower)
 4. **NO FABRICATION:** Only use bullets from the profile
-5. **SMART DE-DUPLICATION ONLY:** Remove bullets that are essentially identical within a role (e.g., "Managed team" and "Led team of 5" → keep only second)
-6. **REORDER BY RELEVANCE:** Top 2 bullets = most job-relevant with quantifiable results
+5. **STRICT DE-DUPLICATION WITHIN EACH ROLE:**
+   - Remove bullets that are essentially identical within the SAME role
+   - Example: "Managed team" and "Led team of 5" → keep only the more detailed version ("Led team of 5")
+   - Example: "Delivered platform" and "Delivered platform with 99.9% uptime" → keep only the version with metrics
+   - **IMPORTANT**: A bullet that appears in Role A and a similar bullet in Role B are BOTH VALID (they happened at different times/companies)
+6. **ASSIGN PRIORITY TO EACH BULLET:** 
+   - **CRITICAL**: Every bullet MUST be an object with `content`, `priority`, and `relevance_score` fields
+   - Top 2-3 bullets per role: `priority: 1` (most job-relevant with quantifiable impact)
+   - Next 2-4 bullets: `priority: 2` (supporting achievements)
+   - Remaining bullets: `priority: 3` (general responsibilities)
+7. **REORDER BY RELEVANCE:** Top 2 bullets = most job-relevant with quantifiable results (priority 1, relevance_score 1-2)
 
 **EXAMPLE:**
 - Profile has 9 bullets for Role 1 (most recent) → Output 8-9 bullets (remove only if truly duplicate)
@@ -134,7 +143,11 @@ This section showcases skills and experiences that are **particularly relevant t
 - `priority: 3` = General/foundational (good to have but not central to job)
 
 **PRIORITY ASSIGNMENT RULES:**
-1. **Bullets**: Top 2-3 bullets per role get priority 1 (most job-relevant), rest get 2-3 based on relevance
+1. **Bullets**: 🚨 MUST be objects, not strings
+   - Top 2-3 bullets per role: `priority: 1` (most job-relevant with metrics/impact)
+   - Next 2-4 bullets: `priority: 2` (supporting achievements)  
+   - Remaining bullets: `priority: 3` (general responsibilities)
+   - Each bullet object MUST have: `content`, `priority`, `relevance_score`
 2. **Achievements**: Top 5 most relevant get priority 1, rest get priority 2
 3. **Projects**: Job-related projects get priority 1, others get priority 2-3
 4. **Summary**: Always priority 1
