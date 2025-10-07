@@ -101,7 +101,7 @@ The profile provides different numbers of bullets for each role. Your job is to:
 This section showcases skills and experiences that are **particularly relevant to this specific job**.
 
 **CRITICAL INSTRUCTIONS:**
-1. **Extract 6-12 achievements** from across ALL work experience bullets that demonstrate skills/experience mentioned in the job description
+1. **Extract 5-10 achievements** from across ALL work experience bullets that demonstrate skills/experience mentioned in the job description
 2. **Prioritize by relevance:** Most job-relevant achievements first (priority 1), then supporting achievements (priority 2-3)
 3. **Focus on quantifiable results:** Include metrics, numbers, or measurable outcomes wherever available in profile
 4. **Cover key job requirements:** Ensure achievements collectively demonstrate the main skills/experiences the job requires
