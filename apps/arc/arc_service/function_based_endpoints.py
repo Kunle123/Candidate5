@@ -331,10 +331,8 @@ async def handle_cv_generate(request_data: Dict[str, Any]) -> Dict[str, Any]:
         USER_SERVICE_URL = os.getenv("USER_SERVICE_URL")
         if not USER_SERVICE_URL:
             logger.warning("[CV GENERATE] USER_SERVICE_URL not set, trying Railway internal DNS")
-            # Try internal DNS first (faster, no internet egress)
-            USER_SERVICE_URL = "http://user-service.railway.internal:8080/api"
-            # Fallback to public URL if internal DNS fails
-            # USER_SERVICE_URL = "https://c5userservice-production.up.railway.app/api"
+            # Railway internal DNS handles port automatically
+            USER_SERVICE_URL = "http://user-service.railway.internal/api"
         
         logger.info(f"[CV GENERATE] Attempting credit deduction via: {USER_SERVICE_URL}")
         
