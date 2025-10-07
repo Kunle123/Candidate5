@@ -362,42 +362,77 @@ class CVQualityValidator:
         cv_roles: List[Dict[str, Any]],
         profile_roles: List[Dict[str, Any]]
     ) -> Tuple[List[Dict[str, Any]], int]:
-        """Ensure each role has minimum bullet count by pulling from profile."""
+        """Ensure each role has minimum bullet count by pulling from profile.
+        
+        CRITICAL: Only checks for duplicates WITHIN each role. If profile has 
+        insufficient unique bullets for a role, accept the lower count.
+        """
         current_year = datetime.now().year
         fixed_count = 0
         
-        # Create profile lookup by company
-        profile_lookup = {
-            self._normalize_company(r.get("company", "")): r
-            for r in profile_roles
-        }
+        # Create profile lookup by company AND date range for precise matching
+        profile_lookup = {}
+        for r in profile_roles:
+            company = self._normalize_company(r.get("company", ""))
+            start_date = r.get("start_date", "")
+            # Use company+start_date as key to match exact profile role
+            key = f"{company}|{start_date}"
+            profile_lookup[key] = r
         
         for role in cv_roles:
             company = self._normalize_company(role.get("company", ""))
+            start_date = role.get("start_date", "")
             bullets = role.get("bullets", [])
             
-            # Handle object array format
+            # Handle object array format - convert to flat string array
             if bullets and isinstance(bullets[0], dict):
                 bullets = [b.get("content", "") for b in bullets if b.get("content")]
                 role["bullets"] = bullets
             
+            # 🚨 CRITICAL: Remove duplicates WITHIN this role first
+            unique_bullets = []
+            seen = set()
+            for bullet in bullets:
+                bullet_lower = bullet.lower().strip()
+                if bullet_lower not in seen:
+                    unique_bullets.append(bullet)
+                    seen.add(bullet_lower)
+                else:
+                    logger.warning(f"[CV AUTO-CORRECT] Removed duplicate bullet in {company}: {bullet[:80]}...")
+            
+            role["bullets"] = unique_bullets
+            bullets = unique_bullets
+            
             # Determine minimum based on recency
-            is_recent = self._is_recent_role(role.get("start_date", ""), current_year)
+            is_recent = self._is_recent_role(start_date, current_year)
             min_bullets = self.min_bullets_recent_roles if is_recent else self.min_bullets_older_roles
             
-            if len(bullets) < min_bullets and company in profile_lookup:
-                # Pull additional bullets from profile
-                profile_role = profile_lookup[company]
-                profile_bullets = profile_role.get("description", [])
+            # Only attempt to add bullets if below minimum AND we have a matching profile role
+            if len(bullets) < min_bullets:
+                lookup_key = f"{company}|{start_date}"
+                profile_role = profile_lookup.get(lookup_key)
                 
-                # Add bullets until we hit minimum
-                bullets_needed = min_bullets - len(bullets)
-                additional_bullets = [b for b in profile_bullets if b not in bullets][:bullets_needed]
-                
-                if additional_bullets:
-                    role["bullets"].extend(additional_bullets)
-                    fixed_count += 1
-                    logger.info(f"[CV AUTO-CORRECT] Added {len(additional_bullets)} bullets to {role.get('company')}")
+                if profile_role:
+                    profile_bullets = profile_role.get("description", [])
+                    
+                    # Filter out bullets that already exist in THIS role (case-insensitive)
+                    bullets_lower = {b.lower().strip() for b in bullets}
+                    additional_bullets = [
+                        b for b in profile_bullets 
+                        if b.lower().strip() not in bullets_lower
+                    ]
+                    
+                    bullets_needed = min_bullets - len(bullets)
+                    
+                    if additional_bullets:
+                        bullets_to_add = additional_bullets[:bullets_needed]
+                        role["bullets"].extend(bullets_to_add)
+                        fixed_count += 1
+                        logger.info(f"[CV AUTO-CORRECT] Added {len(bullets_to_add)} bullets to {company} ({start_date})")
+                    else:
+                        logger.info(f"[CV AUTO-CORRECT] No unique bullets available for {company} ({start_date}), accepting {len(bullets)} bullets")
+                else:
+                    logger.info(f"[CV AUTO-CORRECT] No matching profile role for {company} ({start_date}), accepting {len(bullets)} bullets")
         
         return cv_roles, fixed_count
     
