@@ -68,6 +68,10 @@ async def cv_preview(request: Request):
 @router.post("/cv/generate")
 async def cv_full_generation(request: Request):
     data = await request.json()
+    # Extract Authorization header for credit deduction
+    auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+    if auth_header:
+        data["_auth_header"] = auth_header
     return await handle_cv_generate(data)
 
 @router.post("/cv/update")

@@ -17,7 +17,7 @@ def print_prompt_file_info():
         with open(prompt_path, "r", encoding="utf-8") as f:
             first_200 = f.read(200)
         print(f"[DEBUG] cv_preview.txt exists, size: {size} bytes, first 200 chars: {first_200}")
-    else:
+        else:
         print("[DEBUG] cv_preview.txt does NOT exist in /app/prompts/")
 
 print("=== [ARC MAIN.PY ENTRYPOINT TEST] If you see this, /app/main.py is running as the entrypoint! ===")

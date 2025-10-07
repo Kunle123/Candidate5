@@ -104,6 +104,25 @@ async def cv_generate_function_based(session_id: str, job_description: str) -> D
         )
         cv_data = parse_json_response(response_text)
         
+        # CRITICAL VALIDATION: Check if all roles were included
+        expected_role_count = len(original_profile.get("work_experience", []))
+        if "cv" in cv_data and "professional_experience" in cv_data["cv"] and "roles" in cv_data["cv"]["professional_experience"]:
+            actual_role_count = len(cv_data["cv"]["professional_experience"]["roles"])
+            if actual_role_count < expected_role_count:
+                logger.error(
+                    f"[CV GENERATE] ⚠️ ROLE COUNT MISMATCH: Expected {expected_role_count} roles, "
+                    f"but LLM only returned {actual_role_count}. This is a critical error!"
+                )
+                logger.error(f"[CV GENERATE] Missing {expected_role_count - actual_role_count} roles from CV generation")
+                # Log which companies are in the output for debugging
+                returned_companies = [role.get("company", "UNKNOWN") for role in cv_data["cv"]["professional_experience"]["roles"]]
+                logger.error(f"[CV GENERATE] Returned companies: {returned_companies}")
+                
+                # For now, we'll proceed but log the issue prominently
+                # In future, we could retry or add missing roles from original profile
+            else:
+                logger.info(f"[CV GENERATE] ✅ Role count validated: {actual_role_count}/{expected_role_count} roles included")
+        
         # Sort roles in reverse chronological order (most recent first)
         if "cv" in cv_data and "professional_experience" in cv_data["cv"] and "roles" in cv_data["cv"]["professional_experience"]:
             roles = cv_data["cv"]["professional_experience"]["roles"]
@@ -273,10 +292,45 @@ async def handle_cv_preview(request_data: Dict[str, Any]) -> Dict[str, Any]:
 async def handle_cv_generate(request_data: Dict[str, Any]) -> Dict[str, Any]:
     session_id = request_data.get("session_id")
     job_description = request_data.get("jobDescription")
+    auth_header = request_data.get("_auth_header")
+    
     if not session_id:
         raise HTTPException(status_code=400, detail="Session ID is required")
     if not job_description:
         raise HTTPException(status_code=400, detail="Job description is required")
+    
+    # Deduct credits BEFORE generating CV
+    if auth_header:
+        import httpx
+        import os
+        USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8000/api")
+        
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                credit_response = await client.post(
+                    f"{USER_SERVICE_URL}/user/credits/use",
+                    json={"amount": 1},
+                    headers={"Authorization": auth_header}
+                )
+                
+                if credit_response.status_code == 402:
+                    raise HTTPException(status_code=402, detail="Insufficient credits to generate CV")
+                elif credit_response.status_code != 200:
+                    logger.warning(f"[CV GENERATE] Credit deduction failed: {credit_response.status_code} {credit_response.text}")
+                    raise HTTPException(status_code=credit_response.status_code, detail="Failed to deduct credits")
+                
+                logger.info(f"[CV GENERATE] ✅ Deducted 1 credit. Remaining: {credit_response.json()}")
+        except httpx.TimeoutException:
+            logger.error("[CV GENERATE] Timeout calling user service for credit deduction")
+            raise HTTPException(status_code=504, detail="Credit service timeout")
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"[CV GENERATE] Error deducting credits: {e}")
+            raise HTTPException(status_code=500, detail=f"Credit deduction error: {str(e)}")
+    else:
+        logger.warning("[CV GENERATE] No authorization header provided - skipping credit deduction")
+    
     return await cv_generate_function_based(session_id, job_description)
 
 async def handle_cv_update(request_data: Dict[str, Any]) -> Dict[str, Any]:
