@@ -10,7 +10,7 @@ import tempfile
 import os
 from assistant_manager import CVAssistantManager
 from ai_utils import save_parsed_cv_to_db
-from db import get_db
+from db.database import get_db
 from auth import get_current_user
 from slowapi import Limiter
 from slowapi.util import get_remote_address
