@@ -5,7 +5,7 @@ import os
 from api.v1.router import api_router
 from api.v1.endpoints.session_endpoints import session_router
 from api.v1.endpoints.ai import router as ai_router
-from career_ark_router import router as career_ark_router
+from api.v1.endpoints.import_assistant import router as import_router
 from profile_session_manager import initialize_profile_session_manager
 from openai import OpenAI
 import openai
@@ -49,7 +49,7 @@ def on_startup():
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(session_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")
-app.include_router(career_ark_router)  # No prefix - uses paths defined in router
+app.include_router(import_router)  # No prefix - accessible at /importassistant
 
 @app.get("/")
 def read_root():

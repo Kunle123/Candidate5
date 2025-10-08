@@ -49,3 +49,8 @@ api_router.include_router(
     ai.router,
     tags=["ai"]
 )
+
+api_router.include_router(
+    import_assistant.router,
+    tags=["import"]
+)
