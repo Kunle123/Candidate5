@@ -22,20 +22,20 @@
 # ---
 from fastapi import APIRouter, HTTPException, Path, Body, Depends, UploadFile, File, Request
 from sqlalchemy.orm import Session
-from .models import WorkExperience, Education, Skill, Project, Certification, Training, UserArcData, CVTask
-from .db import get_db
+from models import WorkExperience, Education, Skill, Project, Certification, Training, UserArcData, CVTask
+from db import get_db
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from .auth import get_current_user
+from auth import get_current_user
 import logging
 from uuid import UUID, uuid4
 import os
 from fastapi.responses import FileResponse
 import io
-from .arc_schemas import ArcData
-from .cv_utils import extract_text_from_docx, extract_text_from_pdf, split_cv_by_sections, nlp_chunk_text
-from .ai_utils import parse_cv_with_ai_chunk, save_parsed_cv_to_db
+from arc_schemas import ArcData
+from cv_utils import extract_text_from_docx, extract_text_from_pdf, split_cv_by_sections, nlp_chunk_text
+from ai_utils import parse_cv_with_ai_chunk, save_parsed_cv_to_db
 from schemas import ProfileCreate, ProfileUpdate, ProfileOut, WorkExperienceCreate, WorkExperienceUpdate, WorkExperienceOut, EducationCreate, EducationUpdate, EducationOut, SkillCreate, SkillOut, ProjectCreate, ProjectUpdate, ProjectOut, CertificationCreate, CertificationUpdate, CertificationOut, TrainingCreate, TrainingUpdate, Role
 from openai import OpenAI
 from fastapi.routing import APIRoute
@@ -1392,7 +1392,7 @@ async def generate_assistant_adaptive(request: Request):
     }
 
 import tempfile
-from .assistant_manager import CVAssistantManager
+from assistant_manager import CVAssistantManager
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import pyclamd
@@ -1469,7 +1469,6 @@ async def import_cv_assistant(
         raise HTTPException(status_code=400, detail="No text could be extracted from the file.")
     # 3. Process with OpenAI Assistant
     try:
-        from .assistant_manager import CVAssistantManager
         assistant = CVAssistantManager()
         parsed_data = assistant.process_cv(text)
         save_parsed_cv_to_db(parsed_data, user_id, db)
